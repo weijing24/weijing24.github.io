@@ -1,0 +1,739 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+    
+  静态库和共享库开发 - 小菜鸡
+  
+  </title>
+ <meta name="description" content="个人博客">
+ <link href="atom.xml" rel="alternate" title="小菜鸡" type="application/atom+xml">
+    <link rel="stylesheet" href="asset/css/foundation.min.css" />
+    <link rel="stylesheet" href="asset/css/docs.css" />
+
+    <script src="asset/js/vendor/modernizr.js"></script>
+    <script src="asset/js/vendor/jquery.js"></script>
+    <script src="asset/highlightjs/highlight.pack.js"></script>
+    <link href="asset/highlightjs/styles/github.css" media="screen, projection" rel="stylesheet" type="text/css">
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+  </head>
+  <body class="antialiased hide-extras">
+    
+    <div class="marketing off-canvas-wrap" data-offcanvas>
+      <div class="inner-wrap">
+
+
+<nav class="top-bar docs-bar hide-for-small" data-topbar>
+
+<div id="header">
+    <h1><a href="index.html">小菜鸡</a></h1>
+</div>
+
+</nav>
+        <nav class="tab-bar show-for-small">
+  <a href="javascript:void(0)" class="left-off-canvas-toggle menu-icon">
+    <span> &nbsp; 小菜鸡</span>
+  </a>
+</nav>
+
+<aside class="left-off-canvas-menu">
+      <ul class="off-canvas-list">
+      <li><a href="index.html">Home</a></li>
+      
+        <li class="divider"></li>
+        <li><label>web服务器</label></li>
+
+          
+            <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>linux编程</label></li>
+
+          
+            <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+          
+
+      
+      </ul>
+    </aside>
+
+<a class="exit-off-canvas" href="#"></a>
+
+        <section id="main-content" role="main" class="scroll-container">
+
+          <div class="row">
+            <div class="large-3 medium-3 columns">
+              <div class="hide-for-small">
+                <div class="sidebar">
+                <nav>
+                  <ul id="side-nav" class="side-nav">
+
+                    
+                      <li class="side-title"><span>web服务器</span></li>
+                        
+                          <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>linux编程</span></li>
+                        
+                          <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+                        
+
+                    
+                  </ul>
+                </nav>
+                </div>
+              </div>
+            </div>
+            <div class="large-9 medium-9 columns">
+
+ <div class="markdown-body">
+<h1>静态库和共享库开发</h1>
+
+<p>再讲静态库和共享库之前先讲一下一个可执行文件的生成过程</p>
+
+<blockquote>
+<pre><code>1、预处理
+①将所有的#define删除，并且展开所有的宏定义
+②处理所有的条件预编译指令，比如#if #ifdef #elif #else #endif等
+③处理#include 预编译指令，将被包含的文件插入到该预编译指令的位置。
+④删除所有注释 “//”和”/* */”. 添加行号和文件标识，以便编译时产生调试用的行号及编译错误警告行号。
+⑤保留所有的#pragma编译器指令以备编译器使用
+⑥通常使用以下命令来进行预处理：
+    gcc -E test.c -o test.i
+    参数-E表示只进行预处理，打开test.i就可以看到预处理完成的内容。
+2、编译
+①编译过程就是把预处理完的文件进行一系列的词法分析，语法分析，语义分析及优化后生成相应的汇编代码。预处理之后，可直接对生成的test.i文件编译，生成汇编代码：
+    gcc -S test.i -o test.s
+②gcc的-S选项，表示在程序编译期间，在生成汇编代码后，停止，-o输出汇编代码文件
+3.汇编
+①汇编器是将汇编代码转变成机器可以执行的命令，每一个汇编语句几乎都对应一条机器指令。
+②汇编相对于编译过程比较简单，根据汇编指令和机器指令的对照表一一翻译即可。
+③对于上面生成的汇编代码文件test.s，gas汇编器负责将其编译为目标文件，如下：
+    gcc -c test.s -o test.o
+4、链接
+①gcc连接器是gas提供的，负责将程序的目标文件与所需的所有附加的目标文件连接起来，最终生成可执行文件。附加的目标文件包括静态连接库和动态连接库。
+②对于上一小节中生成的test.o，将其与Ｃ标准输入输出库进行连接，最终生成程序test
+    gcc test.o -o test
+</code></pre>
+</blockquote>
+
+<p>下面讲一下gcc的用法</p>
+
+<blockquote>
+<pre><code>gcc [选项] 文件...
+选项：
+-v　　　　　显示编译器调用的程序
+-E　　　　   仅作预处理,不进行编译、汇编和链接　　生成.i文件
+-S　　　　   编译到汇编语言,不进行汇编和链接　生成.s文件
+-c　　　　　编译、汇编到目标代码,进行链接，=生成.o文件
+-o file　　　 将经过gcc处理过的结果存为file，这个结果可能是预处理,汇编,目标或最终的可执行文件
+-g[gdb]　　  在可执行文件中加入调试信息,若使用中括号中的选项，表示加入gdb扩展的调试信息，方便使用gdb进行调试
+-I dirname　将dirname所指出的目录加入到程序头文件目录列表中,是在预编译过程中使用的参数
+-L dirname　将dirname所指出的目录加入到程序函数档案库文件的目录列表中,是在连接过程中使用的参数,默认状态下在/usr/lib中找
+-l name　　  在连接时,装载名字为libname.a的函数库
+</code></pre>
+</blockquote>
+
+<h4 id="toc_0">1.编写hello world,并使用脚本运行</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int main(void){
+    printf(&quot;Hello World!\n&quot;);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main main.c
+./main
+</code></pre>
+</blockquote>
+
+<h4 id="toc_1">2.预编译以下2个.c文件,并比较它们是否相同</h4>
+
+<p>包含文件：main1.c、main2.c、run.sh<br/>
+main1.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int main(void){
+    printf(&quot;Hello World!\n&quot;);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>main2.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+#define N world
+int main(void){
+    printf(&quot;hello N&quot;);
+    return 0; 
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -E  main1.c -o main1.i
+gcc -E  main2.c -o main2.i
+diff main1.i main2.i
+if test $? -eq 0;then
+    echo    &quot;file same&quot;
+else
+    echo    &quot;file different&quot;
+fi
+</code></pre>
+</blockquote>
+
+<h4 id="toc_2">3.生成汇编代码文件，并查看</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -S main.c -o main.s
+cat main.s
+</code></pre>
+</blockquote>
+
+<h4 id="toc_3">4.生成目标文件，并查看</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -c main.c -o main.o
+cat main.s
+</code></pre>
+</blockquote>
+
+<h4 id="toc_4">5.执行链接命令，并确定文件类型，查看目标文件信息</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+run.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -c main.c -o main.o
+gcc -o main main.o
+file main
+objdump -x main
+</code></pre>
+</blockquote>
+
+<h4 id="toc_5">6.加法的 helloworld</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+main.c：</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int main(void){
+    int a=1;
+    int b=2;
+    printf(&quot;%d+%d=%d\n&quot;,a,b,a+b);
+    return 0;    
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main  main.c
+./main
+</code></pre>
+</blockquote>
+
+<h4 id="toc_6">7.以命令参数执行加法计算</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+相关知识:<br/>
+main()函数的形式<br/>
+在最新的 C99 标准中,只有以下两种定义方式是正确的:</p>
+
+<blockquote>
+<pre><code>int main( void ){   --无参数形式
+    ...
+    return 0;
+}
+int main( int argc, char *argv[] ){     --带参数形式
+    ...
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>int 指明了 main()函数的返回类型,函数名后面的圆括号一般包含传递给函数的信息。 void 表示没有给函数传递参数。关于带参数的形式,我们等会讨论。浏览老版本的 C 代码,将会发现程序常常以main()这种形式开始。C90标准允许这种形式,但是 C99标准不允许。因此即使你当前的编译器允许,也不要这么写。你还可能看到过另一种形式:void main()有些编译器允许这种形式,但是还没有任何标准考虑接受它。C++ 之父Bjarne Stroustrup 在他的主页上的 FAQ 中明确地表示:void main( ) 的定义从来就不存在于 C++ 或者 C 。所以,编译器不必接受这种形式,并且很多编译器也不允许这么写。坚持使用标准的意义在于:当你把程序从一个编译器移到另一个编译器时,照样能正常运行。<br/>
+<strong>main()函数的返回值</strong><br/>
+从前面我们知道 main()函数的返回值类型是 int 型的,而程序最后的return 0; 正与之遥相呼应,0就是 main()函数的返回值。那么这个0返回到那里呢?返回给操作系统,表示程序正常退出。因为return语句通常写在程序的最后,不管返回什么值,只要到达这一步,说明程序已经运行完毕。而 return的作用不仅在于返回一个值,还在于结束函数。<br/>
+<strong>main()函数的参数</strong><br/>
+C 编译器允许 main()函数没有参数,或者有两个参数(有些实现允许更多的参数,但这只是对标准的扩展)。这两个参数,一个是 int 类型,一个是字符串类型。第一个参数是命令行中的字符串数。按照惯例(但不是必须的),这个 int 参数被称为 argc(argument count)。大家或许现在才明白这个形参为什么要取这么个奇怪的名字吧,呵呵!至于英文的意思,自己查字典吧。第二个参数是一个指向字符串的指针数组。命令行中的每个字符串被存储到内存中,并且分配一个指针指向它。按照惯例,这个指针数组被称为 argv(argument value)。系统使用空格把各个字符串格开。一般情况下,把程序本身的名字赋值给 argv[0],接着,把最后的第一个字符串赋给 argv[1],等等。<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+int main(int argc,char *argv[]){
+    if(argc!=3){
+        return 0;
+        printf(&quot;error&quot;);
+    }
+    int a=atoi(argv[1]);
+    int b=atoi(argv[2]);
+    printf(&quot;%d+%d=%d\n&quot;,a,b,a+b);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main main.c
+./main 1 2
+</code></pre>
+</blockquote>
+
+<h4 id="toc_7">8.编写 add 函数实现加法计算</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+main.c</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int add(int p1,int p2){   
+    int c;
+    c=p1+p2;
+    return c;
+}
+int main(int argc,char *argv[]){
+    if(argc!=3){ 
+        printf(&quot;error\n&quot;);            
+        return 0;
+    }
+    else{
+        int a=atoi(argv[1]);
+        int b=atoi(argv[2]);
+        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main main.c
+./main 3 5
+</code></pre>
+</blockquote>
+
+<h4 id="toc_8">9.静态链接编译与动态链接编译的区别</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+相关知识:<br/>
+全静态:不会发生应用程序在不同linux版本下的标准库不兼容问题,但是生成的文件比较大,应用程序功能受限(不能调用动态库等)<br/>
+全动态:生成文件小,但是容易发生不兼容问题<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int add(int p1,int p2){   
+    int c;
+    c=p1+p2;
+    return c;
+}
+int main(int argc,char *argv[]){
+    if(argc!=3){ 
+        printf(&quot;error\n&quot;);            
+        return 0;
+    }
+    else{
+        int a=atoi(argv[1]);
+        int b=atoi(argv[2]);
+        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -static main.c -o main_static
+gcc main.c -o main_dynamic
+file main_static
+file main_dynamic
+objdump -x main_static|grep NEEDED
+objdump -x main_dynamic|grep NEEDED
+</code></pre>
+</blockquote>
+
+<h4 id="toc_9">10.制作静态库</h4>
+
+<p>静态库是目标文件的打包,可通过 ar 命令进行制作。生成的静态库名字应该是 lib***.a,否则 gcc 命令无法识别。<br/>
+包含文件：lib/add.c、include/add.h、main.c、run.sh　　<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+#include&quot;add.h&quot;
+int main(int argc,char *argv[]){
+    if(argc!=3){
+        printf(&quot;error\n&quot;);            
+        return 0;
+    }
+    else{
+        int a=atoi(argv[1]);
+        int b=atoi(argv[2]);
+        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
+    }
+}
+</code></pre>
+</blockquote>
+
+<p>./include/add.h:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2);
+</code></pre>
+</blockquote>
+
+<p>./lib/add.c:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2){
+    int c;
+    c=p1+p2;
+    return c;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -c -I./include lib/add.c -o lib/add.o
+ar -rsv lib/libadd.a lib/add.o
+gcc -o main main.c -I./include -L./lib -ladd
+./main 3 5
+</code></pre>
+</blockquote>
+
+<h4 id="toc_10">11.制作共享库</h4>
+
+<p>包含文件：lib/add.c、include/add.h、main.c、run.sh<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+#include&quot;add.h&quot;
+int main(int argc,char *argv[]){
+    if(argc!=3){ 
+        printf(&quot;error\n&quot;);            
+        return 0;
+    }
+    else{
+        int a=atoi(argv[1]);
+        int b=atoi(argv[2]);
+        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>./include/add.h:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2);
+</code></pre>
+</blockquote>
+
+<p>./lib/add.c:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2){
+    int c;
+    c=p1+p2;
+    return c;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+gcc -o main main.c -I./include -L./lib/ -ladd
+echo $LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=../lib:$LD_LIBRARY_PATH
+./main 1 2
+</code></pre>
+</blockquote>
+
+<h4 id="toc_11">12.以多种方式实现共享库的运行</h4>
+
+<p>包含文件：lib/add.c、include/add.h、main.c、run1.sh、run2.sh、run3.sh<br/>
+run1.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+gcc -o main1 main.c -I./include -L./lib/ -ladd
+echo $LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH
+./main1 1 2
+</code></pre>
+</blockquote>
+
+<p>run2.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+unset LD_LIBRARY_PATH
+gcc -I./include -L./lib -Wl,-rpath=./lib  -o main2 main.c -ladd
+./main2 1 2
+</code></pre>
+</blockquote>
+
+<p>run3.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+sudo cp ./lib/libadd.so /usr/lib 
+sudo chmod 0755 /usr/lib/libadd.so
+sudo ldconfig
+gcc -o main3 main.c -I./include -L./lib/ -ladd
+./main3 1 2
+</code></pre>
+</blockquote>
+
+<h4 id="toc_12">13.升级替换共享库</h4>
+
+<p>共享库的优势是只需要针对相应的库重新编译升级,而不需要重新编译生成可执行文件,保证相互独立性。<br/>
+本题不需要main.c，直接在脚本中借用11题的main.c<br/>
+包含文件：lib/add.c、include/add.h、run.sh<br/>
+./lib/add.c:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2){
+    int c;
+    c=p1&amp;p2;
+    return c;
+}
+</code></pre>
+</blockquote>
+
+<p>./include/add.h:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2);
+</code></pre>
+</blockquote>
+
+<p>run.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+#设置环境变量
+export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH 
+../11/main 1 4 
+</code></pre>
+</blockquote>
+
+<h4 id="toc_13">14.动态加载动态库</h4>
+
+<p>本题不需要lib和include，直接借用12题和13题的动态库<br/>
+包含文件：main.c、run.sh<br/>
+main.c：</p>
+
+<blockquote>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;dlfcn.h&gt;
+</code></pre>
+
+<p>int main(int argc, char **argv){<br/>
+    void *lib_handle;<br/>
+    int (*add)();<br/>
+    char *error;<br/>
+    if(argc!=4){ <br/>
+        printf(&quot;error&quot;); return 0;<br/>
+    }<br/>
+　　/*打开一个动态链接库*/<br/>
+    lib_handle = dlopen(argv[3], RTLD_LAZY);<br/>
+    if (!lib_handle){<br/>
+        fprintf(stderr, &quot;%s\n&quot;, dlerror());<br/>
+        return 1;<br/>
+    }<br/>
+　　/*获取函数地址和变量地址*/<br/>
+    add=dlsym(lib_handle,&quot;add&quot;);<br/>
+　　/*当动态链接库操作函数执行失败时,dlerror 可以返回出错信息,返回值为NULL 时表示操作函数执行成功。*/<br/>
+    if ((error = dlerror()) != NULL){<br/>
+        fprintf(stderr, &quot;%s\n&quot;, error);<br/>
+        return 1;<br/>
+    }<br/>
+    int a=atoi(argv[1]);<br/>
+    int b=atoi(argv[2]);<br/>
+    printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));<br/>
+　　/*关闭指定句柄的动态链接库*/<br/>
+    dlclose(lib_handle);<br/>
+    return 0;<br/>
+}</p>
+</blockquote>
+
+<p>run.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main main.c -ldl
+echo use the &quot;+&quot; 
+./main 2 3 ../12/lib/libadd.so
+echo use the &quot;&amp;&quot;
+./main 2 3 ../13/lib/libadd.so
+</code></pre>
+</blockquote>
+
+<h4 id="toc_14">15.检查系统环境是否满足依赖库要求</h4>
+
+<p>ldconfig -p 可以输出当前系统环境中缓冲加载的动态链接库。<br/>
+包含文件：lib/add.c、include/add.h、main.c、run.sh　　<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &quot;add.h&quot;
+int main(int argc, char *argv[]){
+    puts(&quot;this is a static libarary test ....&quot;);
+    int a=atoi(argv[1]);    
+    int b=atoi(argv[2]);
+    int sum=add(a,b);
+    printf(&quot;%d + %d = %d \n&quot;,a,b,sum);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+#objdump -x main |grep NEEDED |sed -n &#39;1,$p&#39;|awk &#39;{print $2}&#39;&gt;main1.txt
+ldconfig -p &gt;main2.txt #打印出当前缓存文件所保存的所有共享库的名字.
+for line in `objdump -x main |grep NEEDED |sed -n &#39;1,$p&#39;|awk &#39;{print $2}&#39;`;do
+    cat main2.txt |grep -q &quot;$line&quot;
+    if [ $? -eq 0 ];then
+        echo -e &quot;$line is met \n&quot;
+    else
+        echo -e &quot;$line is not met \n&quot;
+    fi
+done
+</code></pre>
+</blockquote>
+
+
+</div>
+
+<br /><br />
+<hr />
+
+<div class="row clearfix">
+  <div class="large-6 columns">
+	<div class="text-left" style="padding:15px 0px;">
+		
+	        <a href="15033200332645.html"  title="Previous Post: 详解apache的allow和deny">&laquo; 详解apache的allow和deny</a>
+	    
+	</div>
+  </div>
+  <div class="large-6 columns">
+	<div class="text-right" style="padding:15px 0px;">
+		
+	</div>
+  </div>
+</div>
+
+<div class="row">
+<div style="padding:0px 0.93em;" class="share-comments">
+
+</div>
+</div>
+<script type="text/javascript">
+	$(function(){
+		var currentURL = '%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html';
+		$('#side-nav a').each(function(){
+			if($(this).attr('href') == currentURL){
+				$(this).parent().addClass('active');
+			}
+		});
+	});
+</script>  
+</div></div>
+
+
+<div class="page-bottom">
+  <div class="row">
+  <hr />
+  <div class="small-9 columns">
+  <p class="copyright">Copyright &copy; 2015
+Powered by <a target="_blank" href="http://www.mweb.im">MWeb</a>,&nbsp; 
+Theme used <a target="_blank" href="http://github.com">GitHub CSS</a>.</p>
+  </div>
+  <div class="small-3 columns">
+  <p class="copyright text-right"><a href="#header">TOP</a></p>
+  </div>
+   
+  </div>
+</div>
+
+        </section>
+      </div>
+    </div>
+    
+    
+    <script src="asset/js/foundation.min.js"></script>
+    <script src="asset/js/foundation/foundation.offcanvas.js"></script>
+    <script>
+      $(document).foundation();
+
+     
+    </script>
+    <script src="asset/chart/all-min.js"></script><script type="text/javascript">$(function(){    var mwebii=0;    var mwebChartEleId = 'mweb-chart-ele-';    $('pre>code').each(function(){        mwebii++;        var eleiid = mwebChartEleId+mwebii;        if($(this).hasClass('language-sequence')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = Diagram.parse($(this).text());            diagram.drawSVG(eleiid,{theme: 'simple'});        }else if($(this).hasClass('language-flow')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = flowchart.parse($(this).text());            diagram.drawSVG(eleiid);        }    });});</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({TeX: { equationNumbers: { autoNumber: "AMS" } }});</script>
+
+  </body>
+</html>

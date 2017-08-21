@@ -1,0 +1,884 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[小菜鸡]]></title>
+  <link href="weijing24.github.io/atom.xml" rel="self"/>
+  <link href="weijing24.github.io/"/>
+  <updated>2017-08-21T21:11:00+08:00</updated>
+  <id>weijing24.github.io/</id>
+  <author>
+    <name><![CDATA[]]></name>
+    
+  </author>
+  <generator uri="http://www.mweb.im">MWeb</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[详解apache的allow和deny]]></title>
+    <link href="weijing24.github.io/15033200332645.html"/>
+    <updated>2017-08-21T20:53:53+08:00</updated>
+    <id>weijing24.github.io/15033200332645.html</id>
+    <content type="html"><![CDATA[
+<p>　　今天看了一篇关于apache allow，deny的文章收获匪浅，防止被删，我直接摘过来了，<a href="http://www.cnblogs.com/top5/archive/2009/09/22/1571709.html">原文地址</a><br/>
+　　Allow和Deny可以用于apache的conf文件或者.htaccess文件中（配合Directory, Location, Files等），用来控制目录和文件的访问授权。<br/>
+　　所以，最常用的是：</p>
+
+<blockquote>
+<p>Order Deny,Allow<br/>
+Allow from All　　</p>
+</blockquote>
+
+<p>　　注意&quot;Deny,Allow&quot;中间只有一个逗号，也只能有一个逗号，有空格都会出错；单词的大小写不限。上面设定的含义是先设定&quot;先检查禁止设定，没有禁止的全部允许&quot;，而第二句没有Deny，也就是没有禁止访问的设定，直接就是允许所有访问了。这个主要是用来确保或者覆盖上级目录的设置，开放所有内容的访问权。<br/>
+　　按照上面的解释，下面的设定是无条件禁止访问：</p>
+
+<blockquote>
+<p>Order Allow,Deny<br/>
+Deny from All</p>
+</blockquote>
+
+<p>　　如果要禁止部分内容的访问，其他的全部开放：</p>
+
+<blockquote>
+<p>Order Deny,Allow<br/>
+Deny from ip1 ip2</p>
+</blockquote>
+
+<p>或者</p>
+
+<blockquote>
+<p>Order Allow,Deny<br/>
+Allow from all<br/>
+Deny from ip1 ip2</p>
+</blockquote>
+
+<p>　　apache会按照order决定最后使用哪一条规则，比如上面的第二种方式，虽然第二句allow允许了访问，但由于在order中allow不是最后规则，因此还需要看有没有deny规则，于是到了第三句，符合ip1和ip2的访问就被禁止了。注意，order决定的“最后”规则非常重要，下面是两个错误的例子和改正方式：</p>
+
+<blockquote>
+<p>Order Deny,Allow<br/>
+Allow from all<br/>
+Deny from domain.org</p>
+</blockquote>
+
+<p>　　错误：想禁止来自domain.org的访问，但是deny不是最后规则，apache在处理到第二句allow的时候就已经匹配成功，根本就不会去看第三句。<br/>
+　　解决方法：Order Allow,Deny，后面两句不动，即可。</p>
+
+<blockquote>
+<p>Order Allow,Deny<br/>
+Allow from ip1<br/>
+Deny from all</p>
+</blockquote>
+
+<p>　　错误：想只允许来自ip1的访问，但是，虽然第二句中设定了allow规则，由于order中deny在后，所以会以第三句deny为准，而第三句的范围中又明显包含了ip1（all include ip1），所以所有的访问都被禁止了。<br/>
+　　解决方法一：直接去掉第三句。<br/>
+　　解决方法二：</p>
+
+<blockquote>
+<p>Order Deny,Allow<br/>
+Deny from all<br/>
+Allow from ip1</p>
+</blockquote>
+
+<h3 id="toc_0">下面是测试过的例子：</h3>
+
+<p>#全部可以通行</p>
+
+<blockquote>
+<p>　<br/>
+Order deny,allow<br/>
+allow from all<br/>
+deny from 219.204.253.8</p>
+</blockquote>
+
+<p>#全部可以通行 </p>
+
+<blockquote>
+<p>Order deny,allow<br/>
+deny from 219.204.253.8<br/>
+allow from all</p>
+</blockquote>
+
+<p>#只有219.204.253.8不能通行</p>
+
+<blockquote>
+<p>Order allow,deny<br/>
+deny from 219.204.253.8<br/>
+allow from all</p>
+</blockquote>
+
+<p>#只有219.204.253.8不能通行</p>
+
+<blockquote>
+<p>Order allow,deny<br/>
+allow from all<br/>
+deny from 219.204.253.8</p>
+</blockquote>
+
+<p>#全部都不能通行 </p>
+
+<blockquote>
+<p>Order allow,deny<br/>
+deny from all<br/>
+allow from 219.204.253.8</p>
+</blockquote>
+
+<p>#全部都不能通行 </p>
+
+<blockquote>
+<p>Order allow,deny<br/>
+allow from 219.204.253.8<br/>
+deny from all</p>
+</blockquote>
+
+<p>#只允许219.204.253.8通行 </p>
+
+<blockquote>
+<p>Order deny,allow<br/>
+allow from 219.204.253.8<br/>
+deny from all</p>
+</blockquote>
+
+<p>#只允许219.204.253.8通行 </p>
+
+<blockquote>
+<p>Order deny,allow<br/>
+deny from all<br/>
+allow from 219.204.253.8</p>
+</blockquote>
+
+<p>#全部都可以通行（默认的）</p>
+
+<blockquote>
+<p>Order deny,allow</p>
+</blockquote>
+
+<p>#全部都不能通行（默认的）</p>
+
+<blockquote>
+<p>Order allow,deny</p>
+</blockquote>
+
+<p>#全部都不能通行</p>
+
+<blockquote>
+<p>Order deny,allow<br/>
+deny from all</p>
+</blockquote>
+
+<p>对于上面两种情况，如果换成allow from all，则全部都可以通行！</p>
+
+<p>#只有219.204.253.8不能通行</p>
+
+<blockquote>
+<p>Order deny,allow<br/>
+deny from 219.204.253.8</p>
+</blockquote>
+
+<p>#全部都不能通行</p>
+
+<blockquote>
+<p>Order allow,deny<br/>
+deny from 219.204.253.8</p>
+</blockquote>
+
+<p>#只允许219.204.253.8通行</p>
+
+<blockquote>
+<p>Order allow,deny<br/>
+allow from 219.204.253.8</p>
+</blockquote>
+
+<p>#全部都可以通行</p>
+
+<blockquote>
+<p>Order deny,allow<br/>
+allow from 219.204.253.8</p>
+</blockquote>
+
+<p>#代表拒绝218.20开头的IP，但允许218.20.253.2通过；而其它非218.20开头的IP也都允许通过。</p>
+
+<blockquote>
+<p>order deny,allow<br/>
+allow from 218.20.253.2<br/>
+deny from 218.20</p>
+</blockquote>
+
+<p>#和上面的差不多，只是掉换的order语句中的allow、deny先后顺序，但最终结果表示全部都拒绝！</p>
+
+<blockquote>
+<p>order allow,deny<br/>
+allow from 218.20.253.2<br/>
+deny from 218.20</p>
+</blockquote>
+
+<p>前段时间做了个Apache的HTTP代理服务器，其中的order allow，deny这部分弄的不太懂，于是上网找资料看，谁知道越看越糊涂，其中有些难以分辨对错甚至是误导。就像破解windows系统密码的一些文章那样，很多都是人云亦云的，并没有经过测试。废话少说，先把我经过测试后分析总结出来的结论show出来，相信这对大家的理解非常有帮助。</p>
+
+<p>总则——</p>
+
+<blockquote>
+<pre><code>影响最终判断结果的只有两点：
+1. order语句中allow、deny的先后顺序；
+2. allow、deny语句中各自包含的范围。
+</code></pre>
+</blockquote>
+
+<p>温馨提醒——</p>
+
+<blockquote>
+<pre><code>1. 修改完配置后要保存好并重启Apache服务，配置才能生效；
+2. 开头字母不分大小写；
+3. allow、deny语句不分先后顺序，谁先谁后不影响最终判断结果；但都会被判断到；
+4. order语句中，“allow,deny”之间“有且只有”一个逗号（英文格式的），而且先后顺序很重要；
+5. Apache有一条缺省规则，“order allow,deny”本身就默认了拒绝所有的意思，因为deny在allow的后面；同理，“order deny,allow”本身默认的是允许所有；当然，最终判断结果还要综合下面的allow、deny语句中各自所包含的范围；（也就是说order语句后面可以没有allow、deny语句）
+6. allow、deny语句中，第二个单词一定是“from”，否则Apache会因错而无法启动，
+7. “order allow,deny”代表先判断allow语句再判断deny语句，反之亦然。
+</code></pre>
+</blockquote>
+
+<p>上面说的都是要记住的，而下面说的是我独创的理解方法。如果有人看了而没有豁然开朗的感觉，那算是我的失败！<br/>
+判断原则分4步走——</p>
+
+<blockquote>
+<pre><code>1. 首先判断默认的；
+2. 然后判断逗号前的；
+3. 最后判断逗号后的；
+4. 最终按顺序叠加而得出判断结果。
+</code></pre>
+</blockquote>
+
+<p>上面三点我说的简单而形象，主要是为了便于记忆。暂时不理解不要紧，继续看下面详细的解说自然会明白。下面以一个普通例子来做解释——</p>
+
+<blockquote>
+<p>order deny,allow<br/>
+allow from 218.20.253.2<br/>
+deny from 218.20</p>
+</blockquote>
+
+<ol>
+<li>所谓“首先判断默认的”，就是判断“order deny,allow”这句，它默认是允许所有；</li>
+<li>所谓“然后判断逗号前的”，因为在本例子中的order语句里面，deny在逗号的前面，所以现在轮到判断下面的deny语句了——“deny from 218.20”；</li>
+<li>所谓“最后判断逗号后的”，因为在本例子中的order语句里面，allow在逗号的后面，所以最后轮到判断下面的allow语句了——“allow from 218.20.253.2”。</li>
+<li>所谓“最终按顺序叠加而得出判断结果”，这是一个形象化了的说法，我把每一步判断都看作一个“不透明的图层”，然后一步步按顺序叠加上去，最终得出的“图像”就是判断结果。</li>
+</ol>
+
+<p>用过作图软件的人应该都知道“图层”是怎么回事，我估计Apache关于order allow deny这方面的设计理念和photoshop等作图软件关于图层的设计理念是一样的。即“游戏规则”是一样的。</p>
+
+<p>那么上面的例子就可以是这么一个步骤和图像——</p>
+
+<ol>
+<li>先画一个白色的大圆，代表“order deny,allow”语句，默认意思是允许所有；</li>
+<li>然后画一个小一点的黑色圆，代表“deny from 218.20”语句，意思是拒绝所有以218.20开头的IP，放进白色的大圆里面；</li>
+<li>最后再画一个白色的圆，代表“allow from 218.20.253.2”语句，意思是允许218.20.253.2通过，放在黑色圆的上面。</li>
+<li>到此为止，我们已经可以看到一个结果了，白色大圆上面有一个黑色圆，黑色圆上面还有一个白色圆。最后，我们所能看到的黑色部分就是拒绝通行的，剩下的白色部分都是允许通行的。判断的结果就是这么简单形象！</li>
+</ol>
+
+<p>如果不懂的用作图软件，我们再来个非常贴近生活的比喻,把上面的例子改动一点点，以便更好的理解：</p>
+
+<blockquote>
+<p>order deny,allow<br/>
+allow from 218.20.253.2<br/>
+deny from 219.30</p>
+</blockquote>
+
+<ol>
+<li>首先拿一张A4白纸，代表第order语句，意思是允许全部；</li>
+<li>然后拿一张黑色纸剪一个圆，放在A4纸里面的某个位置上，代表deny语句，意思是拒绝所有以219.30开头的IP；</li>
+<li>最后拿白纸再剪一个圆，放在黑色圆的旁边，代表allow语句，意思是允许218.20.253.2通过；注意，这个例子不是放进黑色圆里面了，因为deny和allow语句不再有相互包含的关系了。</li>
+<li>A4纸上面有一个黑色圆和一个白色圆，结果自然很明显了。不过白色的A4纸上再放一个白色的圆，显然是多余的了，因为大家都是白色的，都代表允许，所以就重复了，可以去掉白色的圆而不会影响判断结果。</li>
+</ol>
+
+<p>如果看到这里还没明白，那一定是我还有什么没说清楚的。那么请好好分析我所做过的测试例子，将在最后列出来。<br/>
+在这里再啰嗦一下，allow、deny语句后面跟的参数有多种形式，有不同的表达方式，我在网上看到的做法是deny from IP1 IP2 IP3或allow from domain.com等。其它的表达方式大家再找别的资料看吧。我想说的是另一种表达方式：</p>
+
+<blockquote>
+<p>order deny,allow<br/>
+allow from IP1 IP2<br/>
+allow from domain.info<br/>
+allow from 219.20.55.0/24<br/>
+deny from all</p>
+</blockquote>
+
+<p>我没具体验证过这是否对，不过这样是可以正常启动Apache服务的，按道理应该是正确的表达方式。哈哈，像我这样的入门者只能这样了，还希望大家多多指教！</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[静态库和共享库开发]]></title>
+    <link href="weijing24.github.io/%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html"/>
+    <updated>2017-08-21T17:52:58+08:00</updated>
+    <id>weijing24.github.io/%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html</id>
+    <content type="html"><![CDATA[
+<p>再讲静态库和共享库之前先讲一下一个可执行文件的生成过程</p>
+
+<blockquote>
+<pre><code>1、预处理
+①将所有的#define删除，并且展开所有的宏定义
+②处理所有的条件预编译指令，比如#if #ifdef #elif #else #endif等
+③处理#include 预编译指令，将被包含的文件插入到该预编译指令的位置。
+④删除所有注释 “//”和”/* */”. 添加行号和文件标识，以便编译时产生调试用的行号及编译错误警告行号。
+⑤保留所有的#pragma编译器指令以备编译器使用
+⑥通常使用以下命令来进行预处理：
+    gcc -E test.c -o test.i
+    参数-E表示只进行预处理，打开test.i就可以看到预处理完成的内容。
+2、编译
+①编译过程就是把预处理完的文件进行一系列的词法分析，语法分析，语义分析及优化后生成相应的汇编代码。预处理之后，可直接对生成的test.i文件编译，生成汇编代码：
+    gcc -S test.i -o test.s
+②gcc的-S选项，表示在程序编译期间，在生成汇编代码后，停止，-o输出汇编代码文件
+3.汇编
+①汇编器是将汇编代码转变成机器可以执行的命令，每一个汇编语句几乎都对应一条机器指令。
+②汇编相对于编译过程比较简单，根据汇编指令和机器指令的对照表一一翻译即可。
+③对于上面生成的汇编代码文件test.s，gas汇编器负责将其编译为目标文件，如下：
+    gcc -c test.s -o test.o
+4、链接
+①gcc连接器是gas提供的，负责将程序的目标文件与所需的所有附加的目标文件连接起来，最终生成可执行文件。附加的目标文件包括静态连接库和动态连接库。
+②对于上一小节中生成的test.o，将其与Ｃ标准输入输出库进行连接，最终生成程序test
+    gcc test.o -o test
+</code></pre>
+</blockquote>
+
+<p>下面讲一下gcc的用法</p>
+
+<blockquote>
+<pre><code>gcc [选项] 文件...
+选项：
+-v　　　　　显示编译器调用的程序
+-E　　　　   仅作预处理,不进行编译、汇编和链接　　生成.i文件
+-S　　　　   编译到汇编语言,不进行汇编和链接　生成.s文件
+-c　　　　　编译、汇编到目标代码,进行链接，=生成.o文件
+-o file　　　 将经过gcc处理过的结果存为file，这个结果可能是预处理,汇编,目标或最终的可执行文件
+-g[gdb]　　  在可执行文件中加入调试信息,若使用中括号中的选项，表示加入gdb扩展的调试信息，方便使用gdb进行调试
+-I dirname　将dirname所指出的目录加入到程序头文件目录列表中,是在预编译过程中使用的参数
+-L dirname　将dirname所指出的目录加入到程序函数档案库文件的目录列表中,是在连接过程中使用的参数,默认状态下在/usr/lib中找
+-l name　　  在连接时,装载名字为libname.a的函数库
+</code></pre>
+</blockquote>
+
+<h4 id="toc_0">1.编写hello world,并使用脚本运行</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int main(void){
+    printf(&quot;Hello World!\n&quot;);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main main.c
+./main
+</code></pre>
+</blockquote>
+
+<h4 id="toc_1">2.预编译以下2个.c文件,并比较它们是否相同</h4>
+
+<p>包含文件：main1.c、main2.c、run.sh<br/>
+main1.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int main(void){
+    printf(&quot;Hello World!\n&quot;);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>main2.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+#define N world
+int main(void){
+    printf(&quot;hello N&quot;);
+    return 0; 
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -E  main1.c -o main1.i
+gcc -E  main2.c -o main2.i
+diff main1.i main2.i
+if test $? -eq 0;then
+    echo    &quot;file same&quot;
+else
+    echo    &quot;file different&quot;
+fi
+</code></pre>
+</blockquote>
+
+<h4 id="toc_2">3.生成汇编代码文件，并查看</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -S main.c -o main.s
+cat main.s
+</code></pre>
+</blockquote>
+
+<h4 id="toc_3">4.生成目标文件，并查看</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -c main.c -o main.o
+cat main.s
+</code></pre>
+</blockquote>
+
+<h4 id="toc_4">5.执行链接命令，并确定文件类型，查看目标文件信息</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+run.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -c main.c -o main.o
+gcc -o main main.o
+file main
+objdump -x main
+</code></pre>
+</blockquote>
+
+<h4 id="toc_5">6.加法的 helloworld</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+main.c：</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int main(void){
+    int a=1;
+    int b=2;
+    printf(&quot;%d+%d=%d\n&quot;,a,b,a+b);
+    return 0;    
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main  main.c
+./main
+</code></pre>
+</blockquote>
+
+<h4 id="toc_6">7.以命令参数执行加法计算</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+相关知识:<br/>
+main()函数的形式<br/>
+在最新的 C99 标准中,只有以下两种定义方式是正确的:</p>
+
+<blockquote>
+<pre><code>int main( void ){   --无参数形式
+    ...
+    return 0;
+}
+int main( int argc, char *argv[] ){     --带参数形式
+    ...
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>int 指明了 main()函数的返回类型,函数名后面的圆括号一般包含传递给函数的信息。 void 表示没有给函数传递参数。关于带参数的形式,我们等会讨论。浏览老版本的 C 代码,将会发现程序常常以main()这种形式开始。C90标准允许这种形式,但是 C99标准不允许。因此即使你当前的编译器允许,也不要这么写。你还可能看到过另一种形式:void main()有些编译器允许这种形式,但是还没有任何标准考虑接受它。C++ 之父Bjarne Stroustrup 在他的主页上的 FAQ 中明确地表示:void main( ) 的定义从来就不存在于 C++ 或者 C 。所以,编译器不必接受这种形式,并且很多编译器也不允许这么写。坚持使用标准的意义在于:当你把程序从一个编译器移到另一个编译器时,照样能正常运行。<br/>
+<strong>main()函数的返回值</strong><br/>
+从前面我们知道 main()函数的返回值类型是 int 型的,而程序最后的return 0; 正与之遥相呼应,0就是 main()函数的返回值。那么这个0返回到那里呢?返回给操作系统,表示程序正常退出。因为return语句通常写在程序的最后,不管返回什么值,只要到达这一步,说明程序已经运行完毕。而 return的作用不仅在于返回一个值,还在于结束函数。<br/>
+<strong>main()函数的参数</strong><br/>
+C 编译器允许 main()函数没有参数,或者有两个参数(有些实现允许更多的参数,但这只是对标准的扩展)。这两个参数,一个是 int 类型,一个是字符串类型。第一个参数是命令行中的字符串数。按照惯例(但不是必须的),这个 int 参数被称为 argc(argument count)。大家或许现在才明白这个形参为什么要取这么个奇怪的名字吧,呵呵!至于英文的意思,自己查字典吧。第二个参数是一个指向字符串的指针数组。命令行中的每个字符串被存储到内存中,并且分配一个指针指向它。按照惯例,这个指针数组被称为 argv(argument value)。系统使用空格把各个字符串格开。一般情况下,把程序本身的名字赋值给 argv[0],接着,把最后的第一个字符串赋给 argv[1],等等。<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+int main(int argc,char *argv[]){
+    if(argc!=3){
+        return 0;
+        printf(&quot;error&quot;);
+    }
+    int a=atoi(argv[1]);
+    int b=atoi(argv[2]);
+    printf(&quot;%d+%d=%d\n&quot;,a,b,a+b);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main main.c
+./main 1 2
+</code></pre>
+</blockquote>
+
+<h4 id="toc_7">8.编写 add 函数实现加法计算</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+main.c</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int add(int p1,int p2){   
+    int c;
+    c=p1+p2;
+    return c;
+}
+int main(int argc,char *argv[]){
+    if(argc!=3){ 
+        printf(&quot;error\n&quot;);            
+        return 0;
+    }
+    else{
+        int a=atoi(argv[1]);
+        int b=atoi(argv[2]);
+        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main main.c
+./main 3 5
+</code></pre>
+</blockquote>
+
+<h4 id="toc_8">9.静态链接编译与动态链接编译的区别</h4>
+
+<p>包含文件：main.c、run.sh<br/>
+相关知识:<br/>
+全静态:不会发生应用程序在不同linux版本下的标准库不兼容问题,但是生成的文件比较大,应用程序功能受限(不能调用动态库等)<br/>
+全动态:生成文件小,但是容易发生不兼容问题<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+int add(int p1,int p2){   
+    int c;
+    c=p1+p2;
+    return c;
+}
+int main(int argc,char *argv[]){
+    if(argc!=3){ 
+        printf(&quot;error\n&quot;);            
+        return 0;
+    }
+    else{
+        int a=atoi(argv[1]);
+        int b=atoi(argv[2]);
+        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -static main.c -o main_static
+gcc main.c -o main_dynamic
+file main_static
+file main_dynamic
+objdump -x main_static|grep NEEDED
+objdump -x main_dynamic|grep NEEDED
+</code></pre>
+</blockquote>
+
+<h4 id="toc_9">10.制作静态库</h4>
+
+<p>静态库是目标文件的打包,可通过 ar 命令进行制作。生成的静态库名字应该是 lib***.a,否则 gcc 命令无法识别。<br/>
+包含文件：lib/add.c、include/add.h、main.c、run.sh　　<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+#include&quot;add.h&quot;
+int main(int argc,char *argv[]){
+    if(argc!=3){
+        printf(&quot;error\n&quot;);            
+        return 0;
+    }
+    else{
+        int a=atoi(argv[1]);
+        int b=atoi(argv[2]);
+        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
+    }
+}
+</code></pre>
+</blockquote>
+
+<p>./include/add.h:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2);
+</code></pre>
+</blockquote>
+
+<p>./lib/add.c:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2){
+    int c;
+    c=p1+p2;
+    return c;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -c -I./include lib/add.c -o lib/add.o
+ar -rsv lib/libadd.a lib/add.o
+gcc -o main main.c -I./include -L./lib -ladd
+./main 3 5
+</code></pre>
+</blockquote>
+
+<h4 id="toc_10">11.制作共享库</h4>
+
+<p>包含文件：lib/add.c、include/add.h、main.c、run.sh<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include&lt;stdio.h&gt;
+#include&quot;add.h&quot;
+int main(int argc,char *argv[]){
+    if(argc!=3){ 
+        printf(&quot;error\n&quot;);            
+        return 0;
+    }
+    else{
+        int a=atoi(argv[1]);
+        int b=atoi(argv[2]);
+        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>./include/add.h:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2);
+</code></pre>
+</blockquote>
+
+<p>./lib/add.c:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2){
+    int c;
+    c=p1+p2;
+    return c;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+gcc -o main main.c -I./include -L./lib/ -ladd
+echo $LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=../lib:$LD_LIBRARY_PATH
+./main 1 2
+</code></pre>
+</blockquote>
+
+<h4 id="toc_11">12.以多种方式实现共享库的运行</h4>
+
+<p>包含文件：lib/add.c、include/add.h、main.c、run1.sh、run2.sh、run3.sh<br/>
+run1.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+gcc -o main1 main.c -I./include -L./lib/ -ladd
+echo $LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH
+./main1 1 2
+</code></pre>
+</blockquote>
+
+<p>run2.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+unset LD_LIBRARY_PATH
+gcc -I./include -L./lib -Wl,-rpath=./lib  -o main2 main.c -ladd
+./main2 1 2
+</code></pre>
+</blockquote>
+
+<p>run3.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+sudo cp ./lib/libadd.so /usr/lib 
+sudo chmod 0755 /usr/lib/libadd.so
+sudo ldconfig
+gcc -o main3 main.c -I./include -L./lib/ -ladd
+./main3 1 2
+</code></pre>
+</blockquote>
+
+<h4 id="toc_12">13.升级替换共享库</h4>
+
+<p>共享库的优势是只需要针对相应的库重新编译升级,而不需要重新编译生成可执行文件,保证相互独立性。<br/>
+本题不需要main.c，直接在脚本中借用11题的main.c<br/>
+包含文件：lib/add.c、include/add.h、run.sh<br/>
+./lib/add.c:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2){
+    int c;
+    c=p1&amp;p2;
+    return c;
+}
+</code></pre>
+</blockquote>
+
+<p>./include/add.h:</p>
+
+<blockquote>
+<pre><code>int add(int p1,int p2);
+</code></pre>
+</blockquote>
+
+<p>run.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
+#设置环境变量
+export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH 
+../11/main 1 4 
+</code></pre>
+</blockquote>
+
+<h4 id="toc_13">14.动态加载动态库</h4>
+
+<p>本题不需要lib和include，直接借用12题和13题的动态库<br/>
+包含文件：main.c、run.sh<br/>
+main.c：</p>
+
+<blockquote>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;dlfcn.h&gt;
+</code></pre>
+
+<p>int main(int argc, char **argv){<br/>
+    void *lib_handle;<br/>
+    int (*add)();<br/>
+    char *error;<br/>
+    if(argc!=4){ <br/>
+        printf(&quot;error&quot;); return 0;<br/>
+    }<br/>
+　　/*打开一个动态链接库*/<br/>
+    lib_handle = dlopen(argv[3], RTLD_LAZY);<br/>
+    if (!lib_handle){<br/>
+        fprintf(stderr, &quot;%s\n&quot;, dlerror());<br/>
+        return 1;<br/>
+    }<br/>
+　　/*获取函数地址和变量地址*/<br/>
+    add=dlsym(lib_handle,&quot;add&quot;);<br/>
+　　/*当动态链接库操作函数执行失败时,dlerror 可以返回出错信息,返回值为NULL 时表示操作函数执行成功。*/<br/>
+    if ((error = dlerror()) != NULL){<br/>
+        fprintf(stderr, &quot;%s\n&quot;, error);<br/>
+        return 1;<br/>
+    }<br/>
+    int a=atoi(argv[1]);<br/>
+    int b=atoi(argv[2]);<br/>
+    printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));<br/>
+　　/*关闭指定句柄的动态链接库*/<br/>
+    dlclose(lib_handle);<br/>
+    return 0;<br/>
+}</p>
+</blockquote>
+
+<p>run.sh：</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+gcc -o main main.c -ldl
+echo use the &quot;+&quot; 
+./main 2 3 ../12/lib/libadd.so
+echo use the &quot;&amp;&quot;
+./main 2 3 ../13/lib/libadd.so
+</code></pre>
+</blockquote>
+
+<h4 id="toc_14">15.检查系统环境是否满足依赖库要求</h4>
+
+<p>ldconfig -p 可以输出当前系统环境中缓冲加载的动态链接库。<br/>
+包含文件：lib/add.c、include/add.h、main.c、run.sh　　<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &quot;add.h&quot;
+int main(int argc, char *argv[]){
+    puts(&quot;this is a static libarary test ....&quot;);
+    int a=atoi(argv[1]);    
+    int b=atoi(argv[2]);
+    int sum=add(a,b);
+    printf(&quot;%d + %d = %d \n&quot;,a,b,sum);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>run.sh:</p>
+
+<blockquote>
+<pre><code>#!/bin/bash
+#objdump -x main |grep NEEDED |sed -n &#39;1,$p&#39;|awk &#39;{print $2}&#39;&gt;main1.txt
+ldconfig -p &gt;main2.txt #打印出当前缓存文件所保存的所有共享库的名字.
+for line in `objdump -x main |grep NEEDED |sed -n &#39;1,$p&#39;|awk &#39;{print $2}&#39;`;do
+    cat main2.txt |grep -q &quot;$line&quot;
+    if [ $? -eq 0 ];then
+        echo -e &quot;$line is met \n&quot;
+    else
+        echo -e &quot;$line is not met \n&quot;
+    fi
+done
+</code></pre>
+</blockquote>
+
+]]></content>
+  </entry>
+  
+</feed>
