@@ -1,0 +1,415 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+    
+  记一次ftp服务器搭建走过的坑 - 小菜鸡
+  
+  </title>
+ <meta name="description" content="个人博客">
+ <link href="atom.xml" rel="alternate" title="小菜鸡" type="application/atom+xml">
+    <link rel="stylesheet" href="asset/css/foundation.min.css" />
+    <link rel="stylesheet" href="asset/css/docs.css" />
+
+    <script src="asset/js/vendor/modernizr.js"></script>
+    <script src="asset/js/vendor/jquery.js"></script>
+    <script src="asset/highlightjs/highlight.pack.js"></script>
+    <link href="asset/highlightjs/styles/github.css" media="screen, projection" rel="stylesheet" type="text/css">
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+  </head>
+  <body class="antialiased hide-extras">
+    
+    <div class="marketing off-canvas-wrap" data-offcanvas>
+      <div class="inner-wrap">
+
+
+<nav class="top-bar docs-bar hide-for-small" data-topbar>
+
+<div id="header">
+    <h1><a href="index.html">小菜鸡</a></h1>
+</div>
+
+</nav>
+        <nav class="tab-bar show-for-small">
+  <a href="javascript:void(0)" class="left-off-canvas-toggle menu-icon">
+    <span> &nbsp; 小菜鸡</span>
+  </a>
+</nav>
+
+<aside class="left-off-canvas-menu">
+      <ul class="off-canvas-list">
+      <li><a href="index.html">Home</a></li>
+      
+        <li class="divider"></li>
+        <li><label>容器</label></li>
+
+          
+            <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>web服务器</label></li>
+
+          
+            <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+          
+            <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>linux编程</label></li>
+
+          
+            <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+          
+            <li><a title="信号" href="15033227238921.html">信号</a></li>
+          
+            <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+          
+            <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+          
+            <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+          
+            <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+          
+            <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+          
+            <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+          
+            <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+          
+            <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+          
+            <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+          
+            <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>坑</label></li>
+
+          
+            <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+          
+            <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+          
+            <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+          
+            <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>日常运维</label></li>
+
+          
+            <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+          
+            <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+          
+            <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+          
+            <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+          
+            <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+          
+            <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+          
+            <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+          
+            <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+          
+            <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+          
+            <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+          
+            <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+          
+            <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+          
+
+      
+      </ul>
+    </aside>
+
+<a class="exit-off-canvas" href="#"></a>
+
+        <section id="main-content" role="main" class="scroll-container">
+
+          <div class="row">
+            <div class="large-3 medium-3 columns">
+              <div class="hide-for-small">
+                <div class="sidebar">
+                <nav>
+                  <ul id="side-nav" class="side-nav">
+
+                    
+                      <li class="side-title"><span>容器</span></li>
+                        
+                          <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>web服务器</span></li>
+                        
+                          <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+                        
+                          <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>linux编程</span></li>
+                        
+                          <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+                        
+                          <li><a title="信号" href="15033227238921.html">信号</a></li>
+                        
+                          <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+                        
+                          <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+                        
+                          <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+                        
+                          <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+                        
+                          <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+                        
+                          <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+                        
+                          <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+                        
+                          <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+                        
+                          <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+                        
+                          <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>坑</span></li>
+                        
+                          <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+                        
+                          <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+                        
+                          <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+                        
+                          <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>日常运维</span></li>
+                        
+                          <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+                        
+                          <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+                        
+                          <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+                        
+                          <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+                        
+                          <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+                        
+                          <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+                        
+                          <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+                        
+                          <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+                        
+                          <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+                        
+                          <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+                        
+                          <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+                        
+                          <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+                        
+
+                    
+                  </ul>
+                </nav>
+                </div>
+              </div>
+            </div>
+            <div class="large-9 medium-9 columns">
+
+ <div class="markdown-body">
+<h1>记一次ftp服务器搭建走过的坑</h1>
+
+<h2 id="toc_0">1、安装</h2>
+
+<p>①下载</p>
+
+<blockquote>
+<p>wget <a href="https://security.appspot.com/downloads/vsftpd-3.0.3.tar.gz">https://security.appspot.com/downloads/vsftpd-3.0.3.tar.gz</a>    #要翻墙</p>
+</blockquote>
+
+<p>②解压</p>
+
+<blockquote>
+<p>tar xzvf vsftpd-3.0.3.tar.gz &amp;&amp; cd vsftpd-3.0.3</p>
+</blockquote>
+
+<p>③编译<br/>
+根据需要修改builddefs.h文件，<br/>
+cat builddefs.h</p>
+
+<blockquote>
+<p>#ifndef VSF_BUILDDEFS_H<br/>
+    #define VSF_BUILDDEFS_H <br/>
+    #undef VSF_BUILD_TCPWRAPPERS<br/>
+    #define VSF_BUILD_PAM<br/>
+    #undef VSF_BUILD_SSL<br/><br/>
+    #endif</p>
+</blockquote>
+
+<p>如需要tcp wrapper，改成#define VSF_BUILD_TCPWRAPPERS<br/>
+如需要OpenSSL，改成#define VSF_BUILD_SSL<br/>
+建议把所有的undef改为define，反正也不多，就三四个。<br/>
+改完直接make即可。<br/>
+④安装<br/>
+编译完成后会在当前目录生成vsftpd、vsftpd.8和vsftpd.conf.5。make install会安装到/usr/local目录下</p>
+
+<h2 id="toc_1">2、踩坑</h2>
+
+<p>之所以搭建这个是因为老的ftp一直不稳定，于是去官网下了个最新版。</p>
+
+<h3 id="toc_2">2.1 编译过程会踩的坑</h3>
+
+<p>① 缺少tcp_wrappers-devel包<br/>
+    之所以缺少这个包是因为在一开始的builddefs.h文件中我们修改为了#define VSF_BUILD_TCPWRAPPERS，<br/>
+② 缺少pam-devel包<br/>
+    同理在一开始的builddefs.h文件中我们修改为了#define VSF_BUILD_PAM<br/>
+③ 缺少openssl-devel包<br/>
+    同理在一开始的builddefs.h文件中我们修改为了#define VSF_BUILD_SSL</p>
+
+<h3 id="toc_3">2.2 配置文件的坑</h3>
+
+<h4 id="toc_4">问题发现:</h4>
+
+<p>在启动vsftp进程后使用ftp客户端登录可能会遇到这么两个问题，一个是vsftpd:refusing to run with writable root inside chroot(),一个是Failed to change directory，这两个问题归根结底都是配置文件的三个参数导致的，分别是chroot_local_user、chroot_list_enable、chroot_list_file。</p>
+
+<h4 id="toc_5">知识点:</h4>
+
+<p>①chroot_local_user<br/>
+是否将所有用户限制在主目录，,YES为启用 NO禁用.(该项默认值是NO,即在安装vsftpd后不做配置的话，ftp用户是可以向上切换到要目录之外的)<br/>
+②chroot_list_enable<br/>
+是否启动限制用户的名单，通俗的说就是chroot_local_user的例外项。<br/>
+③chroot_list_file<br/>
+是否限制在主目录下的用户名单，此项只有在chroot_list_enable值为yes才有意义</p>
+
+<p>概念比较乱，可以这样记忆：<br/>
+当chroot_local_user为yes时，说明全局用户都被锁定在主目录，无法跳转到其他目录，此时chroot_list_enable为yes时，说明允许设置例外用户不被锁定。反之亦然。即当&quot;全部用户被锁定于主目录&quot;时(chroot_local_user=YES),&quot;例外&quot;就是：不被锁定的用户是哪些;当&quot;全部用户不被锁定于主目录&quot;时(chroot_local_user=NO),&quot;例外&quot;&quot;就是:要被锁定的用户是哪些。</p>
+
+<h4 id="toc_6">实例：</h4>
+
+<p>有user1、user2两个ftp用户,计划让user1锁定在主目录,user2自由切换目录,可以用以下方法实现<br/>
+方法一：</p>
+
+<blockquote>
+<p>chroot_local_user=YES<br/>
+chroot_list_enable=YES<br/>
+/etc/vsftpd/chroot_list名单列表为:<br/>
+user2</p>
+</blockquote>
+
+<p>解释:hroot_local_user=YES将所有用户限定在主目录内，chroot_list_enable=YES表示要启用chroot_list_file, 因为chroot_local_user=YES，即全体用户都被“限定在主目录内”,所以总是作为“例外列表”的chroot_list_file这时列出的是那些“不会被限制在主目录下”的用户。<br/>
+ <br/>
+方法二：</p>
+
+<blockquote>
+<p>chroot_local_user=NO<br/>
+chroot_list_enable=YES<br/>
+/etc/vsftpd/chroot_list名单列表为:<br/>
+user1</p>
+</blockquote>
+
+<p>解释:chroot_local_user=NO则所有用户不被限定在主目录内，chroot_list_enable=YES表示要启用chroot_list_file, 因为chroot_local_user=NO，即全体用户都“不被限定在主目录内”,所以总是作为“例外列表”的chroot_list_file这时列出的是那些“会被限制在主目录下”的用户。</p>
+
+<h4 id="toc_7">问题解决:</h4>
+
+<p>Failed to change directory一般就是配置文件chroot_local_user设了YES，而你没有开chroot_list_enable或者chroot_list_file没有写对应用户<br/>
+vsftpd:refusing to run with writable root inside chroot()<br/>
+从2.3.5之后，vsftpd增强了安全检查，如果用户被限定在了其主目录下，则该用户的主目录不能再具有写权限了！如果检查发现还有写权限，就会报该错误。要修复这个错误，可以用命令<strong><em>chmod a-w /home/user去除用户主目录的写权限</em></strong>或者在vsftpd的配置文件中增加下列项：<br/>
+<strong><em>allow_writeable_chroot=YES</em></strong></p>
+
+
+</div>
+
+<br /><br />
+<hr />
+
+<div class="row clearfix">
+  <div class="large-6 columns">
+	<div class="text-left" style="padding:15px 0px;">
+		
+	        <a href="15033217564988.html"  title="Previous Post: 解决virtualbox安装增强工具失败的问题">&laquo; 解决virtualbox安装增强工具失败的问题</a>
+	    
+	</div>
+  </div>
+  <div class="large-6 columns">
+	<div class="text-right" style="padding:15px 0px;">
+		
+	        <a href="15033215794872.html" 
+	        title="Next Post: 记一次mysql主从一致校验走过的坑">记一次mysql主从一致校验走过的坑 &raquo;</a>
+	    
+	</div>
+  </div>
+</div>
+
+<div class="row">
+<div style="padding:0px 0.93em;" class="share-comments">
+
+</div>
+</div>
+<script type="text/javascript">
+	$(function(){
+		var currentURL = '15033217230950.html';
+		$('#side-nav a').each(function(){
+			if($(this).attr('href') == currentURL){
+				$(this).parent().addClass('active');
+			}
+		});
+	});
+</script>  
+</div></div>
+
+
+<div class="page-bottom">
+  <div class="row">
+  <hr />
+  <div class="small-9 columns">
+  <p class="copyright">Copyright &copy; 2015
+Powered by <a target="_blank" href="http://www.mweb.im">MWeb</a>,&nbsp; 
+Theme used <a target="_blank" href="http://github.com">GitHub CSS</a>.</p>
+  </div>
+  <div class="small-3 columns">
+  <p class="copyright text-right"><a href="#header">TOP</a></p>
+  </div>
+   
+  </div>
+</div>
+
+        </section>
+      </div>
+    </div>
+    
+    
+    <script src="asset/js/foundation.min.js"></script>
+    <script src="asset/js/foundation/foundation.offcanvas.js"></script>
+    <script>
+      $(document).foundation();
+
+     
+    </script>
+    <script src="asset/chart/all-min.js"></script><script type="text/javascript">$(function(){    var mwebii=0;    var mwebChartEleId = 'mweb-chart-ele-';    $('pre>code').each(function(){        mwebii++;        var eleiid = mwebChartEleId+mwebii;        if($(this).hasClass('language-sequence')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = Diagram.parse($(this).text());            diagram.drawSVG(eleiid,{theme: 'simple'});        }else if($(this).hasClass('language-flow')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = flowchart.parse($(this).text());            diagram.drawSVG(eleiid);        }    });});</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({TeX: { equationNumbers: { autoNumber: "AMS" } }});</script>
+
+  </body>
+</html>

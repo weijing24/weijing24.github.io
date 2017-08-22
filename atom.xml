@@ -4,7 +4,7 @@
   <title><![CDATA[小菜鸡]]></title>
   <link href="weijing24.github.io/atom.xml" rel="self"/>
   <link href="weijing24.github.io/"/>
-  <updated>2017-08-21T21:11:00+08:00</updated>
+  <updated>2017-08-21T21:11:37+08:00</updated>
   <id>weijing24.github.io/</id>
   <author>
     <name><![CDATA[]]></name>
@@ -14,869 +14,3555 @@
 
   
   <entry>
-    <title type="html"><![CDATA[详解apache的allow和deny]]></title>
-    <link href="weijing24.github.io/15033200332645.html"/>
-    <updated>2017-08-21T20:53:53+08:00</updated>
-    <id>weijing24.github.io/15033200332645.html</id>
+    <title type="html"><![CDATA[ubuntu mysql5.7源码安装]]></title>
+    <link href="weijing24.github.io/15033230940135.html"/>
+    <updated>2017-08-21T21:44:54+08:00</updated>
+    <id>weijing24.github.io/15033230940135.html</id>
     <content type="html"><![CDATA[
-<p>　　今天看了一篇关于apache allow，deny的文章收获匪浅，防止被删，我直接摘过来了，<a href="http://www.cnblogs.com/top5/archive/2009/09/22/1571709.html">原文地址</a><br/>
-　　Allow和Deny可以用于apache的conf文件或者.htaccess文件中（配合Directory, Location, Files等），用来控制目录和文件的访问授权。<br/>
-　　所以，最常用的是：</p>
+<p>　　本系列的lnmp的大框架基本上是按照<a href="http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html">http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html</a>来写的<br/>
+　　最近在学习搭建LNMP环境，nginx相对来说还是比较好搭的，但是mysql就太坑爹了，之前在网上查资料的时候看到一个人说它花了一周的时间源码搭建mysql，刚开始内心还有点嘲笑他，但是此时此刻我发现是我错了，周日花了一天的时间使用源码安装了mysql，累感不爱。在ubuntu下mysql可以使用apt-get命令一步安装，仅做少许配置，但是源码安装真是掉了一层皮，但是源码安装又是一个运维必须要会的一个东西，所以必须学习。</p>
+
+<h3 id="toc_0">　1.下载mysql</h3>
+
+<p>　　这个是最基本的第一步，下载地址<a href="http://dev.mysql.com/downloads/mysql/">http://dev.mysql.com/downloads/mysql/</a>，我选择了5.7版本的，这一版相对前几版在配置上变化较大，这也是在我之后搭建的过程中发现的，但是后悔已经来不及了。</p>
+
+<h3 id="toc_1">　2、下载相关依赖</h3>
 
 <blockquote>
-<p>Order Deny,Allow<br/>
-Allow from All　　</p>
-</blockquote>
-
-<p>　　注意&quot;Deny,Allow&quot;中间只有一个逗号，也只能有一个逗号，有空格都会出错；单词的大小写不限。上面设定的含义是先设定&quot;先检查禁止设定，没有禁止的全部允许&quot;，而第二句没有Deny，也就是没有禁止访问的设定，直接就是允许所有访问了。这个主要是用来确保或者覆盖上级目录的设置，开放所有内容的访问权。<br/>
-　　按照上面的解释，下面的设定是无条件禁止访问：</p>
-
-<blockquote>
-<p>Order Allow,Deny<br/>
-Deny from All</p>
-</blockquote>
-
-<p>　　如果要禁止部分内容的访问，其他的全部开放：</p>
-
-<blockquote>
-<p>Order Deny,Allow<br/>
-Deny from ip1 ip2</p>
-</blockquote>
-
-<p>或者</p>
-
-<blockquote>
-<p>Order Allow,Deny<br/>
-Allow from all<br/>
-Deny from ip1 ip2</p>
-</blockquote>
-
-<p>　　apache会按照order决定最后使用哪一条规则，比如上面的第二种方式，虽然第二句allow允许了访问，但由于在order中allow不是最后规则，因此还需要看有没有deny规则，于是到了第三句，符合ip1和ip2的访问就被禁止了。注意，order决定的“最后”规则非常重要，下面是两个错误的例子和改正方式：</p>
-
-<blockquote>
-<p>Order Deny,Allow<br/>
-Allow from all<br/>
-Deny from domain.org</p>
-</blockquote>
-
-<p>　　错误：想禁止来自domain.org的访问，但是deny不是最后规则，apache在处理到第二句allow的时候就已经匹配成功，根本就不会去看第三句。<br/>
-　　解决方法：Order Allow,Deny，后面两句不动，即可。</p>
-
-<blockquote>
-<p>Order Allow,Deny<br/>
-Allow from ip1<br/>
-Deny from all</p>
-</blockquote>
-
-<p>　　错误：想只允许来自ip1的访问，但是，虽然第二句中设定了allow规则，由于order中deny在后，所以会以第三句deny为准，而第三句的范围中又明显包含了ip1（all include ip1），所以所有的访问都被禁止了。<br/>
-　　解决方法一：直接去掉第三句。<br/>
-　　解决方法二：</p>
-
-<blockquote>
-<p>Order Deny,Allow<br/>
-Deny from all<br/>
-Allow from ip1</p>
-</blockquote>
-
-<h3 id="toc_0">下面是测试过的例子：</h3>
-
-<p>#全部可以通行</p>
-
-<blockquote>
-<p>　<br/>
-Order deny,allow<br/>
-allow from all<br/>
-deny from 219.204.253.8</p>
-</blockquote>
-
-<p>#全部可以通行 </p>
-
-<blockquote>
-<p>Order deny,allow<br/>
-deny from 219.204.253.8<br/>
-allow from all</p>
-</blockquote>
-
-<p>#只有219.204.253.8不能通行</p>
-
-<blockquote>
-<p>Order allow,deny<br/>
-deny from 219.204.253.8<br/>
-allow from all</p>
-</blockquote>
-
-<p>#只有219.204.253.8不能通行</p>
-
-<blockquote>
-<p>Order allow,deny<br/>
-allow from all<br/>
-deny from 219.204.253.8</p>
-</blockquote>
-
-<p>#全部都不能通行 </p>
-
-<blockquote>
-<p>Order allow,deny<br/>
-deny from all<br/>
-allow from 219.204.253.8</p>
-</blockquote>
-
-<p>#全部都不能通行 </p>
-
-<blockquote>
-<p>Order allow,deny<br/>
-allow from 219.204.253.8<br/>
-deny from all</p>
-</blockquote>
-
-<p>#只允许219.204.253.8通行 </p>
-
-<blockquote>
-<p>Order deny,allow<br/>
-allow from 219.204.253.8<br/>
-deny from all</p>
-</blockquote>
-
-<p>#只允许219.204.253.8通行 </p>
-
-<blockquote>
-<p>Order deny,allow<br/>
-deny from all<br/>
-allow from 219.204.253.8</p>
-</blockquote>
-
-<p>#全部都可以通行（默认的）</p>
-
-<blockquote>
-<p>Order deny,allow</p>
-</blockquote>
-
-<p>#全部都不能通行（默认的）</p>
-
-<blockquote>
-<p>Order allow,deny</p>
-</blockquote>
-
-<p>#全部都不能通行</p>
-
-<blockquote>
-<p>Order deny,allow<br/>
-deny from all</p>
-</blockquote>
-
-<p>对于上面两种情况，如果换成allow from all，则全部都可以通行！</p>
-
-<p>#只有219.204.253.8不能通行</p>
-
-<blockquote>
-<p>Order deny,allow<br/>
-deny from 219.204.253.8</p>
-</blockquote>
-
-<p>#全部都不能通行</p>
-
-<blockquote>
-<p>Order allow,deny<br/>
-deny from 219.204.253.8</p>
-</blockquote>
-
-<p>#只允许219.204.253.8通行</p>
-
-<blockquote>
-<p>Order allow,deny<br/>
-allow from 219.204.253.8</p>
-</blockquote>
-
-<p>#全部都可以通行</p>
-
-<blockquote>
-<p>Order deny,allow<br/>
-allow from 219.204.253.8</p>
-</blockquote>
-
-<p>#代表拒绝218.20开头的IP，但允许218.20.253.2通过；而其它非218.20开头的IP也都允许通过。</p>
-
-<blockquote>
-<p>order deny,allow<br/>
-allow from 218.20.253.2<br/>
-deny from 218.20</p>
-</blockquote>
-
-<p>#和上面的差不多，只是掉换的order语句中的allow、deny先后顺序，但最终结果表示全部都拒绝！</p>
-
-<blockquote>
-<p>order allow,deny<br/>
-allow from 218.20.253.2<br/>
-deny from 218.20</p>
-</blockquote>
-
-<p>前段时间做了个Apache的HTTP代理服务器，其中的order allow，deny这部分弄的不太懂，于是上网找资料看，谁知道越看越糊涂，其中有些难以分辨对错甚至是误导。就像破解windows系统密码的一些文章那样，很多都是人云亦云的，并没有经过测试。废话少说，先把我经过测试后分析总结出来的结论show出来，相信这对大家的理解非常有帮助。</p>
-
-<p>总则——</p>
-
-<blockquote>
-<pre><code>影响最终判断结果的只有两点：
-1. order语句中allow、deny的先后顺序；
-2. allow、deny语句中各自包含的范围。
+<pre><code>sudo apt-get install cmake libncurses5-dev  bison g++
 </code></pre>
 </blockquote>
 
-<p>温馨提醒——</p>
+<p>这里要注意的是ubuntu下的libncurses5-dev在红帽下是另一个名字，这个请自行百度。</p>
+
+<h3 id="toc_2">　3.创建mysql用户、组</h3>
 
 <blockquote>
-<pre><code>1. 修改完配置后要保存好并重启Apache服务，配置才能生效；
-2. 开头字母不分大小写；
-3. allow、deny语句不分先后顺序，谁先谁后不影响最终判断结果；但都会被判断到；
-4. order语句中，“allow,deny”之间“有且只有”一个逗号（英文格式的），而且先后顺序很重要；
-5. Apache有一条缺省规则，“order allow,deny”本身就默认了拒绝所有的意思，因为deny在allow的后面；同理，“order deny,allow”本身默认的是允许所有；当然，最终判断结果还要综合下面的allow、deny语句中各自所包含的范围；（也就是说order语句后面可以没有allow、deny语句）
-6. allow、deny语句中，第二个单词一定是“from”，否则Apache会因错而无法启动，
-7. “order allow,deny”代表先判断allow语句再判断deny语句，反之亦然。
+<pre><code>groupadd mysql
+useradd -r mysql -G mysql
 </code></pre>
 </blockquote>
 
-<p>上面说的都是要记住的，而下面说的是我独创的理解方法。如果有人看了而没有豁然开朗的感觉，那算是我的失败！<br/>
-判断原则分4步走——</p>
+<h3 id="toc_3">4.解压mysql</h3>
+
+<p>　　我把下载好的mysql压缩包放在了/root目录下，因为之后要多次使用root权限，索性直接切换到root了。　　</p>
 
 <blockquote>
-<pre><code>1. 首先判断默认的；
-2. 然后判断逗号前的；
-3. 最后判断逗号后的；
-4. 最终按顺序叠加而得出判断结果。
+<pre><code>tar -xzvf mysql-5.7.9.tar.gz &amp;&amp; cd mysql-5.7.9.tar.gz
 </code></pre>
 </blockquote>
 
-<p>上面三点我说的简单而形象，主要是为了便于记忆。暂时不理解不要紧，继续看下面详细的解说自然会明白。下面以一个普通例子来做解释——</p>
+<h3 id="toc_4">5.生成配置文件</h3>
+
+<p>　　在mysql5.7以前，使用configure生成配置文件，但是5.7是使用cmake生成的。这也就是为什么之前要安装cmake的原因。<br/>
+　　在这里要注意的一点是需要事先安装好boost，如果没有，在cmake最后再加个参数-DDOWNLOAD_BOOST=1 -DWITH_BOOST=/usr/local/boost即可，系统会自动帮你下载解压安装boost</p>
 
 <blockquote>
-<p>order deny,allow<br/>
-allow from 218.20.253.2<br/>
-deny from 218.20</p>
+<pre><code>cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DMYSQL_DATADIR=/usr/local/mysql/data -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DMYSQL_TCP_PORT=3306 -DMYSQL_USER=mysql -DWITH_MYISAM_STORAGE_ENGINE=1 -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_ARCHIVE_STORAGE_ENGINE=1 -DWITH_BLACKHOLE_STORAGE_ENGINE=1 -DWITH_MEMORY_STORAGE_ENGINE=1 -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/usr/local/boost
+make&amp;&amp;make install
+</code></pre>
 </blockquote>
 
-<ol>
-<li>所谓“首先判断默认的”，就是判断“order deny,allow”这句，它默认是允许所有；</li>
-<li>所谓“然后判断逗号前的”，因为在本例子中的order语句里面，deny在逗号的前面，所以现在轮到判断下面的deny语句了——“deny from 218.20”；</li>
-<li>所谓“最后判断逗号后的”，因为在本例子中的order语句里面，allow在逗号的后面，所以最后轮到判断下面的allow语句了——“allow from 218.20.253.2”。</li>
-<li>所谓“最终按顺序叠加而得出判断结果”，这是一个形象化了的说法，我把每一步判断都看作一个“不透明的图层”，然后一步步按顺序叠加上去，最终得出的“图像”就是判断结果。</li>
-</ol>
-
-<p>用过作图软件的人应该都知道“图层”是怎么回事，我估计Apache关于order allow deny这方面的设计理念和photoshop等作图软件关于图层的设计理念是一样的。即“游戏规则”是一样的。</p>
-
-<p>那么上面的例子就可以是这么一个步骤和图像——</p>
-
-<ol>
-<li>先画一个白色的大圆，代表“order deny,allow”语句，默认意思是允许所有；</li>
-<li>然后画一个小一点的黑色圆，代表“deny from 218.20”语句，意思是拒绝所有以218.20开头的IP，放进白色的大圆里面；</li>
-<li>最后再画一个白色的圆，代表“allow from 218.20.253.2”语句，意思是允许218.20.253.2通过，放在黑色圆的上面。</li>
-<li>到此为止，我们已经可以看到一个结果了，白色大圆上面有一个黑色圆，黑色圆上面还有一个白色圆。最后，我们所能看到的黑色部分就是拒绝通行的，剩下的白色部分都是允许通行的。判断的结果就是这么简单形象！</li>
-</ol>
-
-<p>如果不懂的用作图软件，我们再来个非常贴近生活的比喻,把上面的例子改动一点点，以便更好的理解：</p>
+<p>参数含义：　　　　</p>
 
 <blockquote>
-<p>order deny,allow<br/>
-allow from 218.20.253.2<br/>
-deny from 219.30</p>
+<pre><code>-DCMAKE_INSTALL_PREFIX：指定MySQL程序的安装目录，默认/usr/local/mysql
+-DMYSQL_DATADIR：数据文件目录
+-DDEFAULT_CHARSET：指定服务器默认编码，默认latin1
+-DDEFAULT_COLLATION：指定服务器默认的整理编码，默认latin1_general_ci
+-DMYSQL_UNIX_ADDR：连接数据库socket文件路径，默认/tmp/mysql.sock
+-DENABLED_LOCAL_INFILE：指定是否允许本地执行LOAD DATA INFILE，默认OFF
+-DWITH_DEBUG    bool值，表示是否开启debug模式
+-DWITH_MYISAM_STORAGE_ENGINE= MYISAM引擎支持(1|0)
+-DWITH_INNOBASE_STORAGE_ENGINE= innoDB引擎支持(1|0)
+-DWITH_MEMORY_STORAGE_ENGINE= MEMORY引擎支持(1|0)
+-DWITHOUT_xxx_STORAGE_ENGINE：指定不编译的存储引擎
+SYSCONFDIR：初始化参数文件目录
+-DMYSQL_TCP_PORT：服务端口号，默认3306
+-DWITH_COMMENT：指定编译备注信息
+</code></pre>
 </blockquote>
 
-<ol>
-<li>首先拿一张A4白纸，代表第order语句，意思是允许全部；</li>
-<li>然后拿一张黑色纸剪一个圆，放在A4纸里面的某个位置上，代表deny语句，意思是拒绝所有以219.30开头的IP；</li>
-<li>最后拿白纸再剪一个圆，放在黑色圆的旁边，代表allow语句，意思是允许218.20.253.2通过；注意，这个例子不是放进黑色圆里面了，因为deny和allow语句不再有相互包含的关系了。</li>
-<li>A4纸上面有一个黑色圆和一个白色圆，结果自然很明显了。不过白色的A4纸上再放一个白色的圆，显然是多余的了，因为大家都是白色的，都代表允许，所以就重复了，可以去掉白色的圆而不会影响判断结果。</li>
-</ol>
-
-<p>如果看到这里还没明白，那一定是我还有什么没说清楚的。那么请好好分析我所做过的测试例子，将在最后列出来。<br/>
-在这里再啰嗦一下，allow、deny语句后面跟的参数有多种形式，有不同的表达方式，我在网上看到的做法是deny from IP1 IP2 IP3或allow from domain.com等。其它的表达方式大家再找别的资料看吧。我想说的是另一种表达方式：</p>
+<h3 id="toc_5">　6.编译安装</h3>
 
 <blockquote>
-<p>order deny,allow<br/>
-allow from IP1 IP2<br/>
-allow from domain.info<br/>
-allow from 219.20.55.0/24<br/>
-deny from all</p>
+<pre><code>mkdir -p /usr/local/mysql/data
+chown -R mysql:mysql /usr/local/mysql
+make&amp;&amp;make install
+</code></pre>
 </blockquote>
 
-<p>我没具体验证过这是否对，不过这样是可以正常启动Apache服务的，按道理应该是正确的表达方式。哈哈，像我这样的入门者只能这样了，还希望大家多多指教！</p>
+<h3 id="toc_6">7.配置（这里的问题最多，出了很多问题，到现在只有这个勉强能用的方法）</h3>
+
+<p>　　①复制my.cnf配置文件<br/>
+　　　　cp /usr/local/mysql/support-files/***.cnf /etc/my.cnf<br/>
+　　②配置/etc/my.conf</p>
+
+<blockquote>
+<pre><code>[mysqld]
+basedir=/usr/local/mysql
+datadir=/usr/local/mysql/data
+log-error=/usr/local/mysql/mysql_error.log
+pid-file=/usr/local/mysql/mysql.pid
+#socket=/usr/local/mysql/mysql.sock
+user=mysql
+port=3306
+explicit_defaults_for_timestamp=true
+[mysqld_safe]
+basedir=/usr/local/mysql
+datadir=/usr/local/mysql/data
+log-error=/usr/local/mysql/mysql_error.log
+pid-file=/usr/local/mysql/mysql.pid
+</code></pre>
+</blockquote>
+
+<p>　　③复制权限文件<br/>
+　　　　cp /usr/local/mysql/support-files/mysql.server /etc/init.d/mysql<br/>
+　　④初始化MySQL（这步完成后/usr/local/mysql/data目录下有数据了，本来是空的）<br/>
+　　　　sudo bin/mysqld --initialize-insecure --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data --pid-file=/usr/local/mysql/data/mysql.pid 生成无密码用户或sudo bin/mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data --pid-file=/usr/local/mysql/data/mysql.pid生成随机密码用户<br/>
+　　⑤启动MySQL（修改密码）<br/>
+　　　　如果不先使用mysqld_safe直接启动mysql的话，就会报错<br/>
+<img src="media/15033230940135/15033231284056.jpg" alt=""/></p>
+
+<blockquote>
+<pre><code>/usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
+service mysql start
+/usr/local/bin/mysql -u root -h 127.0.0.1 --skip-password（无密码）
+或/usr/lcoal/bin/mysql -u root -h 127.0.0.1 -p （有密码）
+mysql&gt; ALTER USER &#39;root&#39;@&#39;localhost&#39; IDENTIFIED BY &#39;new-password&#39;;　　（注意前面的mysql&gt;是进入mysql的标志，不是命令）
+mysql&gt; quit
+service mysql stop
+</code></pre>
+</blockquote>
+
+<p><img src="media/15033230940135/15033231360131.jpg" alt=""/><br/>
+可以看到退出mysql服务时是把mysqld_safe也关闭的<br/>
+　　⑧启动mysql（登陆）<br/>
+　　　　/usr/local/bin/mysqld_safe &amp;<br/>
+　　　　service mysql start</p>
+
+<p>　　　　mysql -u root -p</p>
+
+<p>　　从上面可以看出每次启动mysql时都要先启动mysqld_safe，在启动mysql，关闭mysql时会把mysqld_safe一起关掉，所以这就是我认为安装的不完美的地方，如果是终端apt-get安装的话从来没有发生过这种情况。看了mysql的官网在介绍安装的时候也是这么讲的也许是5.7版本就是这样操作的，连接：<br/>
+　　<a href="http://dev.mysql.com/doc/refman/5.7/en/data-directory-initialization-mysqld.html">http://dev.mysql.com/doc/refman/5.7/en/data-directory-initialization-mysqld.html</a><br/>
+　　<a href="http://dev.mysql.com/doc/refman/5.7/en/data-directory-initialization-mysql-install-db.html">http://dev.mysql.com/doc/refman/5.7/en/data-directory-initialization-mysql-install-db.html</a></p>
+
+<p><img src="media/15033230940135/15033231552482.jpg" alt=""/><br/>
+<img src="media/15033230940135/15033231589939.jpg" alt=""/><br/>
+<img src="media/15033230940135/15033231614946.jpg" alt=""/><br/>
+<img src="media/15033230940135/15033231637871.jpg" alt=""/></p>
 
 ]]></content>
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[静态库和共享库开发]]></title>
-    <link href="weijing24.github.io/%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html"/>
-    <updated>2017-08-21T17:52:58+08:00</updated>
-    <id>weijing24.github.io/%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html</id>
+    <title type="html"><![CDATA[ubuntu php5.6源码安装]]></title>
+    <link href="weijing24.github.io/15033230316456.html"/>
+    <updated>2017-08-21T21:43:51+08:00</updated>
+    <id>weijing24.github.io/15033230316456.html</id>
     <content type="html"><![CDATA[
-<p>再讲静态库和共享库之前先讲一下一个可执行文件的生成过程</p>
+<p>　　本系列的lnmp的大框架基本上是按照<a href="http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html">http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html</a>来写的<br/>
+　　下面的nginx配置文件和php配置文件都有一个小错误，之前误打误撞通过了，今天复习的时候发现又报 connect() to unix:/var/run/php-fpm/php-fpm.sock failed (2: No such file or directory) 这个错误，然后就开始了艰苦卓绝的找错。后来在stack overflow上找到了一个解决方法：<br/>
+<a href="http://serverfault.com/questions/477630/impossible-to-run-php-fpm-on-server-restarts-ubuntu-12-04-x64">http://serverfault.com/questions/477630/impossible-to-run-php-fpm-on-server-restarts-ubuntu-12-04-x64</a><br/>
+　　大意是在/usr/local/php/etc/php-fpm.conf中listen的目录在/var/run/php-fpm/php-fpm.sock中，但是/var/run是个动态目录，开机后目录下的文件都会重新加载初始化，而php-fpm这个目录根本就不存在，系统也不会为你自动创建，所以改成listen=/var/run/php-fpm.sock即可。同时/usr/local/nginx/nginx.conf的内容也要改。把fastcgi_pass   unix:/var/run/php-fpm/php-fpm.sock;改成fastcgi_pass   unix:/var/run/php-fpm.sock;<br/>
+　　user和group网上都是www或者www-data而我用会报错permission denied，用nobody可以通过。</p>
+
+<p>　　今天又花了一天时间装了php，感觉php的源码安装也挺麻烦的，整个过程各种报错。下篇文章准备整合所有查找到的报错和解决方法。<br/>
+　　php和nginx一样，在安装前需要装一堆的依赖。有libmcrypt、mcrypt、mhash。其实远不止这三个包，在后面的configure和make中还会陆陆续续安装一些依赖。</p>
+
+<h3 id="toc_0">1.安装libmcrypt、mcrypt、mhash（整个过程都在/usr/local/src/php目录下）</h3>
 
 <blockquote>
-<pre><code>1、预处理
-①将所有的#define删除，并且展开所有的宏定义
-②处理所有的条件预编译指令，比如#if #ifdef #elif #else #endif等
-③处理#include 预编译指令，将被包含的文件插入到该预编译指令的位置。
-④删除所有注释 “//”和”/* */”. 添加行号和文件标识，以便编译时产生调试用的行号及编译错误警告行号。
-⑤保留所有的#pragma编译器指令以备编译器使用
-⑥通常使用以下命令来进行预处理：
-    gcc -E test.c -o test.i
-    参数-E表示只进行预处理，打开test.i就可以看到预处理完成的内容。
-2、编译
-①编译过程就是把预处理完的文件进行一系列的词法分析，语法分析，语义分析及优化后生成相应的汇编代码。预处理之后，可直接对生成的test.i文件编译，生成汇编代码：
-    gcc -S test.i -o test.s
-②gcc的-S选项，表示在程序编译期间，在生成汇编代码后，停止，-o输出汇编代码文件
-3.汇编
-①汇编器是将汇编代码转变成机器可以执行的命令，每一个汇编语句几乎都对应一条机器指令。
-②汇编相对于编译过程比较简单，根据汇编指令和机器指令的对照表一一翻译即可。
-③对于上面生成的汇编代码文件test.s，gas汇编器负责将其编译为目标文件，如下：
-    gcc -c test.s -o test.o
-4、链接
-①gcc连接器是gas提供的，负责将程序的目标文件与所需的所有附加的目标文件连接起来，最终生成可执行文件。附加的目标文件包括静态连接库和动态连接库。
-②对于上一小节中生成的test.o，将其与Ｃ标准输入输出库进行连接，最终生成程序test
-    gcc test.o -o test
+<pre><code>#创建/usr/local/src/php目录并进入
+mkdir /usr/local/src/php
+cd /usr/local/src/php
+#下载libmcrypt，解压，编译，安装
+wget http://sourceforge.net/projects/mcrypt/files/Libmcrypt/2.5.8/libmcrypt-2.5.8.tar.gz
+tar -xzvf libmcrypt-2.5.8.tar.gz &amp;&amp; cd libmcrypt-2.5.8
+./configure
+make -j2 &amp;&amp; make install
+#下载mhash，解压，编译，安装
+wget http://sourceforge.net/projects/mhash/files/mhash/0.9.9.9/mhash-0.9.9.9.tar.gz
+tar -xzvf mhash-0.9.9.9.tar.gz &amp;&amp; cd mhash-0.9.9.9
+./configure &amp;&amp; make -j2 &amp;&amp; make install
+# 这两个包安装完成后要把动态链接库做一个软连接到/usr/lib,以为接下来的mcrypt依赖于这两个包
+ln -s /usr/local/lib/libmcrypt* /usr/lib
+ln -s /usr/local/lib/libmhash.* /usr/lib/
+ln -s /usr/local/bin/libmcrypt-config /usr/bin/libmcrypt-config
+#下载mcrypt，解压，安装，编译
+wget http://sourceforge.net/projects/mcrypt/files/MCrypt/2.6.8/mcrypt-2.6.8.tar.gz/download
+tar -zxvf mcrypt-2.6.8.tar.gz &amp;&amp; cd mcrypt-2.6.8
+./configure &amp;&amp; make -j2 &amp;&amp; make install
 </code></pre>
 </blockquote>
 
-<p>下面讲一下gcc的用法</p>
+<h3 id="toc_1">2.生成配置文件（整个过程都在/usr/local/src/php/php-5.6.15目录下）</h3>
 
 <blockquote>
-<pre><code>gcc [选项] 文件...
-选项：
--v　　　　　显示编译器调用的程序
--E　　　　   仅作预处理,不进行编译、汇编和链接　　生成.i文件
--S　　　　   编译到汇编语言,不进行汇编和链接　生成.s文件
--c　　　　　编译、汇编到目标代码,进行链接，=生成.o文件
--o file　　　 将经过gcc处理过的结果存为file，这个结果可能是预处理,汇编,目标或最终的可执行文件
--g[gdb]　　  在可执行文件中加入调试信息,若使用中括号中的选项，表示加入gdb扩展的调试信息，方便使用gdb进行调试
--I dirname　将dirname所指出的目录加入到程序头文件目录列表中,是在预编译过程中使用的参数
--L dirname　将dirname所指出的目录加入到程序函数档案库文件的目录列表中,是在连接过程中使用的参数,默认状态下在/usr/lib中找
--l name　　  在连接时,装载名字为libname.a的函数库
+<pre><code>wget http://cn2.php.net/distributions/php-5.6.15.tar.gz
+tar -xzvf php-5.6.15.tar.gz &amp;&amp; cd php-5.6.15
+sudo ./configure --prefix=/usr/local/php --with-mysql=/usr/local/mysql/ --with-zlib --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --with-curl --enable-fpm --with-mcrypt --with-gd --with-openssl --with-mhash --enable-sockets --with-ldap --with-ldap-sasl --with-xmlrpc -enable-zip --enable-soap
 </code></pre>
 </blockquote>
 
-<h4 id="toc_0">1.编写hello world,并使用脚本运行</h4>
-
-<p>包含文件：main.c、run.sh<br/>
-main.c:</p>
+<p>　　在configure的时候要注意，--enable-safe-mode --enable-discard-path --enable-fastcgi --enable-force-cgi-redirect参数从5.3版本开始就默认开启了，5.4开始不支持这些选项，所以在参考其他教程时要注意有些选项不需要写到自己的configure中了。我看到的90%的参考教程都写了一两个不支持的参数的。当然你如果写了也没关系，系统不会计算进去。<br/>
+　　有一个选项需要强调一下，就是--enable-fpm，如果你在搭建环境时是需要php和nginx结合的，那么这个选项必写。由于我是搭建的LNMP，所以这个参数加上了。想要详细了解选项的，使用./configure -h查看。<br/>
+我在configure遇到的问题:<br/>
+①configure: error: Please reinstall the libcurl distribution -easy.h should be in &lt; curl-dir &gt;/include/curl/<br/>
+　　解决方法：需要安装curl-devel，ubuntu源中没有，去官网下载并编译安装（也可以直接apt-get下载php5-curl、curl、libcurl4-gnutls-dev）</p>
 
 <blockquote>
-<pre><code>#include&lt;stdio.h&gt;
-int main(void){
-    printf(&quot;Hello World!\n&quot;);
-    return 0;
-}
+<pre><code>cd /usr/local/src/php
+wget http://curl.haxx.se/download/curl-7.45.0.tar.gz
+sudo tar xzvf curl-7.45.0.tar.gz &amp;&amp; cd curl-7.45.0.tar.gz
+sudo ./configure &amp;&amp; sudo make -j2 &amp;&amp; sudo make install
 </code></pre>
 </blockquote>
 
-<p>run.sh:</p>
+<p>再次configure又遇到问题<br/>
+②configure: error: sasl.h not found!<br/>
+　　解决方法：sudo apt-get install libsasl2-dev <br/>
+再次使用上面的configure，生成配置文件，没有再报错了。</p>
+
+<h3 id="toc_2">3.编译安装(在/usr/local/src/php/php-5.6.15下)</h3>
+
+<p>　　cd /usr/local/src/php/php-5.6.15 &amp;&amp; sudo make -j2</p>
+
+<p>报错①：<br/>
+usr/bin/ld: ext/ldap/.libs/ldap.o: undefined reference to symbol &#39;ber_strdup@@OPENLDAP_2.4_2&#39;<br/>
+//usr/lib/x86_64-linux-gnu/liblber-2.4.so.2: error adding symbols: DSO missing from command line<br/>
+解决方法：<br/>
+一开始我查资料说是没有安装openldap，然后就查了openldap的安装方法，结果openldap用db做存储方案，就是说还要编译安装db（这个db不是mysql，就叫db）。结果搞了半天db和openldap都安装完再编译发现还是报这个错。最后在网上一个一个试，找到了一个解决方法。原文是这么说的</p>
 
 <blockquote>
-<pre><code>#!/bin/bash
-gcc -o main main.c
-./main
+<pre><code>遇到这种类似的情况，说明「./configure 」沒抓好一些环境变数值。
+在PHP源码目录下 vi Makefile 找到 EXTRA_LIBS 行，在行末添加 ‘ -llber ‘ 保存退出再次make即可。
+cd /usr/local/src/php/php-5.6.15
+vim Makefile
+找EXTRA_LIBS行，在末尾添加--llber
 </code></pre>
 </blockquote>
 
-<h4 id="toc_1">2.预编译以下2个.c文件,并比较它们是否相同</h4>
-
-<p>包含文件：main1.c、main2.c、run.sh<br/>
-main1.c:</p>
-
-<blockquote>
-<pre><code>#include&lt;stdio.h&gt;
-int main(void){
-    printf(&quot;Hello World!\n&quot;);
-    return 0;
-}
-</code></pre>
-</blockquote>
-
-<p>main2.c:</p>
+<p>希望遇到这个问题的同学可以引以为戒不要走弯路了。<br/>
+再次编译，又报错②：<br/>
+/usr/local/src/php/php-5.6.15/sapi/cli/php: error while loading shared libraies: libmysqlclient.so.20: cannot open shared object file: No such file or directory<br/>
+解决办法：<br/>
+找到libmysqlclient.so.20,并做软链接</p>
 
 <blockquote>
-<pre><code>#include&lt;stdio.h&gt;
-#define N world
-int main(void){
-    printf(&quot;hello N&quot;);
-    return 0; 
-}
-</code></pre>
-</blockquote>
-
-<p>run.sh:</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -E  main1.c -o main1.i
-gcc -E  main2.c -o main2.i
-diff main1.i main2.i
-if test $? -eq 0;then
-    echo    &quot;file same&quot;
-else
-    echo    &quot;file different&quot;
-fi
-</code></pre>
-</blockquote>
-
-<h4 id="toc_2">3.生成汇编代码文件，并查看</h4>
-
-<p>包含文件：main.c、run.sh<br/>
-run.sh:</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -S main.c -o main.s
-cat main.s
-</code></pre>
-</blockquote>
-
-<h4 id="toc_3">4.生成目标文件，并查看</h4>
-
-<p>包含文件：main.c、run.sh<br/>
-run.sh:</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -c main.c -o main.o
-cat main.s
-</code></pre>
-</blockquote>
-
-<h4 id="toc_4">5.执行链接命令，并确定文件类型，查看目标文件信息</h4>
-
-<p>包含文件：main.c、run.sh<br/>
-run.sh：</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -c main.c -o main.o
-gcc -o main main.o
-file main
-objdump -x main
-</code></pre>
-</blockquote>
-
-<h4 id="toc_5">6.加法的 helloworld</h4>
-
-<p>包含文件：main.c、run.sh<br/>
-main.c：</p>
-
-<blockquote>
-<pre><code>#include&lt;stdio.h&gt;
-int main(void){
-    int a=1;
-    int b=2;
-    printf(&quot;%d+%d=%d\n&quot;,a,b,a+b);
-    return 0;    
-}
-</code></pre>
-</blockquote>
-
-<p>run.sh:</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -o main  main.c
-./main
-</code></pre>
-</blockquote>
-
-<h4 id="toc_6">7.以命令参数执行加法计算</h4>
-
-<p>包含文件：main.c、run.sh<br/>
-相关知识:<br/>
-main()函数的形式<br/>
-在最新的 C99 标准中,只有以下两种定义方式是正确的:</p>
-
-<blockquote>
-<pre><code>int main( void ){   --无参数形式
-    ...
-    return 0;
-}
-int main( int argc, char *argv[] ){     --带参数形式
-    ...
-    return 0;
-}
-</code></pre>
-</blockquote>
-
-<p>int 指明了 main()函数的返回类型,函数名后面的圆括号一般包含传递给函数的信息。 void 表示没有给函数传递参数。关于带参数的形式,我们等会讨论。浏览老版本的 C 代码,将会发现程序常常以main()这种形式开始。C90标准允许这种形式,但是 C99标准不允许。因此即使你当前的编译器允许,也不要这么写。你还可能看到过另一种形式:void main()有些编译器允许这种形式,但是还没有任何标准考虑接受它。C++ 之父Bjarne Stroustrup 在他的主页上的 FAQ 中明确地表示:void main( ) 的定义从来就不存在于 C++ 或者 C 。所以,编译器不必接受这种形式,并且很多编译器也不允许这么写。坚持使用标准的意义在于:当你把程序从一个编译器移到另一个编译器时,照样能正常运行。<br/>
-<strong>main()函数的返回值</strong><br/>
-从前面我们知道 main()函数的返回值类型是 int 型的,而程序最后的return 0; 正与之遥相呼应,0就是 main()函数的返回值。那么这个0返回到那里呢?返回给操作系统,表示程序正常退出。因为return语句通常写在程序的最后,不管返回什么值,只要到达这一步,说明程序已经运行完毕。而 return的作用不仅在于返回一个值,还在于结束函数。<br/>
-<strong>main()函数的参数</strong><br/>
-C 编译器允许 main()函数没有参数,或者有两个参数(有些实现允许更多的参数,但这只是对标准的扩展)。这两个参数,一个是 int 类型,一个是字符串类型。第一个参数是命令行中的字符串数。按照惯例(但不是必须的),这个 int 参数被称为 argc(argument count)。大家或许现在才明白这个形参为什么要取这么个奇怪的名字吧,呵呵!至于英文的意思,自己查字典吧。第二个参数是一个指向字符串的指针数组。命令行中的每个字符串被存储到内存中,并且分配一个指针指向它。按照惯例,这个指针数组被称为 argv(argument value)。系统使用空格把各个字符串格开。一般情况下,把程序本身的名字赋值给 argv[0],接着,把最后的第一个字符串赋给 argv[1],等等。<br/>
-main.c:</p>
-
-<blockquote>
-<pre><code>#include&lt;stdio.h&gt;
-#include&lt;stdlib.h&gt;
-int main(int argc,char *argv[]){
-    if(argc!=3){
-        return 0;
-        printf(&quot;error&quot;);
-    }
-    int a=atoi(argv[1]);
-    int b=atoi(argv[2]);
-    printf(&quot;%d+%d=%d\n&quot;,a,b,a+b);
-    return 0;
-}
-</code></pre>
-</blockquote>
-
-<p>run.sh:</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -o main main.c
-./main 1 2
-</code></pre>
-</blockquote>
-
-<h4 id="toc_7">8.编写 add 函数实现加法计算</h4>
-
-<p>包含文件：main.c、run.sh<br/>
-main.c</p>
-
-<blockquote>
-<pre><code>#include&lt;stdio.h&gt;
-int add(int p1,int p2){   
-    int c;
-    c=p1+p2;
-    return c;
-}
-int main(int argc,char *argv[]){
-    if(argc!=3){ 
-        printf(&quot;error\n&quot;);            
-        return 0;
-    }
-    else{
-        int a=atoi(argv[1]);
-        int b=atoi(argv[2]);
-        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
-    }
-    return 0;
-}
-</code></pre>
-</blockquote>
-
-<p>run.sh:</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -o main main.c
-./main 3 5
-</code></pre>
-</blockquote>
-
-<h4 id="toc_8">9.静态链接编译与动态链接编译的区别</h4>
-
-<p>包含文件：main.c、run.sh<br/>
-相关知识:<br/>
-全静态:不会发生应用程序在不同linux版本下的标准库不兼容问题,但是生成的文件比较大,应用程序功能受限(不能调用动态库等)<br/>
-全动态:生成文件小,但是容易发生不兼容问题<br/>
-main.c:</p>
-
-<blockquote>
-<pre><code>#include&lt;stdio.h&gt;
-int add(int p1,int p2){   
-    int c;
-    c=p1+p2;
-    return c;
-}
-int main(int argc,char *argv[]){
-    if(argc!=3){ 
-        printf(&quot;error\n&quot;);            
-        return 0;
-    }
-    else{
-        int a=atoi(argv[1]);
-        int b=atoi(argv[2]);
-        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
-    }
-    return 0;
-}
-</code></pre>
-</blockquote>
-
-<p>run.sh:</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -static main.c -o main_static
-gcc main.c -o main_dynamic
-file main_static
-file main_dynamic
-objdump -x main_static|grep NEEDED
-objdump -x main_dynamic|grep NEEDED
-</code></pre>
-</blockquote>
-
-<h4 id="toc_9">10.制作静态库</h4>
-
-<p>静态库是目标文件的打包,可通过 ar 命令进行制作。生成的静态库名字应该是 lib***.a,否则 gcc 命令无法识别。<br/>
-包含文件：lib/add.c、include/add.h、main.c、run.sh　　<br/>
-main.c:</p>
-
-<blockquote>
-<pre><code>#include&lt;stdio.h&gt;
-#include&quot;add.h&quot;
-int main(int argc,char *argv[]){
-    if(argc!=3){
-        printf(&quot;error\n&quot;);            
-        return 0;
-    }
-    else{
-        int a=atoi(argv[1]);
-        int b=atoi(argv[2]);
-        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
-    }
-}
-</code></pre>
-</blockquote>
-
-<p>./include/add.h:</p>
-
-<blockquote>
-<pre><code>int add(int p1,int p2);
-</code></pre>
-</blockquote>
-
-<p>./lib/add.c:</p>
-
-<blockquote>
-<pre><code>int add(int p1,int p2){
-    int c;
-    c=p1+p2;
-    return c;
-}
-</code></pre>
-</blockquote>
-
-<p>run.sh:</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -c -I./include lib/add.c -o lib/add.o
-ar -rsv lib/libadd.a lib/add.o
-gcc -o main main.c -I./include -L./lib -ladd
-./main 3 5
-</code></pre>
-</blockquote>
-
-<h4 id="toc_10">11.制作共享库</h4>
-
-<p>包含文件：lib/add.c、include/add.h、main.c、run.sh<br/>
-main.c:</p>
-
-<blockquote>
-<pre><code>#include&lt;stdio.h&gt;
-#include&quot;add.h&quot;
-int main(int argc,char *argv[]){
-    if(argc!=3){ 
-        printf(&quot;error\n&quot;);            
-        return 0;
-    }
-    else{
-        int a=atoi(argv[1]);
-        int b=atoi(argv[2]);
-        printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));
-    }
-    return 0;
-}
-</code></pre>
-</blockquote>
-
-<p>./include/add.h:</p>
-
-<blockquote>
-<pre><code>int add(int p1,int p2);
-</code></pre>
-</blockquote>
-
-<p>./lib/add.c:</p>
-
-<blockquote>
-<pre><code>int add(int p1,int p2){
-    int c;
-    c=p1+p2;
-    return c;
-}
-</code></pre>
-</blockquote>
-
-<p>run.sh</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
-gcc -o main main.c -I./include -L./lib/ -ladd
-echo $LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=../lib:$LD_LIBRARY_PATH
-./main 1 2
-</code></pre>
-</blockquote>
-
-<h4 id="toc_11">12.以多种方式实现共享库的运行</h4>
-
-<p>包含文件：lib/add.c、include/add.h、main.c、run1.sh、run2.sh、run3.sh<br/>
-run1.sh:</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
-gcc -o main1 main.c -I./include -L./lib/ -ladd
-echo $LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH
-./main1 1 2
-</code></pre>
-</blockquote>
-
-<p>run2.sh：</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
-unset LD_LIBRARY_PATH
-gcc -I./include -L./lib -Wl,-rpath=./lib  -o main2 main.c -ladd
-./main2 1 2
-</code></pre>
-</blockquote>
-
-<p>run3.sh：</p>
-
-<blockquote>
-<pre><code>#!/bin/bash
-gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
-sudo cp ./lib/libadd.so /usr/lib 
-sudo chmod 0755 /usr/lib/libadd.so
+<pre><code>find / -name &quot;libmysqlclient.so.20&quot;
+/usr/local/mysql/lib/libmysqlclient.so.20
+/usr/local/src/mysql-5.7.9/libmysql/CMakeFiles/CMakeRelink.dir/libmysqlclient.so.20
+/usr/local/src/mysql-5.7.9/libmysql/libmysqlclient.so.20
+echo &quot;/usr/local/lib&quot; &gt;&gt;/etc/ld.so.conf
+echo &quot;/usr/local/mysql/lib&quot; &gt;&gt;/etc/ld.so.conf 
 sudo ldconfig
-gcc -o main3 main.c -I./include -L./lib/ -ladd
-./main3 1 2
+make
 </code></pre>
 </blockquote>
 
-<h4 id="toc_12">13.升级替换共享库</h4>
+<p>再次编译，又他妈报错了，此时我的心情真的是崩溃的</p>
 
-<p>共享库的优势是只需要针对相应的库重新编译升级,而不需要重新编译生成可执行文件,保证相互独立性。<br/>
-本题不需要main.c，直接在脚本中借用11题的main.c<br/>
-包含文件：lib/add.c、include/add.h、run.sh<br/>
-./lib/add.c:</p>
+<p>报错③：<br/>
+　　chmod: 无法访问&quot;ext/phar/phar.phar&quot;: 没有那个文件或目录<br/>
+解决办法：<br/>
+　　mkdir -p ext/phar/phar.phar<br/>
+再次编译，没有错了。<br/>
+make install</p>
+
+<p>4、配置php（在/usr/local/src/php/php-5.6.15下）　　</p>
 
 <blockquote>
-<pre><code>int add(int p1,int p2){
-    int c;
-    c=p1&amp;p2;
-    return c;
+<pre><code>cd /usr/local/src/php/php-5.6.15
+cp php.ini-production /usr/local/php/php.ini # 如果是开发就复制php.ini-development
+cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf
+ln -s /usr/local/php/bin/php /usr/bin/
+echo “listen = /var/run/php-fpm.sock” &gt;&gt; /usr/local/php/etc/php-fpm.conf
+</code></pre>
+</blockquote>
+
+<p>使用nginx服务器等待检测php是否安装成功<br/>
+编辑nginx配置文件：</p>
+
+<blockquote>
+<pre><code>vi /usr/local/nginx/conf/nginx.conf
+location ~ \.php$ {
+    fastcgi_pass　　unix:/var/run/php-fpm.sock;
+    fastcgi_index  index.php;
+    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+    include        fastcgi_params;
+    include        fastcgi.conf;
 }
 </code></pre>
 </blockquote>
 
-<p>./include/add.h:</p>
+<p>在/usr/local/nginx/html下创建index.php</p>
 
 <blockquote>
-<pre><code>int add(int p1,int p2);
+<pre><code>cd /usr/local/nginx/html
+vi /usr/local/nginx/html/index.php
+&lt;?php
+    phpinfo();
+?&gt;
 </code></pre>
 </blockquote>
 
-<p>run.sh：</p>
+<h3 id="toc_3">5.启动php</h3>
+
+<p>mkdir /var/run/php-fpm(这一步在每次启动系统时都要做,因为/var/run是个动态目录,系统重启php-fpm就没了).<br/>
+/usr/local/php/sbin/php-fpm<br/>
+报错①：<br/>
+ERROR: [pool www] cannot get gid for group &#39;nobody&#39;<br/>
+解决方法：<br/>
+groupadd nobody<br/>
+关闭php在开启（不知道php有没有重启选项，只能这样做了）</p>
 
 <blockquote>
-<pre><code>#!/bin/bash
-gcc -fPIC -shared -I./include lib/add.c -o lib/libadd.so
-#设置环境变量
-export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH 
-../11/main 1 4 
+<pre><code>sudo killall php-fpm
+/usr/local/php/sbin/php-fpm
 </code></pre>
 </blockquote>
 
-<h4 id="toc_13">14.动态加载动态库</h4>
+<p>没报错了，此时我以为我已经成功了，呵呵，too young too simple<br/>
+开始检测是否安装成功。<br/>
+开启nginx：<br/>
+　　sudo /usr/lcoal/nginx/nginx<br/>
+在浏览器输入localhost/index.html,结果如下:<br/>
+<img src="media/15033230316456/15033230556482.jpg" alt=""/></p>
 
-<p>本题不需要lib和include，直接借用12题和13题的动态库<br/>
-包含文件：main.c、run.sh<br/>
-main.c：</p>
-
-<blockquote>
-<pre><code>#include &lt;stdio.h&gt;
-#include &lt;dlfcn.h&gt;
-</code></pre>
-
-<p>int main(int argc, char **argv){<br/>
-    void *lib_handle;<br/>
-    int (*add)();<br/>
-    char *error;<br/>
-    if(argc!=4){ <br/>
-        printf(&quot;error&quot;); return 0;<br/>
-    }<br/>
-　　/*打开一个动态链接库*/<br/>
-    lib_handle = dlopen(argv[3], RTLD_LAZY);<br/>
-    if (!lib_handle){<br/>
-        fprintf(stderr, &quot;%s\n&quot;, dlerror());<br/>
-        return 1;<br/>
-    }<br/>
-　　/*获取函数地址和变量地址*/<br/>
-    add=dlsym(lib_handle,&quot;add&quot;);<br/>
-　　/*当动态链接库操作函数执行失败时,dlerror 可以返回出错信息,返回值为NULL 时表示操作函数执行成功。*/<br/>
-    if ((error = dlerror()) != NULL){<br/>
-        fprintf(stderr, &quot;%s\n&quot;, error);<br/>
-        return 1;<br/>
-    }<br/>
-    int a=atoi(argv[1]);<br/>
-    int b=atoi(argv[2]);<br/>
-    printf(&quot;%d+%d=%d\n&quot;,a,b,add(a,b));<br/>
-　　/*关闭指定句柄的动态链接库*/<br/>
-    dlclose(lib_handle);<br/>
-    return 0;<br/>
-}</p>
-</blockquote>
-
-<p>run.sh：</p>
+<p>呵呵呵。。。。。。。。。。。。。。。。。。。。。。。。。<br/>
+就快要成功了我会轻易放弃?果断点了个error log，以为他会引领我找到错误日志，结果是这么个鸟玩意<br/>
+<img src="media/15033230316456/15033230619106.jpg" alt=""/><br/>
+等于没说。后来我一想这是nginx服务器啊，应该看nginx的错误日志，进入nginx，果然发现了logs<br/>
+<img src="media/15033230316456/15033230687781.jpg" alt=""/><br/>
+tail -f error.log，实时查看错误日志。再打开一个终端，执行php-fpm，此时error.log刷出了这样的信息：<br/>
+<img src="media/15033230316456/15033230741090.jpg" alt=""/><br/>
+此时报错：connect() to unix:/var/run/php-fpm/php-fpm.sock failed (13: Permission denied) while connecting to upstream<br/>
+我检查了一下 /tmp/php-cgi.sock 发现该文件拥有者是root，而nginx和php-fpm都是www用户来运行的，按理讲，这个sock文件也应该是www才对。于是修改php-fpm.conf文件</p>
 
 <blockquote>
-<pre><code>#!/bin/bash
-gcc -o main main.c -ldl
-echo use the &quot;+&quot; 
-./main 2 3 ../12/lib/libadd.so
-echo use the &quot;&amp;&quot;
-./main 2 3 ../13/lib/libadd.so
+<pre><code>sudo vim /usr/local/php/etc/php-fpm.conf
+user=nobody
+group=nobody
+listen.owner = nobody
+listen.group = nobody
+listen.mode = 0660
 </code></pre>
 </blockquote>
 
-<h4 id="toc_14">15.检查系统环境是否满足依赖库要求</h4>
+<p>结果如下图：<br/>
+<img src="media/15033230316456/15033230801227.jpg" alt=""/><br/>
+成功了，但是没有www用户，猛然想起之前增加的组是nobody，于是又把php-fpm.conf改了</p>
 
-<p>ldconfig -p 可以输出当前系统环境中缓冲加载的动态链接库。<br/>
-包含文件：lib/add.c、include/add.h、main.c、run.sh　　<br/>
-main.c:</p>
+<blockquote>
+<pre><code>sudo vim /usr/local/php/etc/php-fpm.conf
+listen.owner = www
+listen.group = www
+listen.mode = 0660
+</code></pre>
+</blockquote>
+
+<p>在浏览器中输入localhost/index.php,如图，成功！！！！！！！！<br/>
+<img src="media/15033230316456/15033230853253.jpg" alt=""/></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ubuntu下nginx的安裝]]></title>
+    <link href="weijing24.github.io/15033229668634.html"/>
+    <updated>2017-08-21T21:42:46+08:00</updated>
+    <id>weijing24.github.io/15033229668634.html</id>
+    <content type="html"><![CDATA[
+<p>　　本系列的lnmp的大框架基本上是按照<a href="http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html">http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html</a>来写的<br/>
+　　Nginx是一款轻量级的Web 服务器/反向代理服务器及电子邮件（IMAP/POP3）代理服务器，因它的稳定性、丰富的功能集、示例配置文件和低系统资源的消耗而闻名，其特点是占有内存少，并发能力强，事实上nginx的并发能力确实在同类型的网页服务器中表现较好，著名的使用nginx网站用户有：百度、新浪、网易、腾讯等。<br/>
+　　Nginx代码完全用C语言从头写成，已经移植到许多体系结构和操作系统，包括：linux、freebsd、OS X、windows等。Nginx有自己的函数库，并且除了zlib、pcre和openssl之外，标准模块只使用系统C库函数。而且，如果不需要或者考虑到潜在的授权冲突，可以不使用这些第三方库。<br/>
+　　从上面可以看到nginx是依赖于三个库的：zlib、pcre和openssl。nginx的安装相对来说还算简单，我在安装过程中只遇到了一个问题，运气比较好。今天本来想搞个vim+ycm+clang自动补全的装了一天还没成功，结果问题都是莫名其妙的，果断放弃。好了，说了这么多废话，下面开干吧。</p>
+
+<h3 id="toc_0">　1.选择nginx源码目录</h3>
+
+<p>　　你可以选择任何地方，我选的是/usr/local/src</p>
+
+<h3 id="toc_1">　2、安装pcre库</h3>
+
+<p>　　在<a href="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/">ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/</a>下有pcre的源码包，你可以直接点击下载，也可以wget下载，我选的是wget下载，并使用下面的命令下载编译安装pcre包：</p>
+
+<blockquote>
+<pre><code>cd /usr/local/src
+wget　ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.36.tar.gz
+tar -xvzf　pcre-8.36.tar.gz &amp;&amp; cd　pcre-8.36.tar.gz
+sudo ./configure(注意，必须使用sudo才可以，不然出错，因为在/usr/local下 不是用户目录下)
+sudo make &amp;&amp; sudo make install
+</code></pre>
+</blockquote>
+
+<p>　　<strong>（pcre库会更新的，选择合适的即可，尽量选择pcre而不是pcre2库，因为有人选了pcre2出现问题）</strong> </p>
+
+<h3 id="toc_2">　3、安装zlib库</h3>
+
+<p>　　在<a href="http://zlib.net/">http://zlib.net/</a>下看current version是多少，然后，wget下载，我下载时是1.2.8版本，并使用下面的命令下载编译安装zlib包：</p>
+
+<blockquote>
+<pre><code>cd /usr/local/src
+wget http://zlib.net/zlib-1.2.8.tar.gz
+tar -zxvf zlib-1.2.8.tar.gz &amp;&amp; cd zlib-1.2.8
+sudo ./configure &amp;&amp; sudo make &amp;&amp; sudo make install
+</code></pre>
+</blockquote>
+
+<h3 id="toc_3">　4、安装openssl库</h3>
+
+<p>　　openssl的源码在<a href="http://www.openssl.org/source/">http://www.openssl.org/source/</a>下，可以直接进入下载，也可以wget下载，并使用下面的命令下载编译安装openssl包：</p>
+
+<blockquote>
+<pre><code>cd /usr/local/src &amp;&amp; wget http://www.openssl.org/source/openssl-1.0.1c.tar.gz
+tar -xvzf openssl-1.0.1c.tar.gz &amp;&amp; cd　openssl-1.0.1c.tar.gz
+sudo ./configure &amp;&amp; sudo make &amp;&amp; sudo make install
+</code></pre>
+</blockquote>
+
+<p>　　此时基本上所有nginx需要的库都已经安装好，/usr/local/src的目录结构是这样的（版本可能不同，这个无所谓）:<br/>
+　　<img src="media/15033229668634/15033229862606.jpg" alt=""/></p>
+
+<h3 id="toc_4">　5、安装nginx</h3>
+
+<p>　　nginx的源码在<a href="http://nginx.org/download/">http://nginx.org/download/</a>下，想要什么版本直接下载就行了，并使用下面的命令下载编译安装nginx包：</p>
+
+<blockquote>
+<pre><code>cd /usr/local/src &amp;&amp; wget http://nginx.org/download/nginx-1.4.2.tar.gz
+tar -zxvf nginx-1.4.2.tar.gz &amp;&amp; cd nginx-1.4.2
+sudo ./configure --sbin-path=/usr/local/nginx/nginx --conf-path=/usr/local/nginx/nginx.conf --pid-path=/usr/local/nginx/nginx.pid --with-http_ssl_module --with-pcre=/usr/local/src/pcre-8.36 --with-zlib=/usr/local/src/zlib-1.2.8 --with-openssl=/usr/local/src/openssl-1.0.1c
+sudo make &amp;&amp; sudo make install
+</code></pre>
+</blockquote>
+
+<p>　　<strong>记住，sudo ./configure后面跟的参数只要是和之前安装的库有关的都是以自己下载的库的版本为准！</strong> <br/>
+　　在这边./configure后面跟了很多参数，具体参数含义如下：<br/>
+　　<strong>--prefix=path - Nginx安装路径。如果没有指定，默认为 /usr/local/nginx。</strong><br/>
+　　<strong>--sbin-path=path - Nginx可执行文件安装路径。只能安装时指定，如果没有指定，默认为prefix/sbin/nginx。</strong><br/>
+　　<strong>--conf-path=path - 在没有给定-c选项下默认的nginx.conf的路径。如果没有指定，默认为prefix/conf/nginx.conf。</strong><br/>
+　　<strong>--pid-path=path - 在nginx.conf中没有指定pid指令的情况下，默认的nginx.pid的路径。如果没有指定，默认为 prefix/logs/nginx.pid。</strong><br/>
+　　--lock-path=path - nginx.lock文件的路径。<br/>
+　　--error-log-path=path - 在nginx.conf中没有指定error_log指令的情况下，默认的错误日志的路径。如果没有指定，默认为 prefix/logs/error.log。<br/>
+　　--http-log-path=path - 在nginx.conf中没有指定access_log指令的情况下，默认的访问日志的路径。如果没有指定，默认为 prefix/logs/access.log。<br/>
+　　--user=user - 在nginx.conf中没有指定user指令的情况下，默认的nginx使用的用户。如果没有指定，默认为 nobody。<br/>
+　　--group=group - 在nginx.conf中没有指定user指令的情况下，默认的nginx使用的组。如果没有指定，默认为 nobody。<br/>
+　　--builddir=DIR - 指定编译的目录<br/>
+　　--with-rtsig_module - 启用 rtsig模块<br/>
+　　--with-select_module --without-select_module - 启用或禁用构建一个模块来允许服务器使用select()方法，该模块将自动建立，如果平台不支持的kqueue，epoll，rtsig或/dev/poll<br/>
+　　--with-poll_module --without-poll_module - 启用或禁用构建一个模块来允许服务器使用poll()方法。该模块将自动建立，如果平台不支持的kqueue，epoll，rtsig或/dev/poll<br/>
+　　<strong>--with-http_ssl_module -开启HTTP SSL模块，使NGINX可以支持HTTPS请求。这个模块需要已经安装了OPENSSL，在DEBIAN上是libssl</strong> <br/>
+　　--with-http_realip_module - 启用 ngx_http_realip_module<br/>
+　　--with-http_addition_module - 启用 ngx_http_addition_module<br/>
+　　--with-http_sub_module - 启用 ngx_http_sub_module<br/>
+　　--with-http_dav_module - 启用 ngx_http_dav_module<br/>
+　　--with-http_flv_module - 启用 ngx_http_flv_module<br/>
+　　--with-http_stub_status_module - 启用 &quot;server status&quot; 页<br/>
+　　--without-http_charset_module - 禁用 ngx_http_charset_module<br/>
+　　--without-http_gzip_module - 禁用 ngx_http_gzip_module. 如果启用，需要 zlib。<br/>
+　　--without-http_ssi_module - 禁用 ngx_http_ssi_module<br/>
+　　--without-http_userid_module - 禁用 ngx_http_userid_module<br/>
+　　--without-http_access_module - 禁用 ngx_http_access_module<br/>
+　　--without-http_auth_basic_module - 禁用 ngx_http_auth_basic_module<br/>
+　　--without-http_autoindex_module - 禁用 ngx_http_autoindex_module<br/>
+　　--without-http_geo_module - 禁用 ngx_http_geo_module<br/>
+　　--without-http_map_module - 禁用 ngx_http_map_module<br/>
+　　--without-http_referer_module - 禁用 ngx_http_referer_module<br/>
+　　--without-http_rewrite_module - 禁用 ngx_http_rewrite_module. 如果启用需要 PCRE。<br/>
+　　--without-http_proxy_module - 禁用 ngx_http_proxy_module<br/>
+　　--without-http_fastcgi_module - 禁用 ngx_http_fastcgi_module<br/>
+　　--without-http_memcached_module - 禁用 ngx_http_memcached_module<br/>
+　　--without-http_limit_zone_module - 禁用 ngx_http_limit_zone_module<br/>
+　　--without-http_empty_gif_module - 禁用 ngx_http_empty_gif_module<br/>
+　　--without-http_browser_module - 禁用 ngx_http_browser_module<br/>
+　　--without-http_upstream_ip_hash_module - 禁用 ngx_http_upstream_ip_hash_module<br/>
+　　--with-http_perl_module - 启用 ngx_http_perl_module<br/>
+　　--with-perl_modules_path=PATH - 指定 perl模块的路径<br/>
+　　--with-perl=PATH - 指定 perl 执行文件的路径<br/>
+　　--http-log-path=PATH - Set path to the http access log<br/>
+　　--http-client-body-temp-path=PATH - Set path to the http client request body temporary files<br/>
+　　--http-proxy-temp-path=PATH - Set path to the http proxy temporary files<br/>
+　　--http-fastcgi-temp-path=PATH - Set path to the http fastcgi temporary files<br/>
+　　--without-http - 禁用 HTTP server<br/>
+　　--with-mail - 启用 IMAP4/POP3/SMTP 代理模块<br/>
+　　--with-mail_ssl_module - 启用 ngx_mail_ssl_module<br/>
+　　--with-cc=PATH - 指定 C编译器的路径<br/>
+　　--with-cpp=PATH - 指定 C预处理器的路径<br/>
+　　--with-cc-opt=OPTIONS - 设置额外的参数将被添加到CFLAGS变量。例如,当你在FreeBSD上使用PCRE库时需要使用:--with-cc-opt=&quot;-I /usr/local/include。.如需要需要增加 select()支持的文件数量:--with-cc-opt=&quot;-D FD_SETSIZE=2048&quot;.<br/>
+　　--with-ld-opt=OPTIONS - 设置附加的参数，将用于在链接期间。例如，当在FreeBSD下使用该系统的PCRE库,应指定:--with-ld-opt=&quot;-L /usr/local/lib&quot;.<br/>
+　　--with-cpu-opt=CPU - 为特定的 CPU 编译，有效的值包括：pentium,pentiumpro,pentium3,pentium4,athlon,opteron,amd64,sparc32,sparc64,ppc64<br/>
+　　--without-pcre - 禁止 PCRE 库的使用。同时也会禁止 HTTP rewrite 模块。在 &quot;location&quot; 配置指令中的正则表达式也需要 PCRE。<br/>
+　　<strong>--with-pcre=DIR - 指定 PCRE 库的源代码的路径。</strong><br/>
+　　--with-pcre-opt=OPTIONS - Set additional options for PCRE building.<br/>
+　　--with-md5=DIR - Set path to md5 library sources.<br/>
+　　--with-md5-opt=OPTIONS - Set additional options for md5 building.<br/>
+　　--with-md5-asm - Use md5 assembler sources.<br/>
+　　--with-sha1=DIR - Set path to sha1 library sources.<br/>
+　　--with-sha1-opt=OPTIONS - Set additional options for sha1 building.<br/>
+　　--with-sha1-asm - Use sha1 assembler sources.<br/>
+　　<strong>--with-zlib=DIR - Set path to zlib library sources.</strong><br/>
+　　--with-zlib-opt=OPTIONS - Set additional options for zlib building.<br/>
+　　--with-zlib-asm=CPU - Use zlib assembler sources optimized for specified CPU,valid values are: pentium,pentiumpro<br/>
+　　<strong>--with-openssl=DIR - Set path to OpenSSL library sources</strong><br/>
+　　--with-openssl-opt=OPTIONS - Set additional options for OpenSSL building<br/>
+　　--with-debug - 启用调试日志<br/>
+　　--add-module=PATH - Add in a third-party module found in directory PATH<br/>
+　　在不同版本间，选项可能会有些许变化，请总是使用 ./configure --help 命令来检查一下当前的选项列表。</p>
+
+<p>　　nginx安装完之后看一下/usr/local/下有没有生成nginx这个文件夹，如果生成了且你在nginx编译安装时都没有报错那么恭喜你，基本上成功了。我的/usr/local/nginx目录结构是这样的（仅供参考，可能会不一样）：<br/>
+<img src="media/15033229668634/15033230048029.jpg" alt=""/><br/>
+　　即使是这样，你也不能100%确定你真的安装成功了，还差最后一步就能知道你是否成功了。</p>
+
+<h3 id="toc_5">　6、验证</h3>
+
+<p>　　确保系统的 80 端口没被其他程序占用，运行/usr/local/nginx/nginx 命令来启动 Nginx。</p>
+
+<blockquote>
+<pre><code>netstat -ano|grep 80　　查看80端口
+sudo /usr/local/nginx/nginx
+</code></pre>
+</blockquote>
+
+<p>　　打开浏览器，输入localhost:80<br/>
+<img src="media/15033229668634/15033230155029.jpg" alt=""/></p>
+
+<p>安装成功！</p>
+
+<h3 id="toc_6">可能遇到的问题和帮助信息</h3>
+
+<p>在你安装配置的过程中可能随着安装库的版本不同而导致不同的问题，我在使用上述库中只在最后nginx的make遇到了问题，问题如图<br/>
+<img src="media/15033229668634/15033230239626.jpg" alt=""/><br/>
+出现这个问题可能是安装openssl时出了问题，后来发现openssl没有make和make install，于是在root权限下，执行sudo rm -f /usr/bin/pod2man，再make和make install</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ubuntu安装php常见错误集锦]]></title>
+    <link href="weijing24.github.io/15033229497885.html"/>
+    <updated>2017-08-21T21:42:29+08:00</updated>
+    <id>weijing24.github.io/15033229497885.html</id>
+    <content type="html"><![CDATA[
+<p>以下错误摘录自 <a href="http://www.68idc.cn/help/jiabenmake/qita/20141114128775.html">http://www.68idc.cn/help/jiabenmake/qita/20141114128775.html</a>、<a href="http://zgadzaj.com/how-to-install-php-53-and-52-together-on-ubuntu-1204">http://zgadzaj.com/how-to-install-php-53-and-52-together-on-ubuntu-1204</a></p>
+
+<h3 id="toc_0">一、configure 报错</h3>
+
+<p>　　<strong>1、错误类型：</strong><br/>
+　　　　<strong>Configure: error: Please reinstall the libcurl distribution-easy.h should be in &lt; curl-dir &gt;/include/curl/</strong><br/>
+　　　　<strong>解决方法：</strong><br/>
+　　　　<strong>sudo apt-get install libcurl4-gnutls-dev libcurl4-openssl-dev</strong></p>
+
+<p>　　<strong>2、错误类型：</strong><br/>
+　　　　<strong>configure: error: sasl.h not found!</strong><br/>
+　　　　<strong>解决方法：</strong><br/>
+　　　　<strong>sudo apt-get install libsasl2-dev</strong></p>
+
+<p>　　<strong>3、错误类型：</strong><br/>
+　　　　<strong>Configure: error: Please reinstall the ncurses distribution</strong><br/>
+　　　　<strong>解决方法：</strong><br/>
+　　　　<strong>sudo apt-get install libncurses5-dev</strong></p>
+
+<p>　　4、错误类型：<br/>
+　　　　Configure: error: xml2-config not found. Please check your libxml2 installation.<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libxml2-dev </p>
+
+<p>　　5、错误类型：<br/>
+　　　　configure: error: Cannot find OpenSSL’s &lt; evp.h &gt;<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install openssl</p>
+
+<p>　　6、错误类型：<br/>
+　　　　Configure: error: Please reinstall the BZip2 distribution<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install bzip2</p>
+
+<p>　　7、错误类型：编译时缺少库<br/>
+　　　　configure：error：libXpm.（a|so）not found<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libXpm-dev</p>
+
+<p>　　8、错误类型：<br/>
+　　　　Configure: error: libjpeg.(also) not found.<br/>
+　　　　Configure: error: libpng.(also) not found.<br/>
+　　　　（这2个报错在5.3之后的版本中应该不会有了，取消掉了这个东西）<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libjpeg-dev libpng12-dev</p>
+
+<p>　　9、错误类型：<br/>
+　　　　Configure: error: Cannot find MySQL header files under /usr.Note that the MySQL client library is not bundled anymore!<br/>
+　　　　解决方法（如果是按我的LNMP的顺序这个错也是不会发生的，因为此时数据库已经装好了）：<br/>
+　　　　sudo apt-get install libmysql++-dev</p>
+
+<p>　　10、错误类型：编译时缺少gmp.h文件<br/>
+　　　　configure: error: Unable to locate gmp.h<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libgmp-dev libgmp3-dev</p>
+
+<p>　　11、错误类型：<br/>
+　　　　Configure: error: Cannot find pspell<br/>
+　　　　解决方法：sudo apt-get install libpspell-dev</p>
+
+<p>　　12、错误类型：<br/>
+　　　　configure: error: mcrypt.h not found. Please reinstall libmcrypt.<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libmcrypt-dev mcrypt</p>
+
+<p>　　13、错误类型：<br/>
+　　　　Configure: error: snmp.h not found. Check your SNMP installation.<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libsnmp-dev</p>
+
+<p>　　<strong>14、configure:error:Cannot find ldap.h</strong><br/>
+　　　　<strong>网上普遍的方法是安装openldap。</strong><br/>
+　　　　<strong>解决方法：</strong><br/>
+　　　　<strong>ubuntu下ldap的包名是libldap-2.4-2、ldap-utils、libldap2-dev，安装即可</strong></p>
+
+<p>　　15、错误类型：<br/>
+　　　　configure:error:xslt-config not found. Please reinstall the libxslt &gt;= 1.1.0 distribution<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libxslt1-dev</p>
+
+<p>　　16、错误类型：<br/>
+　　　　configure: error: Could not find libevent &gt;=1.4.11 in /usr/local/php<br/>
+　　　　解决方法：<br/>
+　　　　安装libevent-1.4.11以上版本至/usr/local<br/>
+　　　　tar xzvf libevent-1.4.14-stable.tar.gz &amp;&amp; cd libevent-1.4.14-stable<br/>
+　　　　./configure --prefix=/usr/local<br/>
+　　　　make&amp;&amp;make install<br/>
+　　　　在编译./configure时添加--with-libevent-dir=/usr/local即可</p>
+
+<p>　　17、错误类型：<br/>
+　　　　configure: error: Could not find pcre.h in /usr<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libpcre3-dev</p>
+
+<p>　　18、错误类型：<br/>
+　　　　configure: error: DBA: Could not find necessary header file(s).checking for db4 major version... configure: error: Header contains different version<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libdb4.8-dev</p>
+
+<p>　　19、错误类型：<br/>
+　　　　configure: error: freetype.h not found.<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libfreetype6-dev<br/>
+　　　　<br/>
+　　20、错误类型：<br/>
+　　　　configure: error: Cannot find libpq-fe.h. Please specify correct PostgreSQL installation path<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install postgresql-server-dev-9.1</p>
+
+<p>　　21、错误类型：<br/>
+　　　　configure: error: Your t1lib distribution is not installed correctly. Please reinstall it.<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libt1-dev</p>
+
+<p>　　22、错误类型：<br/>
+　　　　configure: error: Unable to find gd.h anywhere under /usr<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libgd2-xpm-dev</p>
+
+<p>　　23、错误类型：<br/>
+　　　　configure: error: ODBC header file &#39;/usr/include/sqlext.h&#39; not found!<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install unixodbc-dev</p>
+
+<p>　　24、错误类型：<br/>
+　　　　configure: error: Directory /usr is not a FreeTDS installation directory<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install freetds-dev</p>
+
+<p>　　25、错误类型：<br/>
+　　　　configure: error: Cannot find libtidy<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libtidy-dev</p>
+
+<p>　　26、错误类型：<br/>
+　　　　configure: error: You&#39;ve configured extension pdo_sqlite to build statically, but it depends on extension pdo, which you&#39;ve configured to build shared. You either need to build pdo_sqlite shared or build pdo statically for the build to be successful.<br/>
+　　　　解决方法：<br/>
+　　　　Add following switches to your ./configure options:<br/>
+  　　　　--with-pdo-sqlite=shared<br/>
+ 　　　　 --with-sqlite=shared</p>
+
+<p>　　27、报错类型：<br/>
+　　　　configure: error: Cannot find OpenSSL&#39;s libraries<br/>
+　　　　解决方法：<br/>
+　　　　Add following switch to your ./configure options (optionally updating the path to reflect your system):<br/>
+　　　　--with-libdir=/lib/x86_64-linux-gnu</p>
+
+<p>　　从上面这么多错误可以看出大多数是由于库的安装不完整导致的，并且<strong>根据提示就能知道安装哪些包。</strong></p>
+
+<h3 id="toc_1">二、make 报错</h3>
+
+<p>　　1、报错类型：<br/>
+　　　　error while loading shared libraies: libmysqlclient.so.20: cannot open shared object file: No such file or directory<br/>
+　　　  解决方法：</p>
+
+<blockquote>
+<pre><code>find / -name &quot;libmysqlclient.so.20&quot;
+/usr/local/mysql/lib/libmysqlclient.so.20
+/usr/local/src/mysql-5.7.9/libmysql/CMakeFiles/CMakeRelink.dir/libmysqlclient.so.20
+/usr/local/src/mysql-5.7.9/libmysql/libmysqlclient.so.20
+echo &quot;/usr/local/lib&quot; &gt;&gt;/etc/ld.so.conf
+echo &quot;/usr/local/mysql/lib&quot; &gt;&gt;/etc/ld.so.conf 
+sudo ldconfig
+</code></pre>
+</blockquote>
+
+<p>　　或者：<br/>
+　　ln -s /usr/local/mysql/lib/libmysqlclient.so.20 /usr/lib64</p>
+
+<p>　　2、报错类型：<br/>
+　　　　chmod: 无法访问&quot;ext/phar/phar.phar&quot;: 没有那个文件或目录<br/>
+　　　　解决方法：<br/>
+　　　　mkdir -p ext/phar/phar.phar</p>
+
+<p>　　3、报错类型：<br/>
+　　　　usr/bin/ld: ext/ldap/.libs/ldap.o: undefined reference to symbol &#39;ber_strdup@@OPENLDAP_2.4_2&#39;//usr/lib/x86_64-linux-gnu/liblber-2.4.so.2: error adding symbols: DSO missing from command line<br/>
+　　　　解决方法：　　　　<br/>
+　　　　遇到这种类似的情况，说明「./configure 」沒抓好一些环境变数值。 在PHP源码目录下 vi Makefile 找到 EXTRA_LIBS 行，在行末添加 ‘ -llber ‘ 保存退出再次make即可。</p>
+
+<blockquote>
+<pre><code>cd /usr/local/src/php/php-5.6.15
+vim Makefile
+找EXTRA_LIBS行，在末尾添加--llber
+</code></pre>
+</blockquote>
+
+<p>　　4、报错类型：<br/>
+　　　　cc1: out of memory allocating 2036 bytes after a total of 81846272 bytes<br/>
+　　　　/usr/bin/ld: cannot find -lltdl<br/>
+　　　　collect2: ld returned 1 exit status<br/>
+　　　　解决方法：<br/>
+　　　　sudo apt-get install libltdl-dev</p>
+
+<h3 id="toc_2">三、启动服务器报错</h3>
+
+<p>　　1、报错类型：<br/>
+　　　　ERROR: [pool www] cannot get gid for group &#39;nobody&#39;<br/>
+　　　　解决方法：<br/>
+　　　　groupadd nobody</p>
+
+<p>　　2、报错类型：<br/>
+　　　　connect() to unix:/var/run/php-fpm/php-fpm.sock failed (13: Permission denied) while connecting to upstream<br/>
+　　　　解决方法（owner和group根据运行者来写）：　</p>
+
+<blockquote>
+<pre><code>sudo vim /usr/local/php/etc/php-fpm.conf
+listen.owner = www
+listen.group = www
+listen.mode = 0660
+</code></pre>
+</blockquote>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[vim常用命令]]></title>
+    <link href="weijing24.github.io/15033229297218.html"/>
+    <updated>2017-08-21T21:42:09+08:00</updated>
+    <id>weijing24.github.io/15033229297218.html</id>
+    <content type="html"><![CDATA[
+<p>有一定vim基础的可以看这篇文章，能快速查询常用命令。</p>
+
+<p>使用vim可以安装下面三个包</p>
+
+<p>vim-minimal 仅提供vi和相关的命令<br/>
+vim-enhanced    提供vim命令<br/>
+vim-X11 提供gvim</p>
+
+<p>vim有三个模式：命令模式、插入模式、Ex模式</p>
+
+<p>i →插入模式，按 ESC 回到命令模式</p>
+
+<p>命令模式下：</p>
+
+<p>x：删当前光标所在的一个字符</p>
+
+<p>dd： 删除当前行，并把删除的行存到剪贴板里</p>
+
+<p>p：当前位置之后粘贴</p>
+
+<p>P：当前位置之前粘贴</p>
+
+<p>yy：拷贝当前行</p>
+
+<p>u：撤销<br/>
+a：当前光标x位置之后开始插入（追加）<br/>
+A：当前行结尾开始插入<br/>
+I：当前行开头开始插入<br/>
+O：当前行上方插入<br/>
+o：当前行下方插入<br/>
+gg：移至文档第一行<br/>
+G：移至文档最后一行<br/><br/>
+r：替换光标处的字符<br/>
+～：改变大小写</p>
+
+<p>ctrl+V:基于块<br/>
+ctrl+r恢复撤销 </p>
+
+<p>v:基于字符<br/>
+V:基于行</p>
+
+<p>EX模式：</p>
+
+<p>:x或者:wq　　保存并退出</p>
+
+<p>:q!　　　　　 退出不保存</p>
+
+<p>:w !sudo tee %　强制保存 </p>
+
+<p>：anges/pattern/string/flags</p>
+
+<p>range可以是行号，行号范围，搜索条件（/readme.txt/）、%<br/>
+常见的flag是g（替换一行中多个位置上的pattern）和i（使用当前搜索区分大小写）　　<br/>
+eg：%s/&lt;cat&gt;/dog/gi</p>
+
+<p>vimtutor　　vim说明书</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[wait和waitpid详解]]></title>
+    <link href="weijing24.github.io/15033229130846.html"/>
+    <updated>2017-08-21T21:41:53+08:00</updated>
+    <id>weijing24.github.io/15033229130846.html</id>
+    <content type="html"><![CDATA[
+<p>　　发现进程有关的编程题里面的包含知识量实在是太庞大，这是关于wait和waitpid区别的，以前只是粗略知道它们的区别，这是网上看到的比较全的对比<br/>
+　　转自<a href="http://blog.chinaunix.net/uid-25365622-id-3045460.html">http://blog.chinaunix.net/uid-25365622-id-3045460.html</a></p>
+
+<p>　　wait的函数原型是：pid_t wait(int *status) 　　　　<br/>
+　　进程一旦调用了wait，就立即阻塞自己，由wait自动分析是否当前进程的某个子进程已经退出，如果让它找到了这样一个已经变成僵尸的子进程，wait就会收集这个子进程的信息，并把它彻底销毁后返回；如果没有找到这样一个子进程，wait就会一直阻塞在这里，直到有一个出现为止。　<br/>
+参数：<br/>
+　　参数status用来保存被收集进程退出时的一些状态，它是一个指向int类型的指针。但如果我们对这个子进程是如何死掉的毫不在意，只想把这个僵尸进程消灭掉，（事实上绝大多数情况下，我们都会这样想），我们就可以设定这个参数为NULL，就象下面这样：<br/>
+pid = wait(NULL);<br/>
+返回值：<br/>
+　　如果成功，wait会返回被收集的子进程的进程ID<br/>
+　　如果调用进程没有子进程，调用就会失败，此时wait返回-1，同时errno被置为ECHILD。　</p>
+
+<p>　　waitpid的函数原型是：pid_t waitpid(pid_t pid,int *status,int options)<br/>
+　　从本质上讲，系统调用waitpid和wait的作用是完全相同的，但waitpid多出了两个可由用户控制的参数pid和options，从而为我们编程提供了另一种更灵活的方式。<br/>
+参数：(status同上)<br/>
+　　pid:从参数的名字pid和类型pid_t中就可以看出，这里需要的是一个进程ID。但当pid取不同的值时，在这里有不同的意义。 　　　　<br/>
+　　pid&gt;0时，只等待进程ID等于pid的子进程，不管其它已经有多少子进程运行结束退出了，只要指定的子进程还没有结束,waitpid就会一直等下去。<br/>
+　　pid=-1时，等待任何一个子进程退出，没有任何限制，此时waitpid和wait的作用一模一样。 　　<br/>
+　　pid=0时，等待同一个进程组中的任何子进程，如果子进程已经加入了别的进程组，waitpid不会对它做任何理睬。<br/>
+　　pid&lt;-1时，等待一个指定进程组中的任何子进程，这个进程组的ID等于pid的绝对值。 　　<br/>
+options: options提供了一些额外的选项来控制waitpid，目前在Linux中只支持WNOHANG和WUNTRACED两个选项，这是两个常数，可以用&quot;|&quot;运算符把它们连接起来使用<br/>
+比如：<br/>
+ret=waitpid(-1,NULL,WNOHANG | WUNTRACED);<br/>
+如果我们不想使用它们，也可以把options设为0，如： 　　<br/>
+ret=waitpid(-1,NULL,0); 　　　　<br/>
+如果使用了WNOHANG参数调用waitpid，即使没有子进程退出，它也会立即返回，不会像wait那样永远等下去。而WUNTRACED参数，由于涉及到一些跟踪调试方面的知识，加之极少用到，这里就不多费笔墨了，有兴趣的读者可以自行查阅相关材料.看到这里，聪明的读者可能已经看出端倪了--wait不就是经过包装的waitpid吗？<br/>
+没错，察看&lt;内核源码目录&gt;/include/unistd.h文件349-352行就会发现以下程序段：　　 　　</p>
+
+<blockquote>
+<pre><code>static inline pid_t wait(int * wait_stat){ 　
+　 return waitpid(-1,wait_stat,0); 　　//返回值和错误 
+} 　
+</code></pre>
+</blockquote>
+
+<p>返回值：　 　<br/>
+waitpid的返回值比wait稍微复杂一些，一共有3种情况： 　<br/>
+● 当正常返回的时候，waitpid返回收集到的子进程的进程ID；<br/>
+● 如果设置了选项WNOHANG，而调用中waitpid发现没有已退出的子进程可收集，则返回0； 　　 　　<br/>
+● 如果调用中出错，则返回-1，这时errno会被设置成相应的值以指示错误所在；当pid所指示的子进程不存在，或此进程存在，但不是调用进程的子进程，waitpid就会出错返回，这时errno被设置为ECHILD </p>
+
+<p>其它： 调用 wait＆waitpid 来处理终止的子进程：<br/>
+　　pid_t wait(int * status); <br/>
+　　pid_t waitpid(pid_t pid,int * status, int options); <br/>
+　　两个函数都返回两个值：函数的返回值和终止的子进程ID，而子进程终止的状态则是通过status指针返回的。<br/>
+　　wait＆waitpid 的区别是显而易见的，wait等待第一个终止的子进程，而waitpid则可以指定等待特定的子进程。<br/>
+这的区别可能会在下面这种情况时表现得更加明显：<br/>
+   <strong>当同时有5个客户连上服务器，也就是说有五个子进程分别对应了5个客户，此时，五个客户几乎在同时请求终止，这样一来，几乎同时，五个FIN发向服务器，同样的，五个SIGCHLD信号到达服务器，然而，UNIX的信号往往是不会排队的，显然这样一来，信号处理函数将只会执行一次，残留剩余四个子进程作为僵尸进程驻留在内核空间。此时，正确的解决办法是利用waitpid(-1, &amp;stat, WNOHANG)防止留下僵尸进程。</strong><br/>
+其中的pid为－1表明等待任一个子进程，而WNOHANG选择项通知内核在没有已终止进程项时不要阻塞。</p>
+
+<p>wait＆waitpid 区别 :<br/>
+waitpid提供了wait函数不能实现的3个功能: <br/>
+1.waitpid等待特定的子进程, 而wait则返回任一终止状态的子进程; <br/>
+2.waitpid提供了一个wait的非阻塞版本; <br/>
+3.waitpid支持作业控制(以WUNTRACED选项). 用于检查wait和waitpid两个函数返回终止状态的宏: 这两个函数返回的子进程状态都保存在status指针中, 用以下3个宏可以检查该状态: <br/>
+   WIFEXITED(status): 若为正常终止, 则为真. 此时可执行 WEXITSTATUS(status): 取子进程传送给exit或_exit参数的低8位. <br/>
+   WIFSIGNALED(status): 若为异常终止, 则为真.此时可执行 WTERMSIG(status): 取使子进程终止的信号编号.<br/>
+   WIFSTOPPED(status): 若为当前暂停子进程, 则为真. 此时可执行 WSTOPSIG(status): 取使子进程暂停的信号编号</p>
+
+<p>注：(网上看到的感觉方法很好，推荐)<br/>
+如果用在父进程用wait()和waitpid()会使父进程挂起，解决的办法：<br/>
+(1).可以用signal函数为SIGCHLD安装handler。在子进程结束后，父进程会收到该信号，可以在handler中调用wait回收。<br/>
+(2).如果父进程不关心子进程什么时候结束，那么可以用signal(SIGCLD, SIG_IGN)或signal（SIGCHLD, SIG_IGN）通知内核，自己对子进程的结束不感兴趣，那么子进程结束后，内核会回收，并不再给父进程发送信号。<br/>
+(3).fork两次，父进程fork一个子进程，然后继续工作，子进程fork一个孙进程后退出，那么孙进程被init接管，孙进程结束后，init会回收。不过子进程的回收还要自己做。 </p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[zabbix安装排错过程]]></title>
+    <link href="weijing24.github.io/15033228802565.html"/>
+    <updated>2017-08-21T21:41:20+08:00</updated>
+    <id>weijing24.github.io/15033228802565.html</id>
+    <content type="html"><![CDATA[
+<p>　　在讲安装过程之前需要先把zabbix的工作流程简单的讲一遍：zabbix是个开源监控软件，通过web才能更直观的监控我们想要监控的主机，同时，zabbix从被监控主机获取到的信息需要存放在数据库中，因此zabbix+nginx/apache+php+mysql是常用的组合方式。nginx/apache提供web服务器，zabbix的web监控是由php写的，因此需要php环境，最后mysql提供存储。<br/>
+　　mysql、nginx、php之前都说过如何编译安装，在此我就只讲编译参数了。<br/>
+　　php:<br/>
+　　　　./configure --prefix=/usr/local/php-5.5.0 --with-config-file-path=/usr/local/php-5.5.0/etc --with-bz2 --with-curl --enable-ftp --enable-sockets --disable-ipv6 --with-gd --with-jpeg-dir=/usr/local --with-png-dir=/usr/local --with-freetype-dir=/usr/local --enable-gd-native-ttf --with-iconv-dir=/usr/local --enable-mbstring --enable-calendar --with-gettext --with-libxml-dir=/usr/local --with-zlib --with-pdo-mysql=mysqlnd --with-mysqli=mysqlnd --with-mysql=mysqlnd --enable-dom --enable-xml --enable-fpm --with-libdir=lib64 --enable-bcmath --with-openssl --enable-mbstring</p>
+
+<p>　　mysql:<br/>
+　　　　cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local/mysql -DWITH_MYISAM_STORAGE_ENGINE=1 -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_ARCHIVE_STORAGE_ENGINE=1 -DWITH_BLACKHOLE_STORAGE_ENGINE=1 -DWITH_MEMORY_STORAGE_ENGINE=1 </p>
+
+<p>　　nginx:<br/>
+　　　　--prefix=/usr/local/nginx --with-http_ssl_module --with-http_stub_status_module --with-pcre</p>
+
+<p>　　zabbix:<br/>
+　　　　安装zabbix前需要修改php.ini的几个参数<br/>
+　　　　 max_execution_time = 300<br/>
+ 　　　　memory_limit = 128M<br/>
+ 　　　　post_max_size = 16M<br/>
+ 　　　　upload_max_filesize = 2M<br/>
+ 　　　　max_input_time = 300<br/>
+ 　　　　date.timezone PRC<br/>
+　　　　修改完毕可以开始编译安装zabbix了<br/>
+　　　　./configure --prefix=/usr/local/zabbix/ --enable-server --enable-agent --enable-proxy --with-mysql --with-net-snmp --with-libcurl --with-libxml2</p>
+
+<h3 id="toc_0">所有软件安装完毕后开始配置</h3>
+
+<p>1、mysql中添加zabbix数据库<br/>
+　　在zabbix的源码目录下有个database目录，里面对应不同的数据库<br/>
+<img src="media/15033228802565/15033228940990.jpg" alt=""/></p>
+
+<p>　　我们使用的是mysql数据库，因此表结构从mysql中导入，一共有3个表，mysql，images和schema  </p>
+
+<blockquote>
+<pre><code>create database zabbix character set utf8;
+grant all privileges on zabbix.* to root@&#39;localhost&#39; identified by &#39;123&#39;;
+mysql -uroot -pmysql zabbix &lt; schema.sql　　#导入这三个表必须按照此顺序
+mysql -uroot -pmysql zabbix &lt; images.sql
+mysql -uroot -pmysql zabbix &lt; data.sql
+</code></pre>
+</blockquote>
+
+<p>2、配置zabbix-server<br/>
+　　vim /usr/local/zabbix/zabbix_server.conf</p>
+
+<blockquote>
+<pre><code>ListenPort=10051
+LogFile=/tmp/zabbix_server.log
+PidFile=/tmp/zabbix_server.pid
+DBHost=localhost
+DBName=zabbix
+DBUser=root
+DBPassword=123　　　　　　#这里要注意，密码不需要加引号，直接写就行，当时我加了引号，日志一直报错连接数据库失败，网上找了很久也没找到解决方法，后来自己多次尝试才发现了这个坑
+DBPort=3306
+DBSocket=/data/mysql3306/mysql.sock
+</code></pre>
+</blockquote>
+
+<p>　　到这边zabbix-server基本上配置好了，使用zabbix_server启动，zabbix_server启动不管成功与否都不会有返回值，因此启动完毕需要看一下10051端口开了没。下面说说client<br/>
+　　你可以在一台主机上同时装server和client。编译时加上--enable-agent就是把client模块编译进去。　<br/>
+　　vim /usr/local/zabbix-2.2.2/etc/zabbix_agentd.conf<br/>
+　　Server=127.0.0.1<br/>
+　　ServerActive=127.0.0.1<br/>
+　　Hostname=Zabbix server<br/>
+　　使用zabbix_agentd启动，查看10050端口是否开启。<br/>
+3、配置zabbix管理网站<br/>
+　　　cp -rp /usr/local/src/zabbix-2.2.13/frontends/php/* /www/zabbix<br/>
+　　　vim /usr/local/nginx/conf/nginx.conf　　</p>
+
+<blockquote>
+<pre><code>server {
+    listen       80;
+    index index.html index.php index.html;
+    root /www;
+    location /{
+            try_files $uri $uri/ /index.php?$args;
+    }
+    location ~ ^(.+.php)(.*)$ {
+            fastcgi_split_path_info ^(.+.php)(.*)$;
+            include fastcgi.conf;
+            fastcgi_pass  127.0.0.1:9000;
+            fastcgi_index index.php;
+            fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
+</code></pre>
+</blockquote>
+
+<p>　　配置完毕启动nginx，浏览器输入localhost/zabbix即可在线配置zabbix的网页，配置完网页即可在网页上监控agent</p>
+
+<p>　　提示：想要开启zabbix网页，nginx，php-fpm，mysql都要开启，缺一不可。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[使用RAID进行磁盘管理]]></title>
+    <link href="weijing24.github.io/15033227857622.html"/>
+    <updated>2017-08-21T21:39:45+08:00</updated>
+    <id>weijing24.github.io/15033227857622.html</id>
+    <content type="html"><![CDATA[
+<p>磁盘阵列（Redundant Arrays of Independent Disks，RAID），有“独立磁盘构成的具有冗余能力的阵列”之意，<strong>作用是防止硬盘物理损坏以及增加存储设备的吞吐量。</strong><br/>
+RAID常见的组合有0、1、5和10：</p>
+
+<ul>
+<li>RAID0:需要至少两块(含)硬盘，可以有效的提高硬盘的性能和吞吐量，但没有数据的冗余和错误修复能力。</li>
+</ul>
+
+<p><img src="media/15033227857622/15033227947114.jpg" alt=""/></p>
+
+<pre><code>    将多块硬盘通过硬件或软件的方式串联在一起，成为一个大的卷集，将数据依次写入到各个硬盘中，这样性能会极大提升，但若任意一块硬盘故障则整个系统的数据都会受到破坏。
+</code></pre>
+
+<ul>
+<li>RAID1:需要至少两块(含)硬盘，可以有效的提高数据资料的安全性和可修复性，但成本却提高了。
+<img src="media/15033227857622/15033228053749.jpg" alt=""/></li>
+</ul>
+
+<pre><code>    实现原来是在数据写入硬盘时也会在另外一块闲置的硬盘上生成镜像文件，在不影响性能的情况下最大限度保证数据资料的可靠性，只要在一对镜像盘中还有一块硬盘可以使用，那么数据也不会丢失，具有很好的硬盘冗余能力，虽然对数据来讲绝对的安全，但成本却明显增加，磁盘利用率仅为50%。
+</code></pre>
+
+<ul>
+<li>RAID5:需要至少三块(含)硬盘，兼顾存储性能、数据安全和储存成本。
+<img src="media/15033227857622/15033228120001.jpg" alt=""/></li>
+</ul>
+
+<pre><code>    如上图所示&quot;parity&quot;块中保存的是其他硬盘数据的奇偶校验信息（并非其他硬盘的数据），以数据的奇偶校验信息来保证数据的安全，RAID5不以单独的硬盘来存放数据的奇偶校验信息，而是保存在各个磁盘上。
+这样当任何一个硬盘损坏都可以根据其他硬盘上的奇偶校验信息来尝试重建损坏的数据，性能也很高，兼顾了存储性能、数据安全和存储成本，可以看作是RAID0与RAID1的折中方案。
+</code></pre>
+
+<ul>
+<li>RAID10:需要至少四块（含）硬盘，兼具速度和安全性，但成本很高。
+<img src="media/15033227857622/15033228174250.jpg" alt=""/></li>
+</ul>
+
+<pre><code>    继承了RAID0的快速与RAID1的安全，RAID1在这里提供了冗余备份的阵列，而RAID0则负责数据的读写阵列。因这种结构的成本高，一般用于存放要求速度与差错控制的数据。
+</code></pre>
+
+<p>常见的做软RAID的工具是mdadm。下面就简单写几个实用的小例子快速上手这个命令。</p>
+
+<h3 id="toc_0">1.配置RAID10</h3>
+
+<p>　　①在虚拟机上给主机分配4块1G的磁盘（为了实验磁盘就不分配大的了）<br/>
+<img src="media/15033227857622/15033228238032.jpg" alt=""/></p>
+
+<p>　　②创建raid10<br/>
+　　　　mdadm -Cv /dev/md1 -n4 -l 10 -a yes /dev/sd{b..e}<br/>
+　　　　mkfs.ext4 /dev/md1<br/>
+　　　　partprobe /dev/md1 #内核同步磁盘</p>
+
+<blockquote>
+<pre><code>-C是创建
+-v是显示过程 
+/dev/md1 是做成的raid磁盘名
+-n 是使用磁盘数
+-l是raid级别
+-a 检查raid名称 
+/dev/sd{b..e}是之前分配的四块盘
+</code></pre>
+</blockquote>
+
+<p>　　③挂载raid磁盘<br/>
+　　　　mkdir /RAID<br/>
+　　　　mount /dev/md1 /RAID<br/>
+　　　　此时一个raid10的磁盘创建挂载已经完成<br/>
+<img src="media/15033227857622/15033228341758.jpg" alt=""/></p>
+
+<p>　　④开机自动挂载<br/>
+　　　　在这里不是很建议用设备名写入fstab表中，因为我之前使用的设备名md1结果开机md1在dev目录下没了，变成md127了，具体原因不明，因此可以使用UUID<br/>
+　　　　使用blkid获取UUID<br/>
+<img src="media/15033227857622/15033228395281.jpg" alt=""/><br/>
+　　　　echo “UUID=d3986c95-11d9-4afa-935e-bd4e637f4754 /RAID　　ext4　　default  0 0” &gt;&gt; /etc/fstab</p>
+
+<p>　　⑤查看RAID磁盘详细信息<br/>
+　　　　mdadm -D /dev/md1<br/>
+<img src="media/15033227857622/15033228454121.jpg" alt=""/></p>
+
+<p>　　⑥模拟一块硬盘损坏<br/>
+　　　　mdadm /dev/md1 -f /dev/sdb<br/>
+　　　　#-f将sdb移出阵列，此时sdb状态是被移除，通过mdadm -D /dev/md1查看sdb是失败状态<br/>
+　　　　此时硬盘状态是坏的，你需要将它从取出<br/>
+　　　　mdadm /dev/md1 -r /dev/sdb<br/>
+　　　　换上同样大小的硬盘后执行<br/>
+　　　　mdadm /dev/md1 -a /dev/sdb<br/>
+　　　　即可将sdb重新加入阵列（如果磁盘真有问题必须要先-r移除才能-a添加）<br/>
+　　　　重新挂载<br/>
+　　　　mount /dev/md1 /RAID<br/>
+<img src="media/15033227857622/15033228520041.jpg" alt=""/></p>
+
+<p>　　⑦停止阵列设备<br/>
+　　　　umount /RAID　　　　#必须先卸载<br/>
+　　　　mdadm -S /dev/md1<br/>
+　　　　此时dev目录下没有md1了，若想恢复，目前我使用的方法是<br/>
+　　　　mdadm -A /dev/md1 /dev/sd{b..e}</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[使用virt-manager创建和管理虚拟机]]></title>
+    <link href="weijing24.github.io/15033227559982.html"/>
+    <updated>2017-08-21T21:39:15+08:00</updated>
+    <id>weijing24.github.io/15033227559982.html</id>
+    <content type="html"><![CDATA[
+<h2 id="toc_0">虚拟机管理程序和虚拟机管理</h2>
+
+<p>　　一个服务器上只安装单一操作系统的时代已经过去，单个服务器可通过安装多个虚拟机来运行不同操作系统。虚拟机的大量使用减少了所需的服务其硬件，降低了服务器的功耗，但却带来了另外一个问题，多虚拟机数目的增加使其管理变得更加复杂。<br/>
+　　虚拟化为管理虚拟机及其资源以及物理主机的基础资源带来了新的挑战。多个操作系统现在以虚拟机的形式共享一个物理主机的资源，操作系统与物理主机之间不再存在一对一的映射关系。每个虚拟机使用一个容器和其他元数据来表示，该容器持有一个或多个虚拟磁盘，而这些元数据用来描述该虚拟机的配置和约束条件。每个虚拟机共享物理主机的资源，主机不仅需要配置，还需要了解这些资源的利用率（以确保虚拟机具有合适的密度，能够最佳地使用主机，既不会给可用资源带来重负，也不会浪费它们）。</p>
+
+<h2 id="toc_1">Virtual Machine Manager介绍</h2>
+
+<p>　　Virtual Machine Manager (virt-manager) 是针对虚拟机管理的一个开源解决方案，由Red-Hat开发。Virtual Machine Manager的优势很明显，它显著简化了管理虚拟机的能力，同时提供了度量虚拟机性能及监视资源利用率的功能。<br/>
+　　Virtual Machine Manager (virt-manager) 是一个轻量级应用程序套件，形式为一个管理虚拟机的命令行或图形用户界面 (GUI)。除了提供对虚拟机的管理功能之外，virt-manager 还通过一个嵌入式虚拟网络计算 (VNC) 客户端查看器为 Guest 虚拟机提供一个完整图形控制台。 </p>
+
+<h2 id="toc_2">虚拟化管理工具套件介绍</h2>
+
+<p>　　virt-manager 是 libvirt 虚拟化 API 的一个首要用户，但有一个越来越庞大的工具生态系统在使用此接口进行虚拟化管理。virt-manager 包提供了一个便捷的 GUI，用来在多个虚拟机管理程序和主机上创建和管理虚拟机。如果更喜欢命令行，那么会由许多工具为您提供只有命令行才能提供的能力和控制力。<br/>
+　　virt-install 工具提供了配置新虚拟机的能力。virt-manager 提供了少量针对虚拟机创建的配置选项，而 virt-install 提供了丰富的配置选项，包括安装方法、存储配置、网络配置、图形配置、虚拟化选项，以及一个庞大的虚拟化设备选项列表。<br/>
+　　virt-image 工具类似于 virt-install 工具，但支持您在 XML 中定义虚拟机创建过程的细节。该 XML 描述符文件指定了虚拟机的一般元数据、域属性（CPU、内存等），以及存储配置。<br/>
+　　virt-clone 工具提供了一种克隆现有的虚拟机映像的方式。提到克隆，我指的是复制现有的虚拟机，该虚拟机具有更新的参数，可确保新虚拟机是唯一的，从而避免发生冲突（比如 MAC 地址冲突）。<br/>
+　　virt-viewer 工具为一个使用 VNC 协议的给定虚拟机提供了一个图形控制台。virt-viewer 可附加到在本地主机或远程主机上运行的虚拟机。<br/>
+　　最后，管理 Guest 域的最强大的工具是虚拟化 shell，或者称为 virsh。virsh 可用于列出、启动和停止虚拟机，以及创建虚拟机。简言之，你可使用 virsh 跨虚拟机管理程序执行全面地管理公开在其他工具中未提供的虚拟化特性。</p>
+
+<h2 id="toc_3">virt-manager的安装：</h2>
+
+<p>①对于debian系</p>
+
+<blockquote>
+<p>sudo apt-get install virt-manager</p>
+</blockquote>
+
+<p>②验证是否安装成功</p>
+
+<blockquote>
+<p>ps ax | grep libvirtd</p>
+</blockquote>
+
+<p>③使用which 命令确认 virt-manager 包是否已经安装，以及了解 virt-manager 文件的位置。</p>
+
+<blockquote>
+<p>which virt-manager</p>
+</blockquote>
+
+<p>④使用 QEMU 作为虚拟机管理程序，这是因为 QEMU 可在任何硬件上运行</p>
+
+<blockquote>
+<p>sudo apt-get install qemu</p>
+</blockquote>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[信号]]></title>
+    <link href="weijing24.github.io/15033227238921.html"/>
+    <updated>2017-08-21T21:38:43+08:00</updated>
+    <id>weijing24.github.io/15033227238921.html</id>
+    <content type="html"><![CDATA[
+<h3 id="toc_0">背景知识：</h3>
+
+<p>　　信号机制是进程之间相互传递消息的一种方法，信号全称为软中断信号，也有人称作软中断。从它的命名可以看出，它的实质和使用很象中断。所以，信号可以说是进程控制的一部分。 <br/>
+　　软中断信号（signal，又简称为信号）用来通知进程发生了异步事件。进程之间可以互相通过系统调用kill发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。注意，信号只是用来通知某进程发生了什么事件，并不给该进程传递任何数据。 <br/>
+　　收到信号的进程对各种信号有不同的处理方法。处理方法可以分为三类：第一种是类似中断的处理程序，对于需要处理的信号，进程可以指定处理函数，由该函数来处理。第二种方法是，忽略某个信号，对该信号不做任何处理，就象未发生过一样。第三种方法是，对该信号的处理保留系统的默认值，这种缺省操作，对大部分的信 号的缺省操作是使得进程终止。进程通过系统调用signal来指定进程对某个信号的处理行为。 <br/>
+　　在进程表的表项中有一个软中断信号域，该域中每一位对应一个信号，当有信号发送给进程时，对应位置位。由此可以看出，进程对不同的信号可以同时保留，但对于同一个信号，进程并不知道在处理之前来过多少个。 <br/>
+　　发出信号的原因很多，这里按发出信号的原因简单分类，以了解各种信号： <br/>
+　　①与进程终止相关的信号。当进程退出，或者子进程终止时，发出这类信号。 <br/>
+　　②与进程例外事件相关的信号。如进程越界，或企图写一个只读的内存区域（如程序正文区），或执行一个特权指令及其他各种硬件错误。 <br/>
+　　③与在系统调用期间遇到不可恢复条件相关的信号。如执行系统调用exec时，原有资源已经释放，而目前系统资源又已经耗尽。 <br/>
+　　④与执行系统调用时遇到非预测错误条件相关的信号。如执行一个并不存在的系统调用。 <br/>
+　　⑤在用户态下的进程发出的信号。如进程调用系统调用kill向其他进程发送信号。 <br/>
+　　⑥与终端交互相关的信号。如用户关闭一个终端，或按下break键等情况。 <br/>
+　　⑦跟踪进程执行的信号。</p>
+
+<p>相关函数和头文件:<br/>
+　　①signal.h<br/>
+　　系统调用signal用来设定某个信号的处理方法。该调用声明的格式如下：<br/>
+　　　　void (*signal(int signum, void (*handler)(int)))(int); </p>
+
+<p>　　在使用该调用的进程中加入以下头文件： <br/>
+　　#include &quot;signal.h&quot;</p>
+
+<p>　　②sigaction函数<br/>
+　　int sigaction(int signo,const struct sigaction *restrict act,struct sigaction *restrict oact);<br/>
+　　sigaction函数用于改变进程接收到特定信号后的行为。该函数的第一个参数为信号的值，可以为除SIGKILL及SIGSTOP外的任何一个特定有效的信号（为这两个信号定义自己的处理函数，将导致信号安装错误）。第二个参数是指向结构sigaction的一个实例的指针，在结构sigaction的实例中，指定了对特定信号的处理，可以为空，进程会以缺省方式对信号处理；第三个参数oldact指向的对象用来保存返回的原来对相应信号的处理，可指定oldact为NULL。如果把第二、第三个参数都设为NULL，那么该函数可用于检查信号的有效性.第二个参数最为重要，其中包含了对指定信号的处理、信号所传递的信息、信号处理函数执行过程中应屏蔽掉哪些信号等等。<br/>
+结构sigaction定义如下：</p>
+
+<blockquote>
+<pre><code>struct sigaction{
+    void (*sa_handler)(int);
+    sigset_t sa_mask;
+    int sa_flag;
+    void (*sa_sigaction)(int,siginfo_t *,void *);
+};
+</code></pre>
+</blockquote>
+
+<p>sa_handler字段包含一个信号捕捉函数的地址<br/>
+sa_mask字段说明了一个信号集，在调用该信号捕捉函数之前，这一信号集要加进进程的信号屏蔽字中。仅当从信号捕捉函数返回时再将进程的信号屏蔽字复位为原先值。<br/>
+sa_flag是一个选项，主要理解两个:<br/>
+　　　　SA_INTERRUPT 由此信号中断的系统调用不会自动重启<br/>
+　　　　SA_RESTART 由此信号中断的系统调用会自动重启<br/>
+　　　　SA_SIGINFO 提供附加信息，一个指向siginfo结构的指针以及一个指向进程上下文标识符的指针<br/>
+最后一个参数是一个替代的信号处理程序，当设置SA_SIGINFO时才会用他。</p>
+
+<p>③sigemptyset <br/>
+　　函数初始化信号集合set，将set 设置为空。 </p>
+
+<p>④信号所传递的每一个整数都被赋予了特殊的意义，并有一个信号名对应该整数。常见的信号有SIGINT, SIGQUIT, SIGCONT, SIGTSTP, SIGALRM等。这些都是信号的名字。你可以通过$man 7 signal来查阅更多的信号。上面几个信号中，<br/>
+　　<strong>SIGINT   当键盘按下CTRL+C从shell中发出信号，信号被传递给shell中前台运行的进程，对应该信号的默认操作是中断 (INTERRUPT) 该进程。</strong><br/>
+　　<strong>SIGQUIT  当键盘按下CTRL+\从shell中发出信号，信号被传递给shell中前台运行的进程，对应该信号的默认操作是退出 (QUIT) 该进程。</strong><br/>
+　　SIGTSTP  当键盘按下CTRL+Z从shell中发出信号，信号被传递给shell中前台运行的进程，对应该信号的默认操作是暂停 (STOP) 该进程。 <br/>
+　　<strong>SIG_DFL：默认信号处理程序</strong><br/>
+　　SIG_IGN：忽略信号的处理程序<br/>
+　　SIGCONT  用于通知暂停的进程继续。<br/>
+　　SIGALRM  起到定时器的作用，通常是程序在一定的时间之后才生成该信号。</p>
+
+<p>⑤kill()<br/>
+　　原型:int kill(pid_t pid,int signo)<br/>
+　　作用:该系统调用可以用来向任何进程或进程组发送任何信号。参数pid的值为信号的接收进程;sinno是信号值，当为0时（即空信号），实际不发送任何信号，但照常进行错误检查，因此，可用于检查目标进程是否存在，以及当前进程是否具有向目标发送信号的权限（root权限的进程可以向任何进程发送信号，非root权限的进程只能向属于同一个session或者同一个用户的进程发送信号）。<br/>
+⑥pause()<br/>
+　　阻塞进程,直到有信号产生</p>
+
+<h4 id="toc_1">1.接收SIGINT信号,始终执行自定义处理</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>打印字符串,忽略ctrl+c的中断信号</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot;
+struct sigaction act;
+void doit(int sig){
+    printf(&quot;ha ha you can&#39;t close me\n&quot;);
+}
+int main(void){
+    act.sa_handler=doit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    if(sigaction(SIGINT,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(1);
+    }
+    while(1){
+        printf(&quot;hello,world\n&quot;);
+        sleep(1);   
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_2">2.接收SIGINT信号,执行一次自定义处理后,恢复默认行为</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>打印字符串,第一次按ctrl+c没有用,第二次按生效</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot;
+struct sigaction act;
+void doit(int sig){
+    printf(&quot;ha ha you can&#39;t close me\n&quot;);
+    act.sa_handler=SIG_DFL;
+    sigaction(SIGINT,&amp;act,NULL);
+}
+int main(void) {
+    struct sigaction act;
+    act.sa_handler=doit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    if(sigaction(SIGINT,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(1);
+    }
+    while(1){
+        printf(&quot;hello,world\n&quot;);
+        sleep(1);   
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_3">3.模拟时钟</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>在5秒内,如果没有接受到其他信号,则提示时间到了</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot; 
+struct sigaction act;
+void doit(int sig){
+    printf(&quot;It&#39;s time to get up\n&quot;);
+}
+int main(void) {
+    act.sa_handler=doit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    if(sigaction(SIGALRM,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(1);
+    }
+    pid_t pid;
+    pid=fork();
+    if(pid&lt;0){
+        printf(&quot;error\n&quot;);
+        return -1;
+    }
+    if(pid==0){
+        sleep(5);
+        kill(getppid(),SIGALRM);      
+    }else{
+        printf(&quot;get a signal\n&quot;);
+        pause();
+    }  
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_4">4.带有超时功能的read</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>在5秒内输入字符串,否则提示超时</li>
+</ul>
+
+<p>相关知识:<br/>
+　　①setjmp.h是C标准函数库中提供“非本地跳转”的头文件：控制流偏离了通常的子程序调用与返回序列。互补的两个函数setjmp与longjmp提供了这种功能。<br/>
+　　setjmp/longjmp的典型用途是异常处理机制的实现：利用longjmp恢复程序或线程的状态，甚至可以跳过栈中多层的函数调用。<br/>
+　　在信号处理机制中，进程在检查收到的信号，会从原来的系统调用中直接返回，而不是等到该调用完成。这种进程突然改变其上下文的情况，就是通过使用setjmp和longjmp来实现的。setjmp将保存的上下文载入用户空间，并继续在旧的上下文中继续执行。这就是说，进程执行一个系统调用，当因为资源或其他原因要去睡眠时，内核为进程作了一次setjmp，如果在睡眠中被信号唤醒，进程不能再进入睡眠时，内核为进程调用longjmp，该操作是内核为进程将现在的上下文切换成原先通过setjmp调用保存在进程用户区的上下文，这样就使得进程可以恢复等待资源前的状态，而且内核为setjmp返回1，使得进程知道该次系统调用失败。另一种用在多线程程序中同步访问的方法是使用互斥量。它允许程序员锁住某个对象，使得每次只能有一个线程访问它。为了控制对关键代码的访问，必须在进入这段代码之前锁住一个互斥量，然后在完成操作之后解锁它。</p>
+
+<p>　　②int setjmp(jmp_buf env)<br/>
+　　建立本地的jmp_buf缓冲区并且初始化，用于将来跳转回此处。这个子程序[保存程序的调用环境于env参数所指的缓冲区，env将被longjmp使用。<strong>如果是从setjmp直接调用返回，setjmp返回值为0。如果是从longjmp恢复的程序调用环境返回，setjmp返回非零值。</strong><br/>
+　　void longjmp(jmp_buf env, int value) 恢复env所指的缓冲区中的程序调用环境上下文，env所指缓冲区的内容是由setjmp子程序[1]调用所保存。value的值从longjmp传递给setjmp。longjmp完成后，程序从对应的setjmp调用处继续执行，如同setjmp调用刚刚完成。<strong>如果value传递给longjmp零值，setjmp的返回值为1；否则，setjmp的返回值为value。</strong><br/>
+　　setjmp保存当前的环境（即程序的状态）到平台相关的一个数据结构 (jmp_buf)，该数据结构在随后程序执行的某一点可被 longjmp用于恢复程序的状态到setjmp调用所保存到jmp_buf时的原样。这一过程可以认为是&quot;跳转&quot;回setjmp所保存的程序执行状态。setjmp的返回值指出控制是正常到达该点还是通过调用longjmp恢复到该点。因此有编程的惯用法: if( setjmp(x) ){/* handle longjmp(x) */}。 <br/>
+　　jmp_buf 数组类型，例如struct int[16]或struct __jmp_buf_tag[3]，用于保存恢复调用环境所需的信息。<br/>
+　　③alarm也称为闹钟函数，它可以再进程中设置一个定时器，当定时器指定的时间到时，它向进程发送SIGALARM信号。要注意的是，一个进程只能有一个闹钟时间，如果在调用alarm之前已设置过闹钟时间，则任何以前的闹钟时间都被新值所代替。当在调用alarm()前已经设置了一个闹钟，那么我们可以调用alarm(0)来取消此闹钟，并返回剩余时间。<br/>
+　　函数原型<br/>
+　　　　unsigned int alarm（unsigned int seconds)<br/>
+　　函数参数<br/>
+　　　　seconds:指定秒数<br/>
+　　函数返回值<br/>
+　　　　成功：如果调用此alarm（）前，进程已经设置了闹钟时间，则返回上一个闹钟时间的剩余时间，否则返回0。<br/>
+　　　　出错：-1</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;signal.h&quot;     //signal() 
+#include &quot;stdio.h&quot;      //perror
+#include &quot;unistd.h&quot;     //read(), write(), alarm()
+#include &quot;stdlib.h&quot;     //exit() 
+#include &quot;setjmp.h&quot;     // setjmp(), lonjmp() 
+#define MAXLINE 80
+struct sigaction act;
+jmp_buf myjmp;
+void sig_alrm(int sig){
+    longjmp(myjmp,1);    
+    exit(0);
+}
+int main(void){
+    int n;
+    char a[MAXLINE];
+    act.sa_handler=sig_alrm;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    if(sigaction(SIGALRM,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(1);
+    }
+    //setjmp一开始默认是0
+    if (setjmp(myjmp) != 0){
+        printf(&quot;read timeout\n&quot;);
+        exit(0);
+    }
+    alarm(5);//指定时间到时发送SIGSLARM信号,若5秒内执行到了alarm(0)则取消发送alarm信号，否则进入子函数的longjmp返回1到setjmp，退出整个程序
+    printf(&quot;please input something in 5 seconds\n&quot;);    
+    n=read(0,a,sizeof(a));
+    alarm(0);
+    printf(&quot;your input string is :\n&quot;);
+    write(1,a,n);
+    exit(0);
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_5">5.屏蔽SIGINT信号,当来SIGINT信号后,恢复所有信号的正常处理</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>sigsuspend屏蔽SIGINT信号,并挂起进程,然后SIGQUIT信号来之后开始正常处理</li>
+</ul>
+
+<p>相关知识:<br/>
+sigsuspend()<br/>
+　　函数原型<br/>
+　　　　int sigsuspend(const sigset_t *mask);<br/>
+　　作用<br/>
+　　　　用于在接收到某个信号之前，临时用mask替换进程的信号掩码，并暂停进程执行，直到收到信号为止。也就是说，进程执行到sigsuspend时，sigsuspend并不会立刻返回，进程处于TASK_INTERRUPTIBLE状态并立刻放弃CPU，等待UNBLOCK（mask之外的）信号的唤醒。进程在接收到UNBLOCK（mask之外）信号后，调用处理函数，然后把现在的信号集还原为原来的，sigsuspend返回，进程恢复执行。<br/>
+　　返回值<br/>
+　　　　sigsuspend返回后将恢复调用之前的的信号掩码。信号处理函数完成后，进程将继续执行。该系统调用始终返回-1，并将errno设置为EINTR.</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot; 
+struct sigaction act,act2;
+void sig_int(int sig){
+    act2.sa_handler=SIG_DFL;
+    sigaction(SIGINT,&amp;act2,NULL);
+}
+void sig_quit(int sig){
+    act.sa_handler=SIG_DFL;
+    sigaction(SIGQUIT,&amp;act,NULL);
+}
+int main(void){
+    sigset_t newmask;
+    sigemptyset(&amp;newmask);
+    act.sa_handler=sig_quit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    act2.sa_handler=sig_int;
+    sigemptyset(&amp;act2.sa_mask);
+    act2.sa_flags=0;
+    if(sigaction(SIGINT,&amp;act2,NULL)!=0){
+        perror(&quot;sigaction sigint error\n&quot;);
+        exit(0);
+    }
+    if(sigaction(SIGQUIT,&amp;act,NULL)!=0){
+        perror(&quot;sigaction sigquit error\n&quot;);
+        exit(0);
+    }
+    sigaddset(&amp;newmask, SIGINT);//SIGINT信号加入到new信号集中
+    printf(&quot;get signal\n&quot;);
+    sigsuspend(&amp;newmask);
+    printf(&quot;\n&quot;);
+    while(1){
+        printf(&quot;hello\n&quot;);
+        sleep(1);
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_6">6.将程序阻塞期间产生的信号推迟到阻塞之后处理</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>slee 5s期间产生SIGQUIT不立即处理,5s后再处理,处理要先自定义打印消息,然后恢复默认设置</li>
+<li>然后将屏蔽信号恢复,sleep 10s,这期间产生的SIGQUIT信号,将直接执行</li>
+</ul>
+
+<p>相关知识:<br/>
+　　①sigemptyset <br/>
+　　函数初始化信号集合set，将set 设置为空。<br/>
+　　②信号屏蔽字是指一个进程中当前阻塞而不能够递送给该进程的信号集。信号集则是一个能表示多个信号的集合的一种数据类型，为sigset_t。<br/>
+　　与信号集设置相关的函数有如下几个：<br/>
+　　 下列四个函数成功返回0，出错返回-1<br/>
+　　　int sigemptyset(sigset_t *set);<br/>
+　　　int sigfillset(sigset_t *set);<br/>
+　　　int sigaddset(sigset_t *set, int signo);<br/>
+　　　int sigdelset(sigset_t *set, int signo);<br/>
+　　 下面函数若真返回1，若假返回0，出错返回-1<br/>
+　　　int sigismember(const sigset_t *set, int signo);<br/>
+　　③int sigaddset(sigset_t *set,int signum);<br/>
+　　　　sigaddset()用来将参数signum 代表的信号加入至参数set 信号集里。<br/>
+　　④sigprocmask<br/>
+　　功能：<br/>
+　　　　检测或更改信号屏蔽字<br/>
+　　头文件：<br/>
+　　　　#include &quot;signal.h&quot;<br/>
+　　函数原型：<br/>
+　　　　int sigprocmask(int how,const sigsett_t *set,sigset_t *oldset);<br/>
+　　参数：<br/>
+　　　　how  操作方式<br/>
+　　　　set   信号集<br/>
+　　　　oldest<br/>
+　　返回值：<br/>
+　　　　若成功返回0，若出错返回-1。<br/>
+　　每个进程都有一个用来描述哪些信号递送到进程时将被阻塞的信号集，该信号集中的所有信号在递送到进程后都将被阻塞。sigprocmask是最为关键的一个函数。在使用之前要先设置好信号集合set。这个函数的作用是将指定的信号集合set加入到进程的信号阻塞集合之中去，如果提供了oldset那么当前的进程信号阻塞集合将会保存在oldset里面。参数how决定函数的操作方式。<br/>
+　　SIG_BLOCK：增加一个信号集合到当前进程的阻塞集合之中。<br/>
+　　SIG_UNBLOCK：从当前的阻塞集合之中删除一个信号集合。<br/>
+　　SIG_SETMASK：将当前的信号集合设置为信号阻塞集合。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot; 
+struct sigaction act;
+void doit(int sig){
+    printf(&quot;caught sigquit\n&quot;);
+    act.sa_handler=SIG_DFL;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    //接收SIGQUIT信号并执行doit函数
+    if(sigaction(SIGQUIT,&amp;act,0)&lt;0){
+        perror(&quot;recover sigquiut error\n&quot;); 
+        exit(1);
+    }    
+}
+int main(void){
+    sigset_t newmask,oldmask,pendmask;
+    act.sa_handler=doit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    //接受到SIGQUIT信号则执行doit函数
+    if(sigaction(SIGQUIT,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(0);
+    }
+    sigemptyset(&amp;newmask);
+    sigaddset(&amp;newmask, SIGQUIT);//SIGINT信号加入到newmask信号集中
+    //将newmask信号集中的信号设为阻塞信号
+    if(sigprocmask(SIG_BLOCK,&amp;newmask,&amp;oldmask)&lt;0){
+        perror(&quot;sigprocmask error\n&quot;);
+        exit(1);
+    }
+    printf(&quot;block SIGQUIT 5s\n&quot;) ;
+    sleep(5);
+    //查看阻塞的信号
+    if(sigpending(&amp;pendmask)&lt;0){
+        perror(&quot;sigpending error\n&quot;);
+        exit(1);
+    }
+    //查看阻塞的信号中有没有SIGQUIT
+    if(sigismember(&amp;pendmask,SIGQUIT))
+        printf(&quot;SIGQUIT pending\n&quot;);
+    printf(&quot;sigquit unblocked\n&quot;);
+    //将阻塞的信号释放
+    if(sigprocmask(SIG_SETMASK,&amp;oldmask,NULL)&lt;0){
+        perror(&quot;set oldmask error\n&quot;);
+        exit(1);
+    } 
+    printf(&quot;program will sleep 10s,during these SIGQUIT won&#39;t be blocked\n&quot;); 
+    sleep(10);
+    printf(&quot;done\n&quot;); 
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[僵尸进程和孤儿进程]]></title>
+    <link href="weijing24.github.io/15033226512813.html"/>
+    <updated>2017-08-21T21:37:31+08:00</updated>
+    <id>weijing24.github.io/15033226512813.html</id>
+    <content type="html"><![CDATA[
+<p>　　之前写了进程的创建，由于是半年前做的题目了，现在回忆有点生疏，有些概念都忘了，比如僵尸进程、孤儿进程、子进程和父进程的关系。。。在博客园看到有一篇讲的很好的关于僵尸进程和孤儿进程的文章，没看到有转载的选项，直接复制过来了，方便以后忘了再查看</p>
+
+<p>转自<a href="http://www.cnblogs.com/Anker/p/3271773.html">http://www.cnblogs.com/Anker/p/3271773.html</a></p>
+
+<h3 id="toc_0">1.前言</h3>
+
+<p>　　之前在看《unix环境高级编程》第八章进程时候，提到孤儿进程和僵尸进程，一直对这两个概念比较模糊。今天被人问到什么是孤儿进程和僵尸进程，会带来什么问题，怎么解决，我只停留在概念上面，没有深入，倍感惭愧。晚上回来google了一下，再次参考APUE，认真总结一下，加深理解。</p>
+
+<h3 id="toc_1">2.基本概念</h3>
+
+<p>　　我们知道在unix/linux中，正常情况下，子进程是通过父进程创建的，子进程在创建新的进程。子进程的结束和父进程的运行是一个异步过程,即父进程永远无法预测子进程 到底什么时候结束。 当一个 进程完成它的工作终止之后，它的父进程需要调用wait()或者waitpid()系统调用取得子进程的终止状态。<br/>
+　　孤儿进程：一个父进程退出，而它的一个或多个子进程还在运行，那么那些子进程将成为孤儿进程。孤儿进程将被init进程(进程号为1)所收养，并由init进程对它们完成状态收集工作。<br/>
+　　僵尸进程：一个进程使用fork创建子进程，如果子进程退出，而父进程并没有调用wait或waitpid获取子进程的状态信息，那么子进程的进程描述符仍然保存在系统中。这种进程称之为僵死进程。</p>
+
+<h3 id="toc_2">3.问题及危害</h3>
+
+<p>　　unix提供了一种机制可以保证只要父进程想知道子进程结束时的状态信息， 就可以得到。这种机制就是: 在每个进程退出的时候,内核释放该进程所有的资源,包括打开的文件,占用的内存等。 但是仍然为其保留一定的信息(包括进程号the process ID,退出状态the termination status of the process,运行时间the amount of CPU time taken by the process等)。直到父进程通过wait / waitpid来取时才释放。 但这样就导致了问题，如果进程不调用wait / waitpid的话， 那么保留的那段信息就不会释放，其进程号就会一直被占用，但是系统所能使用的进程号是有限的，如果大量的产生僵死进程，将因为没有可用的进程号而导致系统不能产生新的进程. 此即为僵尸进程的危害，应当避免。<br/>
+　　孤儿进程是没有父进程的进程，孤儿进程这个重任就落到了init进程身上，init进程就好像是一个民政局，专门负责处理孤儿进程的善后工作。每当出现一个孤儿进程的时候，内核就把孤 儿进程的父进程设置为init，而init进程会循环地wait()它的已经退出的子进程。这样，当一个孤儿进程凄凉地结束了其生命周期的时候，init进程就会代表党和政府出面处理它的一切善后工作。因此孤儿进程并不会有什么危害。<br/>
+　　任何一个子进程(init除外)在exit()之后，并非马上就消失掉，而是留下一个称为僵尸进程(Zombie)的数据结构，等待父进程处理。这是每个 子进程在结束时都要经过的阶段。如果子进程在exit()之后，父进程没有来得及处理，这时用ps命令就能看到子进程的状态是“Z”。如果父进程能及时 处理，可能用ps命令就来不及看到子进程的僵尸状态，但这并不等于子进程不经过僵尸状态。  如果父进程在子进程结束之前退出，则子进程将由init接管。init将会以父进程的身份对僵尸状态的子进程进行处理。<br/>
+　　僵尸进程危害场景：<br/>
+　　例如有个进程，它定期的产 生一个子进程，这个子进程需要做的事情很少，做完它该做的事情之后就退出了，因此这个子进程的生命周期很短，但是，父进程只管生成新的子进程，至于子进程 退出之后的事情，则一概不闻不问，这样，系统运行上一段时间之后，系统中就会存在很多的僵死进程，倘若用ps命令查看的话，就会看到很多状态为Z的进程。 严格地来说，僵死进程并不是问题的根源，罪魁祸首是产生出大量僵死进程的那个父进程。因此，当我们寻求如何消灭系统中大量的僵死进程时，答案就是把产生大 量僵死进程的那个元凶枪毙掉（也就是通过kill发送SIGTERM或者SIGKILL信号啦）。枪毙了元凶进程之后，它产生的僵死进程就变成了孤儿进 程，这些孤儿进程会被init进程接管，init进程会wait()这些孤儿进程，释放它们占用的系统进程表中的资源，这样，这些已经僵死的孤儿进程 就能瞑目而去了。</p>
+
+<p>4.孤儿进程和僵尸进程测试<br/>
+孤儿进程测试程序如下所示：</p>
 
 <blockquote>
 <pre><code>#include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
-#include &quot;add.h&quot;
-int main(int argc, char *argv[]){
-    puts(&quot;this is a static libarary test ....&quot;);
-    int a=atoi(argv[1]);    
-    int b=atoi(argv[2]);
-    int sum=add(a,b);
-    printf(&quot;%d + %d = %d \n&quot;,a,b,sum);
+#include &lt;errno.h&gt;
+#include &lt;unistd.h&gt;
+int main(){
+    pid_t pid;
+    //创建一个进程
+    pid = fork();
+    //创建失败
+    if (pid &lt; 0){
+        perror(&quot;fork error:&quot;);
+        exit(1);
+    }
+    //子进程
+    if (pid == 0){
+        printf(&quot;I am the child process.\n&quot;);
+        //输出进程ID和父进程ID
+        printf(&quot;pid: %d\tppid:%d\n&quot;,getpid(),getppid());
+        printf(&quot;I will sleep five seconds.\n&quot;);
+        //睡眠5s，保证父进程先退出
+        sleep(5);
+        printf(&quot;pid: %d\tppid:%d\n&quot;,getpid(),getppid());
+        printf(&quot;child process is exited.\n&quot;);
+    }else{
+    //父进程
+        printf(&quot;I am father process.\n&quot;);
+        //父进程睡眠1s，保证子进程输出进程id
+        sleep(1);
+        printf(&quot;father process is  exited.\n&quot;);
+    }
     return 0;
 }
 </code></pre>
 </blockquote>
 
-<p>run.sh:</p>
+<p>测试结果如下：<br/>
+<img src="media/15033226512813/15033226812349.jpg" alt=""/></p>
+
+<p>僵尸进程测试程序如下所示：</p>
 
 <blockquote>
-<pre><code>#!/bin/bash
-#objdump -x main |grep NEEDED |sed -n &#39;1,$p&#39;|awk &#39;{print $2}&#39;&gt;main1.txt
-ldconfig -p &gt;main2.txt #打印出当前缓存文件所保存的所有共享库的名字.
-for line in `objdump -x main |grep NEEDED |sed -n &#39;1,$p&#39;|awk &#39;{print $2}&#39;`;do
-    cat main2.txt |grep -q &quot;$line&quot;
-    if [ $? -eq 0 ];then
-        echo -e &quot;$line is met \n&quot;
-    else
-        echo -e &quot;$line is not met \n&quot;
-    fi
-done
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;stdlib.h&gt;
+int main(){
+    pid_t pid;
+    pid = fork();
+    if (pid &lt; 0){
+        perror(&quot;fork error:&quot;);
+        exit(1);
+    }
+    else if (pid == 0){
+        printf(&quot;I am child process.I am exiting.\n&quot;);
+        exit(0);
+    }
+    printf(&quot;I am father process.I will sleep two seconds\n&quot;);
+    //等待子进程先退出
+    sleep(2);
+    //输出进程信息
+    system(&quot;ps -o pid,ppid,state,tty,command&quot;);
+    printf(&quot;father process is exiting.\n&quot;);
+    return 0;
+}
 </code></pre>
 </blockquote>
+
+<p>测试结果如下所示：<br/>
+<img src="media/15033226512813/15033226891818.jpg" alt=""/></p>
+
+<p>僵尸进程测试2：父进程循环创建子进程，子进程退出，造成多个僵尸进程，程序如下所示：</p>
+
+<blockquote>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+int main(){
+    pid_t  pid;
+    //循环创建子进程
+    while(1){
+        pid = fork();
+        if (pid &lt; 0){
+            perror(&quot;fork error:&quot;);
+            exit(1);
+        }
+        else if (pid == 0){
+            printf(&quot;I am a child process.\nI am exiting.\n&quot;);
+            //子进程退出，成为僵尸进程
+            exit(0);
+        }else{
+        //父进程休眠20s继续创建子进程
+            sleep(20);
+            continue;
+        }
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>程序测试结果如下所示：<br/>
+<img src="media/15033226512813/15033226964778.jpg" alt=""/></p>
+
+<h3 id="toc_3">5.僵尸进程解决办法</h3>
+
+<p>（1）通过信号机制<br/>
+　　子进程退出时向父进程发送SIGCHILD信号，父进程处理SIGCHILD信号。在信号处理函数中调用wait进行处理僵尸进程。测试程序如下所示：</p>
+
+<blockquote>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;signal.h&gt;
+static void sig_child(int signo);
+int main(){
+    pid_t pid;
+    //创建捕捉子进程退出信号
+    signal(SIGCHLD,sig_child);
+    pid = fork();
+    if (pid &lt; 0){
+        perror(&quot;fork error:&quot;);
+        exit(1);
+    }else if (pid == 0){
+        printf(&quot;I am child process,pid id %d.I am exiting.\n&quot;,getpid());
+        exit(0);
+    }
+    printf(&quot;I am father process.I will sleep two seconds\n&quot;);
+    //等待子进程先退出
+    sleep(2);
+    //输出进程信息
+    system(&quot;ps -o pid,ppid,state,tty,command&quot;);
+    printf(&quot;father process is exiting.\n&quot;);
+    return 0;
+}
+static void sig_child(int signo){
+    pid_t        pid;
+    int        stat;
+    //处理僵尸进程
+    while ((pid = waitpid(-1, &amp;stat, WNOHANG)) &gt;0)
+        printf(&quot;child %d terminated.\n&quot;, pid);
+}
+</code></pre>
+</blockquote>
+
+<p>测试结果如下所示：<br/>
+<img src="media/15033226512813/15033227068402.jpg" alt=""/></p>
+
+<p>（2）fork两次<br/>
+　　《Unix 环境高级编程》8.6节说的非常详细。原理是将子进程成为孤儿进程，从而其的父进程变为init进程，通过init进程可以处理僵尸进程。测试程序如下所示：</p>
+
+<blockquote>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+int main(){
+    pid_t  pid;
+    //创建第一个子进程
+    pid = fork();
+    if (pid &lt; 0){
+        perror(&quot;fork error:&quot;);
+        exit(1);
+    }
+    //第一个子进程
+    else if (pid == 0){
+        //子进程再创建子进程
+        printf(&quot;I am the first child process.pid:%d\tppid:%d\n&quot;,getpid(),getppid());
+        pid = fork();
+        if (pid &lt; 0){
+            perror(&quot;fork error:&quot;);
+            exit(1);
+        }
+        //第一个子进程退出
+        else if (pid &gt;0){
+            printf(&quot;first procee is exited.\n&quot;);
+            exit(0);
+        }
+        //第二个子进程
+        //睡眠3s保证第一个子进程退出，这样第二个子进程的父亲就是init进程里
+        sleep(3);
+        printf(&quot;I am the second child process.pid: %d\tppid:%d\n&quot;,getpid(),getppid());
+        exit(0);
+    }
+    //父进程处理第一个子进程退出
+    if (waitpid(pid, NULL, 0) != pid){
+        perror(&quot;waitepid error:&quot;);
+        exit(1);
+    }
+    exit(0);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>测试结果如下图所示：<br/>
+<img src="media/15033226512813/15033227156986.jpg" alt=""/></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[共享内存]]></title>
+    <link href="weijing24.github.io/15033226237472.html"/>
+    <updated>2017-08-21T21:37:03+08:00</updated>
+    <id>weijing24.github.io/15033226237472.html</id>
+    <content type="html"><![CDATA[
+<p>使用共享内存步骤:<br/>
+① 开辟一块共享内存shmget<br/>
+② 允许本进程使用共某块共享内存shmat<br/>
+③ 写入/读取</p>
+
+<p>删除共享内存步骤<br/>
+①禁止本进程使用这块共享内存shmdt<br/>
+②删除这块共享内存shmctl或者命令行下ipcrm</p>
+
+<h4 id="toc_0">1.创建共享内存</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>使用shmget函数创建共享内存，并输出创建的shmid</li>
+<li>判断创建的shmid是否成功，失败返回-1，成功打印共享内存的id号</li>
+</ul>
+
+<p>相关知识：<br/>
+　　共享内存函数由 shmget、shmat、shmdt、shmctl 四个函数组成。<br/>
+　　①shmget函数<br/>
+　　作用：得到一个共享内存标识符或创建一个共享内存对象<br/>
+　　原型：int shmget(key_t key, size_t size, int shmflg)<br/>
+　　②shamat函数<br/>
+　　作用：连接共享内存标识符为 shmid 的共享内存,连接成功后把共享内存区对象映射到调用进程的地址空间,随后可像本地空间一样访问<br/>
+　　原型：void *shmat(int shmid, const void *shmaddr, int shmflg)<br/>
+　　③shmdt函数<br/>
+　　作用：断开与共享内存附加点的地址,禁止本进程访问此片共享内存<br/>
+　　原型：int shmdt(const void *shmaddr)<br/>
+　　④shmctl函数<br/>
+　　作用:完成对共享内存的控制<br/>
+　　原型：int shmctl(int shmid, int cmd, struct shmid_ds *buf)</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;sys/ipc.h&quot;
+#include &quot;sys/shm.h&quot;
+#include &quot;error.h&quot;
+#define SIZE 1024
+int main(void){
+    int shmid ;
+    shmid=shmget(IPC_PRIVATE,512,IPC_CREAT|0600 ) ;
+    if ( shmid &lt; 0 ){
+        perror(&quot;get shm ipc_id error&quot;) ;
+        return -1 ;
+    }
+    printf(&quot;shmid=%d\n&quot;,shmid) ;
+    return 0 ;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_1">2.使用fork函数创建子进程</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>在task1基础上使用fork创建子进程</li>
+<li>在子进程中打印&quot;this is child&quot;,在父进程中打印&quot;this is parent&quot;</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;sys/ipc.h&quot;
+#include &quot;sys/shm.h&quot;
+#include &quot;error.h&quot;
+int main(void){
+    int shmid;
+    struct shmid_ds buf;
+    shmid=shmget(IPC_PRIVATE,512,IPC_CREAT|0600 ) ;
+    if ( shmid &lt; 0 ){
+        perror(&quot;get shm ipc_id error&quot;) ;
+        return -1 ;
+    }
+    printf(&quot;shmid is %d\n&quot;,shmid);
+    pid_t pid;
+    pid=fork();
+    if(pid&lt;0){
+        perror(&quot;fork error\n&quot;);
+        shmctl(shmid,IPC_RMID,&amp;buf);
+    }
+    if(pid==0)
+        printf(&quot;this is child\n&quot;);
+    else
+        printf(&quot;this is parent\n&quot;);
+    return 0 ;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_2">3.在子进程中将键盘输入字符串写入共享内存</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>在task2的基础上在子进程中使用shmat函数与共享内存空间建立联系</li>
+<li>将共享内存映射到子进程中,将参数字符串拷贝到共享内存中.</li>
+<li>拷贝完毕后使用shmdt函数分离共享内存对象</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;sys/ipc.h&quot;
+#include &quot;sys/shm.h&quot;
+#include &quot;error.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+int main(void){
+    int shmid;char x[10];
+    struct shmid_ds buf;
+    char *shmaddr;
+    shmid=shmget(IPC_PRIVATE,512,IPC_CREAT|0600 ) ;
+    if ( shmid &lt; 0 ){
+        perror(&quot;get shm ipc_id error\n&quot;) ;
+        return -1 ;
+    }
+    printf(&quot;shmid is %d\n&quot;,shmid);
+    pid_t pid;
+    pid=fork();
+    if(pid&lt;0){
+        perror(&quot;fork error\n&quot;);
+        shmctl(shmid,IPC_RMID,&amp;buf); 
+    }
+    if(pid==0){
+        printf(&quot;this is child\n&quot;);
+        shmaddr=(char *)shmat(shmid,NULL,0);
+        if(shmaddr&lt;(char *)0){
+            perror(&quot;shmat addr error\n&quot;);
+            return -1;
+        }
+        printf(&quot;write something to shm\n&quot;);
+        fgets(x,11,stdin);
+        strcpy(shmaddr,x);
+        // printf(&quot;%s\n&quot;,shmaddr);
+        shmdt(shmaddr);
+        return 0;
+    }else{
+        wait();
+        printf(&quot;this is parent\n&quot;);  
+        shmaddr=(char *)shmat(shmid,NULL,0);
+        printf(&quot;%s\n&quot;,shmaddr);
+    }
+    return 0 ;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_3">4.打印共享内存大小和子进程、父进程进程号</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>基于task3，在父进程中打印共享内存大小以及父进程的进程号和子进程的进程号</li>
+</ul>
+
+<p>main.c：</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;sys/ipc.h&quot;
+#include &quot;sys/shm.h&quot;
+#include &quot;error.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+int main(void){
+    int shmid;char x[10];
+    struct shmid_ds buf;
+    char *shmaddr;
+    shmid=shmget(IPC_PRIVATE,512,IPC_CREAT|0600 ) ;
+    if ( shmid &lt; 0 ){
+        perror(&quot;get shm ipc_id error\n&quot;) ;
+        return -1 ;
+    }
+    //printf(&quot;shmid is %d\n&quot;,shmid);
+    pid_t pid;
+    pid=fork();
+    if(pid&lt;0){
+        perror(&quot;fork error\n&quot;);
+        shmctl(shmid,IPC_RMID,&amp;buf); 
+    }
+    if(pid==0){
+        printf(&quot;this is child\n&quot;);
+        printf(&quot;child pid is %d\n&quot;,getpid());
+        //shmaddr=(char *)shmat(shmid,NULL,0);
+        // if(shmaddr&lt;(char *)0)
+        // {
+        //  perror(&quot;shmat addr error\n&quot;);
+            //return -1;
+        //}
+        //printf(&quot;write something to shm\n&quot;);
+        //fgets(x,11,stdin);
+        //strcpy(shmaddr,&quot;your input string is&#39;xxx&#39;\n&quot;);
+        //shmdt(shmaddr);
+        return 0;
+    }else{
+        //memset(&amp;buf,&#39;\0&#39;,sizeof(buf));
+        //wait();
+        //printf(&quot;%s\n&quot;,shmaddr);
+        shmctl(shmid,IPC_STAT,&amp;buf);
+        printf(&quot;The size of new buf is %ld bytes\n&quot;,buf.shm_segsz);
+        printf(&quot;this is parent\n&quot;);  
+        printf(&quot;parent pid is %d\n&quot;,getpid());
+    }
+    return 0 ;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_4">5.两个进程通过共享内存通信</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>编写两个.c文件,分别完成将图书信息写入共享内存以及从共享内存读取图书信息的功能</li>
+<li>图书信息(no;name;price)使用结构体定义</li>
+<li>01 book1 10</li>
+<li>2 book2 20</li>
+<li>read.c中读取完毕要删除共享内存</li>
+<li>write,c中每次都新建共享内存</li>
+<li>ftok</li>
+</ul>
+
+<p>写程序:</p>
+
+<ul>
+<li>实现父子进程通过共享内存进行数据通信.</li>
+<li>父子进程通过竞争方式来创建一个共享内存单元,然后子进程接受用户输入的信息(键盘输入),并将写入到共享内存单元;父进程则从共享内存单元将该信息读出,并显示信息的个数,具体步骤为:创建子进程-&gt;将输入的字符串写入共享内存-&gt;打印写入的字符串-&gt;在父进程中读取写入的字符串并打印</li>
+</ul>
+
+<p>write.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;sys/ipc.h&quot;
+#include &quot;sys/shm.h&quot;
+#include &quot;error.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#include&quot;sys/types.h&quot;
+typedef struct book{
+    int num;
+    char name[20];
+    float price;
+}book;
+int main(void){
+    int shmid,i;
+    key_t key;
+    book *shmaddr;
+    char temp[20];
+    key=ftok(&quot;write.c&quot;,0x03);
+    if(key==-1){
+        perror(&quot;key error\n&quot;);
+        return -1;
+    }
+    printf(&quot;key=%d\n&quot;,key);
+    shmid=shmget(key,512,IPC_CREAT|0600 ) ;
+    if (shmid&lt;0){
+        perror(&quot;shmid get error\n&quot;) ;
+        return -1 ;
+    }else{ 
+        printf(&quot;shmid =%d\n&quot;,shmid);
+        shmaddr=(book *)shmat(shmid,NULL,0);
+        if(shmaddr&lt;(book *)0){
+            perror(&quot;shmat addr error\n&quot;);
+            return -1;
+        }
+        memset(temp,0x00,sizeof(temp));
+        strcpy(temp,&quot;book&quot;);
+        temp[4]=&#39;0&#39;;
+        for(i=0;i&lt;2;i++){
+            temp[4]+=1;
+            strcpy((shmaddr+i) -&gt; name,temp);
+            (shmaddr+i) -&gt; num=i;
+            (shmaddr+i)-&gt;price=10*(i+1);
+        }
+        shmdt(shmaddr);
+    }
+    return 0 ;
+}
+</code></pre>
+</blockquote>
+
+<p>读程序:</p>
+
+<ul>
+<li>采用shmat函数取得对共享内存空间的地址</li>
+<li>打印共享内存中的字符串</li>
+<li>使用shmdt函数取消父进程与共享内存的关联</li>
+<li>使用shmctl函数删除共享内存</li>
+</ul>
+
+<p>read.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;sys/ipc.h&quot;
+#include &quot;sys/shm.h&quot;
+#include &quot;error.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#include&quot;sys/types.h&quot;
+#include&lt;stdio.h&gt;
+typedef struct book{
+    int num;
+    char name[20];
+    float price;
+}book;
+int main(void){
+    int shmid,i;
+    char temp[20];
+    key_t key;
+    book *shmaddr;
+    key=ftok(&quot;write.c&quot;,0x03);
+    if(key==-1){
+        perror(&quot;key error\n&quot;);
+        return -1;
+    }
+    printf(&quot;key=%d\n&quot;,key);
+    shmid=shmget(key,512,IPC_CREAT|0600 ) ;
+    if (shmid&lt;0){
+        perror(&quot;shmid get error\n&quot;) ;
+        return -1 ;
+    }else{ 
+        printf(&quot;shmid =%d\n&quot;,shmid);
+        shmaddr=(book *)shmat(shmid,NULL,0);
+        if(shmaddr&lt;(book *)0){
+            perror(&quot;shmat addr error\n&quot;);
+            return -1;
+        }
+        for(i=0;i&lt;2;i++){
+            printf(&quot;num:%d,&quot;,(*(shmaddr+i)).num);
+            printf(&quot;name:%s,&quot;,(*(shmaddr+i)).name); 
+            printf(&quot;price:%f\n&quot;,(*(shmaddr+i)).price);             
+        }
+        shmdt(shmaddr);
+    }
+    return 0 ;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_5">6.无名管道</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>创建管道,父进程接受键盘输入,将其写入管道,子进程读取管道,将读取到的字符串打印出来</li>
+</ul>
+
+<p>相关知识:<br/>
+　　管道是一种把两个进程之间的标准输入和标准输出连接起来的机制，从而提供一种让多个进程间通信的方法，当进程创建管道时，每次都需要提供两个文件描述符来操作管道。其中一个对管道进行写操作，另一个对管道进行读操作。对管道的读写与一般的IO系统函数一致，使用write()函数写入数据，使用read()读出数据。<br/>
+　　<strong>必须在fork()中调用pipe()，否则子进程不会继承文件描述符。</strong>两个进程不共享祖先进程，就不能使用pipe。但是可以使用命名管道。<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;unistd.h&quot;
+#include &quot;stdio.h&quot;
+#define size 100
+int main(void){
+    int filedes[2];
+    char a[size],b[size];
+    pid_t pid;
+    pipe(filedes);
+    pid=fork();        
+    if(pid&lt;0){
+        printf(&quot;pid error\n&quot;);
+        return 0;
+    }
+    if (pid &gt; 0){
+        printf( &quot;This is father process\n&quot;);
+        printf(&quot;please input something and wait a little time\n&quot;);
+        fgets(a,50,stdin);
+        printf(&quot;write pipe:%s\n&quot;,a);
+        write( filedes[1],a,sizeof(a));
+        close( filedes[0] );
+        close( filedes[1] );
+    }else if(pid == 0){
+        sleep(7);
+        printf(&quot;This is child process.\n&quot;);
+        read( filedes[0], b, sizeof(b));
+        printf( &quot;read pipe: %s\n&quot;, b );
+        close( filedes[0] );
+        close( filedes[1] );
+    }
+    waitpid( pid, NULL, 0 );
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[关于mysqld_safe]]></title>
+    <link href="weijing24.github.io/15033226078265.html"/>
+    <updated>2017-08-21T21:36:47+08:00</updated>
+    <id>weijing24.github.io/15033226078265.html</id>
+    <content type="html"><![CDATA[
+<p>　　昨天花了一天时间写了mysql的源码安装，比较蛋疼。其中对于mysqld_safe尤其不理解，因为使用apt-get安装几乎中间不需要什么配置，只需要service mysql start即可，但是源码安装在service之前必须要先启动mysqld_safe。关于这个mysqld_safe今天在官网上找到了.原文戳<a href="http://dev.mysql.com/doc/refman/5.5/en/mysqld-safe.html">这里</a>。同时更正一点，使用cmake生成配置文件应该是从5.5就开始的了，我猜测使用cmake和mysqld_safe这一特性应该是从同一版本开始的。因为编译安装太耗费时间我也就不去验证了。以下是对mysqld_safe的翻译。　　<br/>
+　　mysqld_safe是官方推荐的在Unix上运行mysql服务器的方式。mysqld_safe增加了一些安全特性，比如：当发生错误时重启服务器、将运行中的错误信息记录到错误日志。<br/>
+　　mysqld_safe会启动一个叫mysqld的可执行文件。如果要查看相关文件并且指定你想要运行的服务器名称，在mysqld_safe后加--mysqld或者--mysqld-version参数（这句话翻译的不是很好，意思就是如果你想查看mysql的pid、error文件可以使用mysqld_safe --mysqld-version查看，如果想要完全重启服务可以使用mysqld_safe -mysqld重新生成pid和error文件，个人的理解是<strong>mysqld_safe的作用是生成pid和error文件，并启动mysqld）。</strong><br/>
+　　mysqld_safe的很多参数都是和mysqld相同的。　　<br/>
+　　在命令行中，如果指定给mysqld_safe的参数是mysqld_safe没有的，这个参数会传递给mysqld，但是如果参数是在配置文件中的[mysqld_safe]中定义的话，那么直接忽略。<br/>
+　　mysqld_safe从配置文件的[mysqld],[server]和[mysqld_safe]节中读取参数。比如：如果你在[mysqld]节中指定以下参数，mysqld_safe会查找并使用--log-error参数：</p>
+
+<blockquote>
+<pre><code>[mysqld]
+log-error=error.log
+</code></pre>
+</blockquote>
+
+<p>　　为了向后兼容，mysqld_safe也会从[safe_mysqld]节中读取参数，但是为了统一你最好还是写成[mysqld_safe]<br/>
+<img src="media/15033226078265/15033226162740.jpg" alt=""/></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[制作nginx和php的rpm包]]></title>
+    <link href="weijing24.github.io/15033225667618.html"/>
+    <updated>2017-08-21T21:36:06+08:00</updated>
+    <id>weijing24.github.io/15033225667618.html</id>
+    <content type="html"><![CDATA[
+<p>　　rpm包的制作真几把烦，制作php的rpm花了我3天时间，因为是根据线上环境来做的，依赖的第三方库太多，本来想把所有的第三方库做进php包，后来发现在rpmbuild -bb的时候非常耗时，而且乱七八糟的错满天飞，好不容易全部解决了第一次成功第二次又不行了，因此决定能用yum安装的就用yum安装，没有的才用源码。</p>
+
+<h3 id="toc_0">1.安装rpm-build和rpmdevtools</h3>
+
+<p>　　yum install rpmdevtools rpm-build</p>
+
+<h3 id="toc_1">2.生成制作rpm包的必备目录，没有安装rpmdevtools则无法使用以下命令</h3>
+
+<p>　　cd ~<br/>
+　　rpmdev-setuptree<br/>
+　　此时，你的家目录中有一个rpmbuild文件夹，里面有5个文件夹，分别是SPEC,SOURCE,RPMS,BUILD,SRPMS。spec文件夹存放书写生成rpm包的文件，rpms存放生成的rpm包，build存放生成rpm包过程中产生的文件，SRPMS存放srpm包，source存放源码文件和你要装入系统的文件</p>
+
+<h3 id="toc_2">3.生成过程</h3>
+
+<p>　　将nginx/php的源码包、配置文件，init.d中的启动文件放入source目录下，进入spec文件夹，写spec文件<br/>
+　　nginx.spec</p>
+
+<blockquote>
+<pre><code>%define nginx_user nginx
+#after compile no dependies check
+AutoReqProv:    no
+Name:           tengine
+Version:        2.1.2
+Release:        1%{?dist}
+Summary:        Tengine from taobao
+Group:          System Environment/Daemons
+License:        GPLv2
+URL:            http://www.nginx.org/downloads/nginx-1.2.1.tar.gz
+Source0:        %{name}-%{version}.tar.gz
+Source1:        tengine.init
+#Source2:       pcre-8.32.tar.gz
+BuildRoot:      %{_topdir}/BUILDROOT/%{name}-%{version}-%{release}
+BuildRequires:  gcc,make
+#Requires:      pcre,pcre-devel,openssl,openssl-devel,zlib,zlib-devel
+#Requires(post):        info
+#Requires(preun):info
+%description
+nginx from taobao
+
+%prep
+%setup -q
+%build export DESTDIR=%{buildroot}
+./configure\
+    --prefix=/usr/local/sina_mobile/tengine\
+    --sbin-path=/usr/local/sina_mobile/tengine/sbin/nginx\
+    --conf-path=/usr/local/sina_mobile/tengine/conf/nginx.conf\
+    --error-log-path=/usr/local/sina_mobile/tengine/logs/error.log\
+    --http-log-path=/usr/local/sina_mobile/tengine/logs/access.log\
+    --pid-path=/usr/local/sina_mobile/tengine/logs/nginx.pid\
+    --http-client-body-temp-path=/usr/local/sina_mobile/tengine/client_body_temp \
+    --http-proxy-temp-path=/usr/local/sina_mobile/tengine/proxy_temp \
+    --http-fastcgi-temp-path=/usr/local/sina_mobile/tengine/fcgi_temp \
+    --http-uwsgi-temp-path=/usr/local/sina_mobile/tengine/uwsgi_temp \
+    --http-scgi-temp-path=/usr/local/sina_mobile/tengine/scgi_temp \
+    --user=%{nginx_user}\
+    --group=%{nginx_user}\
+    --with-http_ssl_module \
+    --with-http_stub_status_module \
+    --with-http_gzip_static_module \
+    --with-http_realip_module\
+    --with-pcre=/usr/local/src/pcre-8.32\
+    --with-openssl=/usr/local/src/openssl-1.0.1t\
+    --with-zlib=/usr/local/src/zlib-1.2.8
+    #  --with-pcre
+    make %{?_smp_mflags}
+
+%install
+rm -rf %{buildroot}%{_infodir}/dir
+make install DESTDIR=%{buildroot}
+install -p -D -m 0755 %{SOURCE1} %{buildroot}/etc/rc.d/init.d/nginx
+#install -p -D -m 0755 %{SOURCE2} %{buildroot}/usr/local/src/pcre-8.32.tar.gz
+#install -p -d -m 0755 %{buildroot}/usr/local/nginx/sbin
+#install -p -d -m 0755 %{buildroot}/usr/local/nginx/conf
+#install -p -d -m 0755 %{buildroot}/usr/local/nginx/log
+
+%pre
+if [ $1 == 1 ];then
+    /usr/sbin/useradd -s /bin/false -r %{nginx_user} 2&gt;/dev/null || :
+fi
+
+%post
+if [ $1 == 1 ];then
+    /sbin/chkconfig --add nginx
+    /sbin/install-info %{_infodir}/%{name}.info %{_infodir}/dir 2&gt;/dev/null || :
+fi
+
+%preun
+if [ $1 == 0 ];then
+    /sbin/service nginx stop &gt; /dev/null 2&gt;&amp;1
+    /sbin/chkconfig --del nginx
+    /usr/sbin/userdel -r %{nginx_user} 2&gt; /dev/null
+    /sbin/install-info --delete %{_infodir}/%{name}.info %{_infodir}/dir 2&gt;/dev/null || :
+fi
+
+%postun
+rm -rf /usr/local/sina_mobile/tengine/sbin
+rm -rf /usr/local/sina_mobile/tengine/conf
+rm -rf /usr/local/sina_mobile/tengine/*_temp
+rm -rf /usr/local/sina_mobile/tengine/include
+rm -rf /usr/local/sina_mobile/tengine/html
+rm -rf /usr/local/sina_mobile/tengine/modules
+#rm -rf /usr/local/src/pcre-8.32
+rm -f /etc/rc.d/init.d/nginx
+
+%clean
+rm -rf %{buildroot}
+
+%files
+%defattr(-,root,root,-)
+#/usr/local/src/pcre-8.32
+/usr/local/sina_mobile/tengine/*
+%attr(0755,root,root) /etc/rc.d/init.d/nginx
+
+%changelog
+*  Fri Jul 5 2016 laoguang &lt;weijing@qq.com&gt; - 2.1.2-1.el6
+- Initial version
+</code></pre>
+</blockquote>
+
+<p>rpmbuild -bb nginx.spec即可生成rpm包</p>
+
+<p>php.spec</p>
+
+<blockquote>
+<pre><code>%define     php_path    /usr/local/sina_mobile/php538
+%define     dep_path    /usr/local/sina_mobile
+%define     debug_package   %{nil}
+AutoReq:    0
+#AutoProv:  0
+
+Name:       sinabook-php
+Version:    5.3.8
+Release:    1%{?dist}
+Summary:    PHP is a server-side scripting language for creating dynamic Web page
+Group:      System Environment/Daemons
+License:    GPLv2
+URL:        http://www.php.net/downloads/php-5.6.8.tar.gz 
+Source0:    %{name}-%{version}.tar.gz
+#Source1:   php-fpm
+Source2:    php-fpm.conf
+Source3:    php538.ini
+BuildRoot:  %{_topdir}/BUILDROOT/%{name}-%{version}-%{release}
+BuildRequires:  gcc,gcc-c++,make,cmake,ncurses-devel,bison,openssl-devel,libcurl-devel,gdbm-devel,openldap-devel,libtidy-devel,zlib-devel,libxml2-devel,pcre-devel,freetype-devel,libmcrypt-devel,libjpeg-devel,libpng-devel,libXpm-devel
+#Requires:      sinabook-mysql,sinabook-libiconv
+#Requires:   sinabook-gd &gt;= 2.1.0 
+%description
+PHP is a widely-used general-purpose scripting language that is especially suited for Web development and can be embedded into HTML.
+
+%prep
+%setup -q
+
+%build
+./configure\
+    --prefix=%{php_path} \
+    --with-config-file-path=%{php_path}/lib \
+    --with-config-file-scan-dir=%{php_path}/lib/php.d \
+    --with-curl \
+    --with-mhash \
+    --with-xmlrpc \
+    --with-tidy \
+    --with-ldap \
+    --with-pear \
+    --with-gdbm \
+    --with-openssl \
+    --with-gettext \
+    --with-zlib \
+    --with-mcrypt \
+    --with-iconv=%{dep_path}/libiconv \
+    --with-gd=%{dep_path}/gd\
+    --with-jpeg-dir\
+    --with-png-dir\
+    --with-freetype-dir\
+    --with-libXpm-dir=/usr/lib64\
+    --with-mysql=%{dep_path}/mysql \
+    --with-mysqli=%{dep_path}/mysql/bin/mysql_config \
+    --with-pdo-mysql=/usr/local/sina_mobile/mysql \
+    --enable-fpm --enable-mbstring --enable-zip --enable-soap --enable-sysvsem --enable-shmop --enable-sockets --enable-ftp --enable-gd-native-ttf --enable-bcmath --enable-pcntl --enable-maintainer-zts
+make %{?_smp_mflags}
+
+%install
+rm -rf %{buildroot}
+rm -rf %{buildroot}/{.channels,.depdb,.depdblock,.filemap,.lock,.registry}
+make install INSTALL_ROOT=%{buildroot}
+mkdir -p %{buildroot}%{_initrddir}
+rm %{buildroot}/%{php_path}/bin/phar
+ln -sf %{php_path}/bin/phar.phar %{buildroot}/%{php_path}/bin/phar
+#install -p -D -m 0755  %{SOURCE1}   %{buildroot}%{_initrddir}/php-fpm
+install -p -D -m 0644   %{SOURCE2}   %{buildroot}%{php_path}/etc/php-fpm.conf
+install -p -D -m 0644   %{SOURCE3}   %{buildroot}%{php_path}/etc/php.ini
+
+#Grep reports BUILDROOT inside our object files; disable that test.
+QA_SKIP_BUILD_ROOT=1
+QA_RPATHS=$[ 0x0001|0x0010 ]
+export QA_SKIP_BUILD_ROOT
+export QA_RPATHS
+
+%clean
+rm -rf %{buildroot}
+
+%post
+if [ $1 == 1 ];then
+    /sbin/chkconfig --add php-fpm
+    /sbin/chkconfig php-fpm on
+fi
+
+%preun
+if [ $1 == 0 ] ; then
+    /sbin/service php-fpm stop &gt; /dev/null 2&gt;&amp;1
+    /sbin/chkconfig --del php-fpm
+fi
+
+#%postun
+#if [ $1 == 0 ] ; then  
+#   /bin/rm -rf %{php_path}
+#fi
+
+%files
+%defattr(-,root,root,-)
+%{php_path}
+#%config(noreplace) %{php_path}/etc/php-fpm.conf
+#%config(noreplace) %{php_path}/etc/php.ini
+#%attr(0755,root,root) /etc/rc.d/init.d/php-fpm
+%exclude /.channels
+%exclude /.depdb
+%exclude /.depdblock
+%exclude /.filemap
+%exclude /.lock
+
+%changelog
+*  Thu Jul 21 2016 weijing &lt;645509024@qq.com&gt; - 5.3.8-1.el6
+- Initial version
+</code></pre>
+</blockquote>
+
+<p>php-fpm里面关于php的路径需要修改为实际安装的路径，此文件在源码包的support-files中有<br/>
+php-fpm.conf将pid，log等几个参数的注释去掉，然后就能启动了<br/>
+使用此php包的前提是已经安装了mysql，并且系统能找到libmysqlclient.so.18<br/>
+<img src="media/15033225667618/15033225959140.jpg" alt=""/><br/>
+mysql.spec</p>
+
+<blockquote>
+<pre><code>%define mysql_user mysql
+%define mysql_group mysql
+%define debug_package   %{nil}
+AutoReq:       0
+
+Name:       sinabook-mysql
+Version:    5.5.29
+Release:    1%{?dist}
+Summary:    database
+Group:      System Environment/Daemons
+License:    GPLv2
+URL:        http://www.mysql.com/downloads/%{name}-%{version}.tar.gz
+Source0:    %{name}-%{version}.tar.gz
+Source1:    mysql3306.cnf
+Source2:    mysql
+BuildRoot:  %{_topdir}/%{name}-%{version}-%{release}-XXXXXX)
+BuildRequires:  gcc-c++,ncurses,ncurses-devel,bison,cmake,zlib
+
+%description
+%prep
+%setup -q
+
+%build
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local/sina_mobile/mysql -DWITH_MYISAM_STORAGE_ENGINE=1 -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_ARCHIVE_STORAGE_ENGINE=1 -DWITH_BLACKHOLE_STORAGE_ENGINE=1 -DWITH_MEMORY_STORAGE_ENGINE=1 -DWITH_PARTITION_STORAGE_ENGINE=1 -DWITH_PERFSCHEMA_STORAGE_ENGINE=1 -DWITH_PIC=0 -DWITH_READLINE=1  -DWITH_DEBUG=0  -DENABLED_LOCAL_INFILE=1 -DEXTRA_CHARSETS=all -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -Wno-dev
+make %{?_smp_mflags}
+
+%install
+rm -rf %{buildroot}
+make install DESTDIR=%{buildroot}
+install -p -D -m 0755 %{SOURCE1} %{buildroot}/data/mysql3306/mysql3306.cnf
+install -p -D -m 0755 %{SOURCE2} %{buildroot}/etc/init.d/mysql
+
+%pre 
+if [ $1 == 1 ];then
+    /usr/sbin/groupadd mysql
+    /usr/sbin/useradd -r %{mysql_user} -M -g %{mysql_group} -s /bin/false 2&gt;/dev/null || :
+fi
+
+%post
+if [ $1 == 1 ];then
+    /bin/chown -R mysql:mysql /usr/local/sina_mobile/mysql
+    /usr/local/sina_mobile/mysql/scripts/mysql_install_db --user=mysql --basedir=/usr/local/sina_mobile/mysql --datadir=/data/mysql3306
+    /bin/chown -R root /usr/local/sina_mobile/mysql
+    /bin/chown -R mysql /data/mysql3306
+    #/bin/cp /usr/local/sina_mobile/mysql/support-files/mysql.server /etc/init.d/mysql
+    #/bin/sed -i &quot;s@^basedir=@basedir=/usr/local/sina_mobile/mysql@g;s@^datadir=@datadir=/data/mysql3306@g;s@conf=/etc/my.cnf@conf=/data/mysql3306/mysql3306.cnf@g&quot; /etc/init.d/mysql
+    #/bin/chmod 755 /etc/init.d/mysql
+    /sbin/chkconfig --add mysql
+    #/bin/echo &quot;PATH=$PATH:/usr/local/sina_mobile/mysql/bin&quot; &gt;/etc/profile.d/mysql.sh
+    #source /etc/profile.d/mysql.sh
+    #/bin/echo &quot;/usr/local/sina_mobile/mysql/lib&quot; &gt; /etc/ld.so.conf.d/mysql.conf
+    #/sbin/ldconfig &gt; /dev/null 2&gt;&amp;1
+    /bin/ln -s /data/mysql3306/mysql3306.sock /tmp/mysql.sock 2&gt;/dev/null
+    /bin/ln -s /usr/local/sina_mobile/mysql/bin/* /usr/local/bin/
+    /bin/ln -s /usr/local/sina_mobile/mysql/scripts/* /usr/local/bin/
+    /sbin/install-info %{_infodir}/%{name}.info %{_infodir}/dir 2&gt;/dev/null || :
+fi
+
+%preun
+if [ $1 == 0 ];then
+    /sbin/service mysql stop &gt; /dev/null 2&gt;&amp;1
+    /sbin/chkconfig --del mysql
+    #/usr/sbin/userdel -r %{mysql_user} 2&gt; /dev/null
+    #/usr/sbin/groupdel %{mysql_user} 2&gt; /dev/null
+    /sbin/install-info --delete %{_infodir}/%{name}.info %{_infodir}/dir 2&gt;/dev/null || :
+fi
+
+%postun
+#rm -rf /etc/profile.d/mysql.sh
+#rm -rf /etc/ld.so.conf.d/mysql.conf
+rm -rf /tmp/mysql.sock
+rm -rf /usr/local/bin/mysql*
+rm -rf /usr/local/bin/myisam*
+rm -rf /usr/local/bin/resolve*
+rm -rf /usr/local/bin/{innochecksum,msql2mysql,my_print_defaults,perror,replace}
+rm -rf /usr/local/sina_mobile/mysql/*
+rm -rf /etc/init.d/mysql
+
+%clean
+rm -rf %{buildroot}
+
+%files
+%defattr(-,root,root,-)
+/usr/local/sina_mobile/mysql/*
+/data/mysql3306/mysql3306.cnf
+%attr(0755,root,root) /etc/init.d/mysql
+%doc
+
+%changelog
+*  Thu Jul 21 2016 weijing &lt;645509024@qq.com&gt; - 5.5.29-1.el6
+- Initial version
+</code></pre>
+</blockquote>
+
+<p>全部搞定，搞了爸爸一周，不过感觉对于包管理和rpm打包的流程清晰了很多，可能以后安装别的包发生了dependence错误会更清楚的知道哪里出了问题</p>
+
+<p>附上友情链接：</p>
+
+<p>[制作php的rpm包]<a href="http://blog.digitalstruct.com/2011/12/21/rpm-packaging-building-and-deploying-your-own-php/">http://blog.digitalstruct.com/2011/12/21/rpm-packaging-building-and-deploying-your-own-php/</a>　　　　</p>
+
+<p>[制作nginx的rpm包]<a href="http://www.centoscn.com/image-text/config/2014/1201/4215.html">http://www.centoscn.com/image-text/config/2014/1201/4215.html</a></p>
+
+<p>[rpm包出错的解决方法]<a href="http://www.bkjia.com/Linuxjc/1088197.html">http://www.bkjia.com/Linuxjc/1088197.html</a></p>
+
+<p>[rpm包每个字段的解释]<a href="http://ju.outofmemory.cn/entry/95476">http://ju.outofmemory.cn/entry/95476</a></p>
+
+<p>[fedora的官方文档]<a href="http://fedoraproject.org/wiki/How_to_create_an_RPM_package">http://fedoraproject.org/wiki/How_to_create_an_RPM_package</a></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[图解正向代理、反向代理、透明代理]]></title>
+    <link href="weijing24.github.io/15033223691311.html"/>
+    <updated>2017-08-21T21:32:49+08:00</updated>
+    <id>weijing24.github.io/15033223691311.html</id>
+    <content type="html"><![CDATA[
+<p>转自<a href="http://z00w00.blog.51cto.com/515114/1031287">http://z00w00.blog.51cto.com/515114/1031287</a></p>
+
+<h3 id="toc_0">一.正向代理(Forward Proxy)</h3>
+
+<p>　　一般情况下，如果没有特别说明，代理技术默认说的是正向代理技术。关于正向代理的概念如下： 正向代理(forward)是一个位于客户端【用户A】和原始服务器(origin server)【服务器B】之间的服务器【代理服务器Z】，为了从原始服务器取得内容，用户A向代理服务器Z发送一个请求并指定目标(服务器B)，然后代理服务器Z向服务器B转交请求并将获得的内容返回给客户端。客户端必须要进行一些特别的设置才能使用正向代理。如下图1.1<br/>
+<img src="media/15033223691311/15033223910604.jpg" alt="图1.1"/></p>
+
+<p>　　从上面的概念中，我们看出，文中所谓的<strong>正向代理就是代理服务器替代访问方【用户A】去访问目标服务器【服务器B】</strong><br/>
+　　这就是正向代理的意义所在。而为什么要用代理服务器去代替访问方【用户A】去访问服务器B呢？这就要从代理服务器使用的意义说起。使用正向代理服务器作用主要有以下几点：</p>
+
+<h4 id="toc_1">1、访问本无法访问的服务器B，如下图1.2</h4>
+
+<p><img src="media/15033223691311/15033224275672.jpg" alt="图1.2"/><br/>
+　　我们抛除复杂的网络路由情节来看图1.2，假设图中路由器从左到右命名为R1,R2。假设最初用户A要访问服务器B需要经过R1和R2路由器这样一个路由节点，如果路由器R1或者路由器R2发生故障，那么就无法访问服务器B了。但是如果用户A让代理服务器Z去代替自己访问服务器B，由于代理服务器Z没有在路由器R1或R2节点中，而是通过其它的路由节点访问服务器B，那么用户A就可以得到服务器B的数据了。<br/>
+　　现实中的例子就是“翻墙”。不过自从VPN技术被广泛应用外，“翻墙”不但使用了传统的正向代理技术，有的还使用了VPN技术。</p>
+
+<h4 id="toc_2">2、加速访问服务器B</h4>
+
+<p>　　这种说法目前不像以前那么流行了，主要是带宽流量的飞速发展。早期的正向代理中，很多人使用正向代理就是提速。还是如图1.2。假设用户A到服务器B，经过R1路由器和R2路由器，而R1到R2路由器的链路是一个低带宽链路。而用户A到代理服务器Z，从代理服务器Z到服务器B都是高带宽链路。那么很显然就可以加速访问服务器B了。</p>
+
+<h4 id="toc_3">3.Cache作用</h4>
+
+<p>　　Cache（缓存）技术和代理服务技术是紧密联系的（不光是正向代理，反向代理也使用了Cache（缓存）技术。还如上图所示，如果在用户A访问服务器B某数据J之前，已经有人通过代理服务器Z访问过服务器B上得数据J，那么代理服务器Z会把数据J保存一段时间，如果有人正好取该数据J，那么代理服务器Z不再访问服务器B，而把缓存的数据J直接发给用户A。这一技术在Cache中术语就叫Cache命中。如果有更多的像用户A的用户来访问代理服务器Z，那么这些用户都可以直接从代理服务器Z中取得数据J，而不用千里迢迢的去服务器B下载数据了。</p>
+
+<h4 id="toc_4">4.客户端访问授权</h4>
+
+<p>　　这方面的内容现今使用的还是比较多的，例如一些公司采用ISA SERVER做为正向代理服务器来授权用户是否有权限访问互联网，挼下图1.3<br/>
+<img src="media/15033223691311/15033224441235.jpg" alt="图1.3"/></p>
+
+<p>　　图1.3防火墙作为网关，用来过滤外网对其的访问。假设用户A和用户B都设置了代理服务器，用户A允许访问互联网，而用户B不允许访问互联网（这个在代理服务器Z上做限制）这样用户A因为授权，可以通过代理服务器访问到服务器B，而用户B因为没有被代理服务器Z授权，所以访问服务器B时，数据包会被直接丢弃。</p>
+
+<h4 id="toc_5">5、隐藏访问者的行踪</h4>
+
+<p>　　如下图1.4 我们可以看出服务器B并不知道访问自己的实际是用户A，因为代理服务器Z代替用户A去直接与服务器B进行交互。如果代理服务器Z被用户A完全控制（或不完全控制），会惯以“肉鸡”术语称呼。<br/>
+<img src="media/15033223691311/15033224599205.jpg" alt="图1.4"/></p>
+
+<p>　　我们总结一下 正向代理是一个位于客户端和原始服务器(origin server)之间的服务器，为了从原始服务器取得内容，客户端向代理发送一个请求并指定目标(原始服务器)，然后代理向原始服务器转交请求并将获得的内容返回给客户端。客户端必须设置正向代理服务器，当然前提是要知道正向代理服务器的IP地址，还有代理程序的端口。</p>
+
+<h3 id="toc_6">二、反向代理（reverse proxy）</h3>
+
+<p>　　反向代理正好与正向代理相反，对于客户端而言代理服务器就像是原始服务器，并且客户端不需要进行任何特别的设置。客户端向反向代理的命名空间(name-space)中的内容发送普通请求，接着反向代理将判断向何处(原始服务器)转交请求，并将获得的内容返回给客户端。使用反向代理服务器的作用如下：</p>
+
+<h4 id="toc_7">1.保护和隐藏原始资源服务器</h4>
+
+<p>如下图2.1<br/>
+<img src="media/15033223691311/15033224736700.jpg" alt="图2.1"/></p>
+
+<p>　　用户A始终认为它访问的是原始服务器B而不是代理服务器Z，但实用际上反向代理服务器接受用户A的应答，从原始资源服务器B中取得用户A的需求资源，然后发送给用户A。由于防火墙的作用，只允许代理服务器Z访问原始资源服务器B。尽管在这个虚拟的环境下，防火墙和反向代理的共同作用保护了原始资源服务器B，但用户A并不知情。</p>
+
+<h4 id="toc_8">2.负载均衡</h4>
+
+<p>如下图2.2<br/>
+<img src="media/15033223691311/15033224866498.jpg" alt="图2.2"/></p>
+
+<p>　　当反向代理服务器不止一个的时候，我们甚至可以把它们做成集群，当更多的用户访问资源服务器B的时候，让不同的代理服务器Z（x）去应答不同的用户，然后发送不同用户需要的资源。<br/>
+　　当然反向代理服务器像正向代理服务器一样拥有CACHE的作用，它可以缓存原始资源服务器B的资源，而不是每次都要向原始资源服务器B请求数据，特别是一些静态的数据，比如图片和文件，如果这些反向代理服务器能够做到和用户X来自同一个网络，那么用户X访问反向代理服务器X，就会得到很高质量的速度。这正是CDN技术的核心。如下图2.3<br/>
+<img src="media/15033223691311/15033225002472.jpg" alt="图2.3"/></p>
+
+<p>　　我们并不是讲解CDN，所以去掉了CDN最关键的核心技术智能DNS。只是展示CDN技术实际上利用的正是反向代理原理这块。<br/>
+　　反向代理结论与正向代理正好相反，对于客户端而言它就像是原始服务器，并且客户端不需要进行任何特别的设置。客户端向反向代理的命名空间(name-space)中的内容发送普通请求，接着反向代理将判断向何处(原始服务器)转交请求，并将获得的内容返回给客户端，就像这些内容原本就是它自己的一样。<br/>
+　　基本上，网上做正反向代理的程序很多，能做正向代理的软件大部分也可以做反向代理。开源软件中最流行的就是squid，既可以做正向代理，也有很多人用来做反向代理的前端服务器。另外MS ISA也可以用来在WINDOWS平台下做正向代理。反向代理中最主要的实践就是WEB服务，近些年来最火的就是Nginx了。网上有人说NGINX不能做正向代理，其实是不对的。NGINX也可以做正向代理，不过用的人比较少了。</p>
+
+<h3 id="toc_9">三.透明代理</h3>
+
+<p>　　如果把正向代理、反向代理和透明代理按照人类血缘关系来划分的话。那么正向代理和透明代理是很明显堂亲关系，而正向代理和反向代理就是表亲关系了 。<br/>
+　　透明代理的意思是客户端根本不需要知道有代理服务器的存在，它改编你的request fields（报文），并会传送真实IP。注意，加密的透明代理则是属于匿名代理，意思是不用设置使用代理了。透明代理实践的例子就是时下很多公司使用的行为管理软件。如下图3.1<br/>
+<img src="media/15033223691311/15033225254114.jpg" alt="图3.1"/></p>
+
+<p>　　用户A和用户B并不知道行为管理设备充当透明代理行为，当用户A或用户B向服务器A或服务器B提交请求的时候，透明代理设备根据自身策略拦截并修改用户A或B的报文，并作为实际的请求方，向服务器A或B发送请求，当接收信息回传，透明代理再根据自身的设置把允许的报文发回至用户A或B，如上图，如果透明代理设置不允许访问服务器B，那么用户A或者用户B就不会得到服务器B的数据。</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[基于TCP的字符串传输程序]]></title>
+    <link href="weijing24.github.io/15033223148818.html"/>
+    <updated>2017-08-21T21:31:54+08:00</updated>
+    <id>weijing24.github.io/15033223148818.html</id>
+    <content type="html"><![CDATA[
+<p>Linux中的网络编程是通过SOCKET接口来进行的。<br/>
+Socket（套接字）<br/>
+　Socket相当于进行网络通信两端的插座，只要对方的Socket和自己的Socket有通信联接，双方就可以发送和接收数据了。Socket的定义类似于文件句柄的定义。下面的流程图大概描述了基于TCP协议的网络编程过程。同学们只需要对大概流程有一个初步认识即可，暂时不必深究每个函数的意义。因为在后面的实训子任务中，每一个函数的具体内容和使用方法都会讲到。<br/>
+　　　TCP协议socket流程图<br/>
+<img src="media/15033223148818/15033223274146.jpg" alt=""/><br/>
+基本套接字调用顺序如下：</p>
+
+<p><strong>创建套接字--socket()--&gt;绑定本机端口--bind();--&gt;建立连接--connect(),accept();--&gt;侦听端口--listen();--&gt;数据传输--send(),recv();--&gt;输入/输出多路复用--select();--&gt;关闭套接字--closesocket();</strong> <br/>
+其中，服务器端基于TCP的编程步骤大致如下：<br/>
+① 创建套接字；<br/>
+　　建立服务器端的socket套接字：int socket(int domain，int type，int protocol)<br/>
+②绑定套接字到一个IP地址和一个端口上<br/>
+ 　　int bind(int sockfd,struct sockaddr * myaddr,int addrlen)；<br/>
+③将套接字设置为监听模式，以等待连接请求<br/>
+　　int listen(int sockfd，int backlog)<br/>
+④请求到来后，接受连接请求，并返回一个与此次连接对应的套接字<br/>
+　　int accept(int sockfd，struct sockaddr * addr，int * addrlen)<br/>
+　　此时新建连接，并创建新的Socket套接字，此时addr为客户端的addr信息。<br/>
+⑤用返回的套接字和客户端进行通信<br/>
+　　使用recv()和send()<br/>
+⑥关闭服务器端的套接字描述符<br/>
+　　int close(int sockfd)；</p>
+
+<p>客户端调用顺序如下：<br/>
+①创建客户端套接字<br/>
+　　int socket(int domain，int type，int protocol)<br/>
+②向服务器发出连接请求<br/>
+　　int connect（int sockfd，struct sockaddr * servaddr，int addrlen）<br/>
+　　其中参数servaddr指定远程服务器的套接字地址，包括服务器的IP地址和端口号<br/>
+③和服务器端进行网络通信<br/>
+　　使用recv()和send()<br/>
+　　int read(int fd，char * buf，int len)<br/>
+　　int write(int fd，char * buf，int len)<br/>
+④关闭套接字<br/>
+　　int close(int sockfd)；</p>
+
+<h4 id="toc_0">1.网络字节序和本地字节序相互转换</h4>
+
+<p>任务要求：</p>
+
+<ul>
+<li>打印本地字节序</li>
+<li>用htonl函数把本地字节序转换成网络字节序，并打印</li>
+</ul>
+
+<p>相关知识：</p>
+
+<ul>
+<li>小端法(Little-Endian)就是低位字节排放在内存的低地址端即该值的起始地址，高位字节排放在内存的高地址端。</li>
+<li>大端法(Big-Endian)就是高位字节排放在内存的低地址端即该值的起始地址，低位字节排放在内存的高地址端。</li>
+</ul>
+
+<p>　　举个简单的例子，对于整形0x12345678。它在大端法和小端法的系统内中，分别如图1所示的方式存放。<br/>
+<img src="media/15033223148818/15033223361762.jpg" alt=""/></p>
+
+<ul>
+<li>网络字节序　</li>
+</ul>
+
+<p>　　我们知道网络上的数据流是字节流，对于一个多字节数值，在进行网络传输的时候，先传递哪个字节？也就是说，当接收端收到第一个字节的时候，它是将这个字节作为高位还是低位来处理呢？ <br/>
+　　<strong>网络字节序定义：收到的第一个字节被当作高位看待，这就要求发送端发送的第一个字节应当是高位。而在发送端发送数据时，发送的第一个字节是该数字在内存中起始地址对应的字节。可见多字节数值在发送前，在内存中数值应该以大端法存放。</strong> <br/>
+　　uint32_t htonl(uint32_t hostlong)：<strong>htonl 表示 host to network long ，用于将主机 　　unsigned int 型数据转换成网络字节顺序；</strong><br/><br/>
+　　uint16_t htons(uint16_t hostshort)：htons 表示 host to network short ，用于将主机 unsigned short 型数据转换成网络字节顺序；<br/>
+　　ntohl、ntohs 的功能分别与 htonl、htons 相反。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;arpa/inet.h&quot;
+//网络字节序和本地字节序相互转换
+int main(void){
+    int num=0x12345678,i;
+    printf(&quot;before convert :%x\n&quot;,num);
+    for(i=0;i&lt;4;i++)
+        printf(&quot;[%d]:0x%x\n&quot;,i,*((char *)&amp;num+i));//将num转化成char型指针，+i表示向后偏移8位,16进制是4个4位，那么8位对应了2个字符。
+    num=htonl(num);
+    printf(&quot;after convert :%x\n&quot;,num);
+    for(i=0;i&lt;4;i++)
+        printf(&quot;[%d]:0x%x\n&quot;,i,*((char *)&amp;num+i));
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_1">2.利用socket函数创建一个网络套接字</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>c语言编写服务端程序，利用socket函数创建一个套接字（TCP协议）</li>
+<li>返回函数套接字状态，若成功，打印创建成功信息，失败，返回失败原因</li>
+</ul>
+
+<p>相关知识：</p>
+
+<ul>
+<li>socket相当于进行网络通信两端的插座，只要对方的Socket和自己的Socket有通信联接，双方就可以发送和接收数据了。Socket的定义类似于文件句柄的定义。</li>
+</ul>
+
+<p>　　int socket(int family, int type, int protocol );<br/>
+　　<strong>为了在网络上进行I/O通信，第一件事就是要调用socket函数，创建套接字，并指定相应的通信协议类型。第一个参数family一般设置为AF_INET，对于IPv6网络，则需设置成AF_INET6。对于Unix域协议套接字，该参数的值是AF_LOCAL，对于路由套接字，该参数的值是AF_ROUTE，对于秘钥套接字，该参数的值是AF_KEY。第二个参数type制定了套接字接口的类型，其值分别为SOCK_STREAM或SOCK_DGRAM。这两个参数分别表示该套接字是TCP协议类型或者是UDP协议类型。该参数还有两个选项,分别为SOCK_SEQPACKET和SOCK_RAW，前一个表示有序分组的套接字，后一个表示原始套接字。第三个参数一般设置为0。</strong><br/>
+　　socket函数在成功时返回一个小的非负整数值，它与文件描述符类似，我们把它们称之为套接字描述符，简称sockfd。为了得到这个套接字描述符，我们只是制定了协议族(IPv4、IPv6或Unix)和套接字类型(字节流、数据报或原始套接字)。我们并没有指定本地协议地址或者远程协议地址。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+int  main(void){
+    int sockfd;
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;create socket fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;create success\n&quot;);       
+    close(sockfd);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_2">3.利用bind函数将创建好的套接字绑定到本地计算机的某一端口上</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>调用bind函数，并将创建好的套接字绑定到指定端口上，如2500端口 </li>
+</ul>
+
+<p>相关知识：<br/>
+　　对于服务器端来说，一旦通过socket函数创建了套接字以后，下一步就需要把该套接字绑定到本地计算机的某一个端口上。bind函数的作用就是完成该功能。<br/>
+　　int bind(int sockfd, const struct sockaddr* myaddr, socklen_t addrlen);<br/>
+　　第一个参数sockfd是由socket()调用返回的套接口文件描述符。第二个参数myaddr是指向数据结构sockaddr的指针。<strong>数据结构sockaddr中包括了关于服务器的地址、端口和IP地址的信息。</strong>第三个参数addrlen表示sockaddr结构体的长度，可以设置成sizeof(struct sockaddr)。bind函数可以指定一个端口号，或者指定一个IP地址，也可以两者都指定或者都不指定。如果指定端口号为0，那么内核就在bind被调用的时候选择一个临时接口。如果让内核来为套接字选择一个临时端口号，那么必须注意，函数bind并不返回选择的端口号值。因为bind函数的第二个参数是const类型的，它无法返回内核所分配的端口号。为了得到内核默认分配的端口号，必须调用函数getsockname函数来获取。值得一提的是，当不指定本地IP地址时，系统会为该socket分配一个默认IP地址。分配方式：myaddr.sin_addr.s_addr = htonl(INADDR_ANY)；其中INADDR_ANY表示IPv4的通配地址。这个值一般为0，在这种选择下，内核将等到套接字已经连接（TCP）或者在套接字上发出数据报（UDP）时，才会选择一个本地IP地址。当server有多个网卡时，可以指定绑定到特定的网卡IP上，分配方式：myaddr.sin_addr.s_addr=inet_addr(&quot;192.168.0.123&quot;)；绑定到服务器特定端口的指定方式为：myaddr.sin_port=htons(12345);</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+//利用bind函数将创建好的套接字绑定到本地计算机的某一端口上
+int main(void){
+    int sockfd,bind_fd;
+    struct sockaddr_in servaddr;
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;create socket fail\n&quot;);
+        exit(1);
+    }else    
+        printf(&quot;create success\n&quot;);
+    //初始化
+    bzero(&amp;servaddr,sizeof(servaddr));//结构体初始化
+    servaddr.sin_family=AF_INET;//确定ip协议
+    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);//接收任意ip
+    servaddr.sin_port=htons(2500);//设定端口号2500
+    //绑定端口
+    bind_fd=bind(sockfd,(struct sockaddr*)&amp;servaddr,sizeof(servaddr));
+    if(bind_fd==-1){
+        perror(&quot;bind fail\n&quot;);
+        exit(1);
+    }else       
+        printf(&quot;bind success\n&quot;);       
+    close(sockfd);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_3">4.利用listen函数将已经绑定的套接字设置为被动连接监听状态</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>在task3中创建好并绑定到本地特定端口的套接字上，增加listen函数，使得套接字处于监听状态</li>
+<li>打印监听函数调用成功与否</li>
+</ul>
+
+<p>相关知识：</p>
+
+<p>　　listen函数使用主动连接套接口变为被连接套接口，使得一个进程可以接受其它进程的请求，从而成为一个服务器进程。在TCP服务器编程中listen函数把进程变为一个服务器，并指定相应的套接字变为被动连接。<br/>
+　　int listen(int sockfd, int backlog)<br/>
+　　参数sockfd被listen函数作用的套接字，sockfd之前由socket函数返回。在被socket函数返回的套接字fd之时，它是一个主动连接的套接字，也就是此时系统假设用户会对这个套接字调用connect函数，期待它主动与其它进程连接，然后在服务器编程中，用户希望这个套接字可以接受外来的连接请求，也就是被动等待用户来连接。由于系统默认时认为一个套接字是主动连接的，所以需要通过某种方式来告诉系统，用户进程通过系统调用listen来完成这件事。<br/>
+　　参数backlog这个参数涉及到一些网络的细节。在进程正理一个一个连接请求的时候，可能还存在其它的连接请求。因为TCP连接是一个过程，所以可能存在一种半连接的状态，有时由于同时尝试连接的用户过多，使得服务器进程无法快速地完成连接请求。如果这个情况出现了，服务器进程希望内核如何处理呢？内核会在自己的进程空间里维护一个队列以跟踪这些完成的连接但服务器进程还没有接手处理或正在进行的连接，这样的一个队列内核不可能让其任意大，所以必须有一个大小的上限。这个backlog告诉内核使用这个数值作为上限。毫无疑问，服务器进程不能随便指定一个数值，内核有一个许可的范围。这个范围是实现相关的。很难有某种统一，<strong>一般这个值会小30以内。</strong><br/>
+　　当调用listen之后，服务器进程就可以调用accept来接受一个外来的请求。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+//利用listen函数将已经绑定的套接字设置为被动连接监听状态
+int main(void){
+    int sockfd,bind_fd,listen_fd;
+    struct sockaddr_in servaddr;
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;create socket fail\n&quot;);
+        exit(1);
+    }else       
+        printf(&quot;create success\n&quot;);       
+</code></pre>
+</blockquote>
+
+<pre><code>    //初始化
+    bzero(&amp;servaddr,sizeof(servaddr));//结构体初始化
+    servaddr.sin_family=AF_INET;//确定ip协议
+    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);//接收任意ip
+    servaddr.sin_port=htons(2500);//设定端口号2500
+    //绑定端口
+    bind_fd=bind(sockfd,(struct sockaddr*)&amp;servaddr,sizeof(servaddr));
+    if(bind_fd==-1){
+        perror(&quot;bind fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;bind success\n&quot;);
+    //将已绑定的套接口设为被动连接监听
+    listen_fd=listen(sockfd,10);
+    if(listen_fd==-1){
+        perror(&quot;listen fail\n&quot;);
+        exit(1);
+    }else       
+        printf(&quot;listen success\n&quot;);
+    close(sockfd);
+    return 0;
+}
+</code></pre>
+
+<h4 id="toc_4">5.利用accept函数来处理客户端请求的连接</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>在task4的程序中，添加对客户端连接的处理，调用accept函数，为客户端连接分配一个新的socket，并打印客户端IP地址和端口号</li>
+</ul>
+
+<p>相关知识：</p>
+
+<ul>
+<li>对于服务器编程中最重要的一步等待并接受客户的连接，那么这一步在编程中如何完成，accept函数就是完成这一步的。它从内核中取出已经建立的客户连接，然后把这个已经建立的连接返回给用户程序，此时用户程序就可以与自己的客户进行点到点的通信了。</li>
+<li>int accept(int sockfd, struct sockaddr* addr, socklen_t* len)</li>
+</ul>
+
+<p>　　accept默认会阻塞进程，直到有一个客户连接建立后返回，它返回的是一个新可用的套接字，这个套接字是连接套接字。此时我们需要区分两种套接字，一种套接字正如accept的参数sockfd，它是监听套接字，在调用listen函数之后，一个套接字会从主动连接的套接字变身为一个监听套接字；而accept返回是一个连接套接字，它代表着一个网络已经存在的点点连接。自然要问的是：为什么要有两种套接字？原因很简单，如果使用一个描述字的话，那么它的功能太多，使得使用很不直观，同时在内核确实产生了一个这样的新的描述字。<br/>
+　　参数sockfd就是上面解释中的监听套接字，这个套接字用来监听一个端口，当有一个客户与服务器连接时，它使用这个一个端口号，而此时这个端口号正与这个套接字关联。当然客户不知道套接字这些细节，它只知道一个地址和一个端口号。<br/>
+　　参数addr是一个结果参数，它用来接受一个返回值，这返回值指定客户端的地址，当然这个地址是通过某个地址结构来描述的，用户应该知道这一个什么样的地址结构。如果对客户的地址不感兴趣，那么可以把这个值设置为NULL。<br/>
+　　参数len也是结果的参数，用来接受上述addr的结构的大小的，它指明addr结构所占有的字节个数。同样的，它也可以被设置为NULL。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+#include &quot;arpa/inet.h&quot;
+#define MYPORT 3490
+//利用accept函数来处理客户端请求的连接
+int main(void){
+    int sockfd,newfd,i,n;
+    char buf[100];
+    socklen_t len;
+    struct sockaddr_in servaddr;
+    struct sockaddr_in clientaddr;
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;socket error\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;create socket successful\n&quot;);       
+    servaddr.sin_family=AF_INET;
+    servaddr.sin_port=htons(MYPORT);
+    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+    bzero(&amp;(servaddr.sin_zero),8);
+    n=bind(sockfd,(struct sockaddr*)&amp;servaddr,sizeof(servaddr));
+    if(n==-1){
+        perror(&quot;bind error\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;bind successful\n&quot;);
+    i=listen(sockfd,10);
+    if(i==-1){
+        perror(&quot;listen error\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;listen successful\n&quot;);
+    while(1){
+        len=sizeof(clientaddr); 
+        newfd=accept(sockfd,(struct sockaddr*)&amp;clientaddr,&amp;len);
+        if(newfd==-1){
+            perror(&quot;accept error\n&quot;);
+            exit(1);
+        }else
+            printf(&quot;accept successful\n&quot;);       
+        if(inet_ntop(AF_INET,&amp;clientaddr.sin_addr,buf,sizeof(buf))==NULL){//转化为本地可识别ip
+            perror(&quot;inet_ntop error\n&quot;);
+            exit(1);
+        }
+        printf(&quot;conneting from %s ,&quot;,buf);
+        printf(&quot;port is %d\n&quot;,ntohs(clientaddr.sin_port));
+        close(newfd);    
+    }
+    close(sockfd);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_5">6.利用connect函数创建客户端程序，连接前文编好的服务器程序</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>创建一个客户端，利用命令行模式输入IP地址，客户端程序调用connect函数与服务端取得连接。</li>
+<li>argv[1]参数为目的IP地址，要求必须对连接不可达的各种状态进行解析，并打印提示信息</li>
+<li>调用格式：./client IP地址。</li>
+</ul>
+
+<p>　　eg:./client 10.42.0.250（不可达IP）。提示：can not connect to 10.42.0.250,exit!<br/>
+　　No route to host<br/>
+　　./client 10.42.0.123（一个没开启server端服务的IP地址）。提示：can not connect to ×××,exit!<br/>
+　　Connection refused<br/>
+　　调用成功：./client 10.42.0.1.提示：connect to 10.42.0.1 successfully</p>
+
+<p>相关知识：<br/>
+　　与Server端程序不同的是，在Client端，创建了一个新的套接字之后，不需要调用bind函数进行与本地的绑定，只需要预先初始化好服务器端连接信息，也就是sockaddr_in server_addr即可。该结构体中必须包含网络协议的网络类型（对于IPv4，就是AF_INET），目的服务器的IP地址，目的服务器的端口号。<br/>
+　　int connect(int sockfd, struct sockaddr *serv_addr, int addrlen)：参数sockfd 的套接字连至参数serv_addr 指定的网络地址<br/>
+　　sockfd 是系统调用 socket() 返回的套接口文件描述符 ;serv_addr 是保存着目的地端口和 IP 地址的数据结构 struct sockaddr ;addrlen 设置为 sizeof(struct sockaddr) ;connect 激发 TCP的三路握手过程 </p>
+
+<ul>
+<li>这通过调用socket,bind和1isten函数来完成，称为被动打开(Passive open) </li>
+<li>三次握手</li>
+</ul>
+
+<p>　　客户通过调用connect进行主动打开(active opn)。 这引起客户TCP发送一个SYN分节(表示同步)，它告诉服务器客户将在(待建立的)连接中发送的数据的初始序列号。服务器必须确认客户的SYN，同时自己也得发送一个SYN分节，它含有服务器将在同一连接中发送的数据的韧始序列号。服务器以单个分节向客户发送SYN和对客户 SYN的ACK。客户必须确认服务器的SYN。 </p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+#include &quot;arpa/inet.h&quot;
+#include &quot;errno.h&quot;
+#define SERVER_PORT 3490
+//利用connect函数创建客户端程序，连接前文编好的服务器程序
+int main(int argc,char *argv[]){
+    int sockfd,i,n;
+    socklen_t len;
+    struct sockaddr_in servaddr; 
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;socket error\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;create successful\n&quot;);
+    len=sizeof(servaddr);
+    bzero(&amp;servaddr,sizeof(servaddr));
+    servaddr.sin_family=AF_INET;
+    servaddr.sin_port=htons(SERVER_PORT);
+    n=inet_pton(AF_INET,argv[1],&amp;servaddr.sin_addr);//转化为网络可识别的ip
+    if(n==-1){
+        printf(&quot;%s\n&quot;,strerror(errno));
+        exit(1);
+    }
+    if(n==0){
+        printf(&quot;ip error\n&quot;);
+        exit(1);
+    }
+    i=connect(sockfd,(struct sockaddr*)&amp;servaddr,len);
+    if(i&lt;0){
+        printf(&quot;can&#39;t connect to %s,exit\n&quot;,argv[1]);
+        printf(&quot;%s\n&quot;,strerror(errno));
+        exit(1);
+    }
+    close(sockfd);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_6">7.获取套接字的地址族</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>c语言创建一个套接字，调用bind函数，其中端口设置为0，将被套接字绑定到本地某个端口上。</li>
+<li>调用getsockname，显示内核为该bind函数分配的端口号</li>
+</ul>
+
+<p>相关知识：</p>
+
+<ul>
+<li>int getsockname(int sockfd, struct sockaddr *localaddr, socklen_t *addrlen)</li>
+<li>int getpeername(int sockfd, struct sockaddr * peeraddr, socken_t * addrlen);　　　　　</li>
+</ul>
+
+<p>　　<strong>getsockname函数返回与套接口关联的本地协议地址。</strong>使用场合：在不调用bind的TCP客户，当connect成功返回后，getsockname返回分配给此连接的本地IP地址和本地端口号；<br/>
+　　在以端口号为0调用bind后，使用getsockname返回内核分配的本地端口号；getsockname可用来获取某套接口的地址族；在捆绑了通配IP地址的TCP服务器上，当连接建立后，可以使用getsockname获得分配给此连接的本地IP地址；<br/>
+　　getpeername返回远程协议地址描述结构。当一个服务器是由调用过accept的，并且fork出一个子进程进行业务逻辑处理时，必须调用getpeername来获取对端地址和端口号。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+int main(void){
+    int sockfd,bind_fd,listen_fd,newfd,n;
+    char buf[100];
+    struct sockaddr_in servaddr;
+    socklen_t len=sizeof(servaddr);
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;create socket fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;create success\n&quot;);
+    //初始化
+    bzero(&amp;servaddr,sizeof(servaddr));//结构体初始化
+    servaddr.sin_family=AF_INET;//确定ip协议
+    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);//接收任意ip
+    servaddr.sin_port=htons(0);//设定端口号2500
+    //绑定端口
+    bind_fd=bind(sockfd,(struct sockaddr*)&amp;servaddr,sizeof(servaddr));
+    if(bind_fd==-1){
+        perror(&quot;bind fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;bind success\n&quot;);
+    listen_fd=listen(sockfd,10);
+    if(listen_fd==-1){
+        perror(&quot;listen fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;listen success\n&quot;);
+    if(getsockname(sockfd,(struct sockaddr*)&amp;servaddr,&amp;len)==-1){
+        perror(&quot;getsockname error\n&quot;);
+        exit(1);
+    }
+    n=inet_ntop(AF_INET,&amp;servaddr,buf,sizeof(buf));
+    printf(&quot;port :%d\n&quot;,ntohs(servaddr.sin_port));
+    close(sockfd);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[安装linux各种桌面环境]]></title>
+    <link href="weijing24.github.io/15033222846104.html"/>
+    <updated>2017-08-21T21:31:24+08:00</updated>
+    <id>weijing24.github.io/15033222846104.html</id>
+    <content type="html"><![CDATA[
+<h2 id="toc_0">安装kde</h2>
+
+<p>1、添加 KDE SC 4.11 库<br/>
+打开一个终端窗口，在终端窗口中输入如下命令：</p>
+
+<blockquote>
+<p>sudo add-apt-repository ppa:kubuntu-ppa/backports</p>
+</blockquote>
+
+<p>回车执行命令，输入管理员密码。</p>
+
+<p>2、安装 KDE<br/>
+在终端窗口中继续输入如下命令并执行：</p>
+
+<blockquote>
+<p>sudo apt-get update  更新安装包<br/>
+sudo apt-get install kubuntu-desktop 安装桌面</p>
+</blockquote>
+
+<p>等待 KDE SC 4.11 的下载包下载安装完成。安装完成后，您需要重新启动计算机。重新启动后，登录界面，您就可以看到 KDE 选择了。</p>
+
+<h2 id="toc_1">安装gnome</h2>
+
+<p>首先说明的是，Ubuntu从11.10版本就已经在默认的软件源里面添加了Gnome3，这样一来使得我们安装变得非常方便了，直接apt-get。</p>
+
+<blockquote>
+<p>sudo apt-get install gnome-shell</p>
+</blockquote>
+
+<p>等待安装完成以后，可以输入</p>
+
+<blockquote>
+<p>gnome-shell --version  查看版本</p>
+</blockquote>
+
+<h2 id="toc_2">安装Kxde</h2>
+
+<p>Kxde的安装方式与KDE类似<br/>
+1、在终端输入 sudo apt-get install  lxde进行安装kude桌面</p>
+
+<p>2、安装LUbuntu-core</p>
+
+<blockquote>
+<p>sudo apt-get install Lubuntu-core</p>
+</blockquote>
+
+<p>注销后重新进入系统</p>
+
+<p>3、安装cinnamon<br/>
+命令行下一次输入：</p>
+
+<blockquote>
+<p>sudo add-apt-repository ppa:tsvetko.tsvetkov/cinnamon<br/>
+sudo apt-get update<br/>
+sudo apt-get install cinnamon</p>
+</blockquote>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[常用软件编译参数以及软件地址]]></title>
+    <link href="weijing24.github.io/15033222695994.html"/>
+    <updated>2017-08-21T21:31:09+08:00</updated>
+    <id>weijing24.github.io/15033222695994.html</id>
+    <content type="html"><![CDATA[
+<p>编译安装找软件编译的过程实在太浪费时间，索性今天就把常用的都记在这了，以后再用省得找了。</p>
+
+<table>
+<thead>
+<tr>
+<th>软件名</th>
+<th>地址</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>apr</td>
+<td><a href="https://archive.apache.org/dist/apr">https://archive.apache.org/dist/apr</a></td>
+</tr>
+<tr>
+<td>apr-util</td>
+<td><a href="https://archive.apache.org/dist/apr">https://archive.apache.org/dist/apr</a></td>
+</tr>
+<tr>
+<td>apache</td>
+<td><a href="https://archive.apache.org/dist/httpd/">https://archive.apache.org/dist/httpd/</a></td>
+</tr>
+<tr>
+<td>serf</td>
+<td><a href="http://archive.apache.org/dist/serf/">http://archive.apache.org/dist/serf/</a></td>
+</tr>
+<tr>
+<td>zlib</td>
+<td><a href="https://zlib.net">https://zlib.net</a></td>
+</tr>
+<tr>
+<td>pcre</td>
+<td><a href="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/">ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/</a></td>
+</tr>
+<tr>
+<td>openssl</td>
+<td><a href="https://www.openssl.org/source/old">https://www.openssl.org/source/old</a></td>
+</tr>
+<tr>
+<td>libpng</td>
+<td><a href="https://sourceforge.net/projects/libpng/files/">https://sourceforge.net/projects/libpng/files/</a></td>
+</tr>
+<tr>
+<td>libiconv</td>
+<td><a href="https://ftp.gnu.org/gnu/libiconv/">https://ftp.gnu.org/gnu/libiconv/</a></td>
+</tr>
+<tr>
+<td>freetype</td>
+<td><a href="http://download.savannah.gnu.org/releases/freetype/">http://download.savannah.gnu.org/releases/freetype/</a></td>
+</tr>
+<tr>
+<td>jpeg</td>
+<td><a href="http://www.ijg.org/files/jpegsrc.v8b.tar.gz">http://www.ijg.org/files/jpegsrc.v8b.tar.gz</a></td>
+</tr>
+<tr>
+<td>gd</td>
+<td><a href="https://jaist.dl.sourceforge.net/project/gd2/">https://jaist.dl.sourceforge.net/project/gd2/</a></td>
+</tr>
+<tr>
+<td>php</td>
+<td><a href="http://museum.php.net/">http://museum.php.net/</a></td>
+</tr>
+<tr>
+<td>subversion</td>
+<td><a href="http://archive.apache.org/dist/subversion/">http://archive.apache.org/dist/subversion/</a></td>
+</tr>
+<tr>
+<td>mysql</td>
+<td><a href="http://downloads.mysql.com/archives/">http://downloads.mysql.com/archives/</a></td>
+</tr>
+<tr>
+<td>sqlite</td>
+<td><a href="http://www.sqlite.org/">http://www.sqlite.org/</a></td>
+</tr>
+<tr>
+<td>nginx</td>
+<td><a href="http://nginx.org/download/">http://nginx.org/download/</a></td>
+</tr>
+<tr>
+<td>zabbix</td>
+<td><a href="http://www.zabbix.com/download2.php">http://www.zabbix.com/download2.php</a></td>
+</tr>
+<tr>
+<td>redis</td>
+<td><a href="http://download.redis.io/releases">http://download.redis.io/releases</a></td>
+</tr>
+<tr>
+<td>memcached</td>
+<td><a href="http://www.memcached.org/files">http://www.memcached.org/files</a></td>
+</tr>
+<tr>
+<td>puppet</td>
+<td><a href="http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm%E3%80%80%E3%80%80(%E8%BF%99%E6%98%AFpuppet%E6%BA%90%E7%9A%84rpm%E5%8C%85%EF%BC%8C%E5%AE%89%E8%A3%85%E5%90%8E%E4%BD%BF%E7%94%A8yum">http://yum.puppetlabs.com/puppetlabs-release-el-6.noarch.rpm　　(这是puppet源的rpm包，安装后使用yum</a> install puppet即可)</td>
+</tr>
+<tr>
+<td>openssh</td>
+<td><a href="http://ftp4.usa.openbsd.org/pub/OpenBSD/OpenSSH/portable">http://ftp4.usa.openbsd.org/pub/OpenBSD/OpenSSH/portable</a></td>
+</tr>
+</tbody>
+</table>
+
+<p>编译参数<br/>
+apr<br/>
+　　./configure --prefix=/usr/local/apr</p>
+
+<p>apr-util<br/>
+　　./configure --prefix=/usr/local/apr-util --with-apr=/usr/local/apr</p>
+
+<p>serf<br/>
+　　yum install expat-devel<br/>
+　　./configure --prefix=/usr/local/serf --with-apr=/usr/local/apr --with-apr-util=/usr/local/apr-util</p>
+
+<p>apache<br/>
+　　./configure --prefix=/usr/local/apache2 --with-apr=/usr/local/apr/bin/apr-1-config --with-apr-util=/usr/local/apr-util/bin/apu-1-config --with-pcre=/usr/local/pcre --with-z=/usr/local/zlib --enable-deflate --enable-log-config --enable-log-forensic --enable-logio --enable-env --enable-mime-magic --enable-expires --enable-headers --enable-setenvif --enable-proxy --enable-proxy-http --enable-http --enable-mime --enable-status --enable-autoindex --enable-info --enable-cgi --enable-dir --enable-actions --enable-rewrite --enable-so --enable-http --enable-dav --enable-maintainer-mode </p>
+
+<p>subversion<br/>
+　　./configure --prefix=/usr/local/subversion --with-apr=/usr/local/apr/bin/apr-1-config --with-apr-util=/usr/local/apr-util/bin/apu-1-config --with-apxs=/usr/local/apache2/bin/apxs --with-serf=/usr/local/serf（支持http，1.8版本以后是此参数，之前是neno） --with-sqlite=$PWD/sqlite-amalgamation/sqlite3.c --with-openssl=/usr/local/openssl --with-zlib=/usr/local/zlib --enable-shared --enable-maintainer-mode --enable-mod-activation</p>
+
+<p>php<br/>
+　　./configure  --prefix=/usr/local/php538 --with-config-file-path=/usr/local/phpfpm538/etc --with-iconv-dir=/usr/local/libiconv --enable-fpm --enable-safe-mode --enable-mbstring --enable-zip --enable-soap --enable-sysvsem --enable-shmop --enable-sockets --enable-ftp --enable-gd-native-ttf --enable-bcmath --with-gdbm --with-curl --with-mhash --with-curlwrappers --with-ldap --enable-pcntl --enable-maintainer-ztswith-xmlrpc --with-mysql=/usr/local/mysql --with-mysqli=/usr/local/mysql/bin/mysql_config --with-pdo-mysql=/usr/local/mysql --with-mcrypt=/usr/local/libmcrypt --with-png-dir=/usr/local/libpng --with-freetype-dir=/usr/local/freetype --with-libxml-dir=/usr/local/libxml2 --with-jpeg-dir=/usr/local/jpeg --with-gd --with-zlib --with-openssl --with-pear --with-gettext  --with-tidy</p>
+
+<p>mysql<br/>
+　　cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DDEFAULT_CHARSET=utf8 -DWITH_EXTRA_CHARSETS=all -DDEFAULT_COLLATION=utf8_general_ci -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_MYISAM_STORAGE_ENGINE=1 -DWITH_MEMORY_STORAGE_ENGINE=1 -DENABLED_LOCAL_INFILE=1 -DWITH_READLINE=1 -DWITH_DEBUG=0 -DENABLED_PROFILING=1</p>
+
+<p>nginx<br/>
+　　./configure --prefix=/usr/local/nginx --sbin-path=/usr/local/nginx/sbin/nginx --conf-path=/usr/local/nginx/conf/nginx.conf --error-log-path=/usr/local/nginx/logs/error.log --http-log-path=/usr/local/nginx/logs/access.log --pid-path=/usr/local/nginx/logs/nginx.pid --http-client-body-temp-path=/usr/local/nginx/client_body_temp --http-proxy-temp-path=/usr/local/nginx/proxy_temp --http-fastcgi-temp-path=/usr/local/nginx/fcgi_temp --http-uwsgi-temp-path=/usr/local/nginx/uwsgi_temp --http-scgi-temp-path=/usr/local/nginx/scgi_temp --user=nginx --group=nginx --with-http_ssl_module --with-http_rewrite_module --with-http_stub_status_module --with-http_gzip_static_module --with-http_realip_module --with-pcre=/usr/local/pcre --with-zlib=/usr/local/zlib --with-http_flv_module</p>
+
+<p>zabbix<br/>
+　　./configure --prefix=/usr/local/zabbix/ --enable-server --enable-agent --enable-proxy --with-mysql --with-net-snmp --with-libcurl --with-libxml2</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[打造属于自己的vim利器]]></title>
+    <link href="weijing24.github.io/15033222443468.html"/>
+    <updated>2017-08-21T21:30:44+08:00</updated>
+    <id>weijing24.github.io/15033222443468.html</id>
+    <content type="html"><![CDATA[
+<p>毋庸置疑vim很强大，然而没有插件的话对于大多数人来说他的界面是很不友好的。下面简单写一下我对vim的配置<br/>
+<img src="media/15033222443468/15033222614613.jpg" alt=""/><br/>
+这是我的vim配置，装的插件不是很多，对我来说已经够用。左边的侧边栏是NERD插件提供的，还装了youcompleteme做代码补全用，其他的就是对vimrc的配置了。<br/>
+插件都是使用bundle来管理的，在安装前需要在~下新建.vim/{plugin,doc,bundle}<br/>
+1、安装vundle<br/>
+<code>git clone https://github.com/gmarik/vundle.git ~/.vim/bundle/vundle</code><br/>
+2、在vimrc文件中输入如下配置，然后打开vim，运行 :PluginInstall，如果安装成功，你将看到Done!的提示字样。<br/>
+3、YCM语法补全模块的编译<br/>
+　　不同于很多vim插件，YCM首先需要编译，另外还需要有配置。在vim启动后，YCM会找寻当前路径以及上层路径的.ycm_extra_conf.py.在~/.vim/bundle/YouCompleteMe/cpp/ycm/.ycm_extra_conf.py中提供了默认的模板</p>
+
+<blockquote>
+<pre><code>cd ~/.vim/bundle
+cd YouCompleteMe
+git clone https://github.com/Valloric/YouCompleteMe.git
+git submodule update --init --recursive
+./install.py --clang-completer
+</code></pre>
+</blockquote>
+
+<p>4、然后应该可以使用了<br/>
+若想打造Python的IDE可以移步[这里]<a href="http://unlogic.co.uk/2013/02/08/vim-as-a-python-ide/">http://unlogic.co.uk/2013/02/08/vim-as-a-python-ide/</a></p>
+
+<p>附：.vimrc</p>
+
+<blockquote>
+<pre><code>&quot;--------------------------------------------------------------------------
+&quot;                       Bundle
+&quot;-------------------------------------------------------------------------- 
+&quot;启用Vim的特性，而不是Vi的（必须放到配置的最前边）
+set nocompatible
+filetype off                  &quot; required
+&quot; set the runtime path to include Vundle and initialize
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+&quot; alternatively, pass a path where Vundle should install plugins
+&quot;call vundle#begin(&#39;~/some/path/here&#39;)
+
+&quot; let Vundle manage Vundle, required
+Plugin &#39;scrooloose/nerdtree&#39;
+nnoremap &lt;F2&gt; :NERDTreeToggle&lt;CR&gt;Plugin &#39;VundleVim/Vundle.vim&#39;
+
+&quot; The following are examples of different formats supported.
+&quot; Keep Plugin commands between vundle#begin/end.
+&quot; plugin on GitHub repo
+Plugin &#39;tpope/vim-fugitive&#39;
+&quot; plugin from http://vim-scripts.org/vim/scripts.html
+Plugin &#39;L9&#39;
+&quot; Git plugin not hosted on GitHub
+Plugin &#39;git://git.wincent.com/command-t.git&#39;
+&quot; The sparkup vim script is in a subdirectory of this repo called vim.
+&quot; Pass the path to set the runtimepath properly.
+Plugin &#39;rstacruz/sparkup&#39;, {&#39;rtp&#39;: &#39;vim/&#39;}
+&quot; Install L9 and avoid a Naming conflict if you&#39;ve already installed a
+&quot; different version somewhere else.
+Plugin &#39;ascenator/L9&#39;, {&#39;name&#39;: &#39;newL9&#39;}
+
+&quot; All of your Plugins must be added before the following line
+call vundle#end()            &quot; required
+filetype plugin indent on    &quot; required
+&quot; To ignore plugin indent changes, instead use:
+&quot;filetype plugin on
+&quot;
+&quot; Brief help
+&quot; :PluginList       - lists configured plugins
+&quot; :PluginInstall    - installs plugins; append `!` to update or just :PluginUpdate
+&quot; :PluginSearch foo - searches for foo; append `!` to refresh local cache
+&quot; :PluginClean      - confirms removal of unused plugins; append `!` to auto-approve removal
+&quot;
+&quot; see :h vundle for more details or wiki for FAQ
+&quot; Put your non-Plugin stuff after this line
+&quot;autocmd vimenter * NERDTree
+&quot; 设置NerdTree（侧边栏）
+map &lt;F3&gt; :NERDTreeMirror&lt;CR&gt;
+map &lt;F3&gt; :NERDTreeToggle&lt;CR&gt;
+&quot; 关闭文件时同时关闭文件浏览器
+let NERDTreeQuitOnOpen = 1
+&quot;当打开vim且没有文件时自动打开NERDTree
+autocmd vimenter * if !argc() | NERDTree | endif
+&quot; 只剩 NERDTree时自动关闭
+autocmd bufenter * if (winnr(&quot;$&quot;) == 1 &amp;&amp; exists(&quot;b:NERDTreeType&quot;) &amp;&amp; b:NERDTreeType == &quot;primary&quot;) | q | endif
+
+&quot;--------------------------------------------------------------------------
+&quot;                       基本设置
+&quot;--------------------------------------------------------------------------
+&quot; When started as &quot;evim&quot;, evim.vim will already have done these settings.
+if v:progname =~? &quot;evim&quot;
+    finish
+endif
+&quot; 设置编码  
+set encoding=utf-8
+set fenc=utf-8
+set fileencodings=ucs-bom,utf-8,cp936,gb2312,gb18030,big5
+&quot;显示行号
+set number
+&quot;设置背景色
+&quot;set bg=dark
+
+&quot;用 koehler 调色板
+&quot;colorscheme koehler
+colorscheme desert
+&quot;隐藏工具栏和滑动条
+set guioptions=aAce
+&quot;总是在窗口右下角显示光标的位置
+set ruler
+
+&quot;设置标签栏
+&quot;最多30个标签
+set tabpagemax=30
+&quot;显示标签栏  
+set showtabline=2
+
+&quot; 启用鼠标
+if has(&#39;mouse&#39;)
+    set mouse=v
+endif
+
+&quot;设置语法高亮
+if &amp;t_Co &gt; 2 || has(&quot;gui_running&quot;)
+    syntax on
+endif
+
+&quot; 输入文本时隐藏鼠标
+set mousehide
+&quot;--------------------------------------------------------------------------
+&quot;                       搜索设置
+&quot;--------------------------------------------------------------------------
+&quot;打开搜索高亮
+set hlsearch
+&quot;忽略大小写
+set ignorecase
+&quot;在查找时输入字符过程中就高亮显示匹配点。然后回车跳到该匹配点。
+set incsearch
+&quot;设置查找到文件尾部后折返开头或查找到开头后折返尾部。
+set wrapscan
+</code></pre>
+</blockquote>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[搭建本地yum源服务器]]></title>
+    <link href="weijing24.github.io/15033221654695.html"/>
+    <updated>2017-08-21T21:29:25+08:00</updated>
+    <id>weijing24.github.io/15033221654695.html</id>
+    <content type="html"><![CDATA[
+<p>　　好久没写博客了，最近比较动荡，临毕业时跳了个槽，感觉之前做的金融方向的运维不是很适合我，对各方面的限制还是太多。金融的IT对于安全似乎要求很高，云盘，U盘都不能用，还要经常给客户做产品实施，对于linux方面涵盖的不是很多，更侧重于硬件，比如会购买高端交换机，万兆网卡，硬件防火墙等等。做的时间久了越来越感觉是个IDC维护的（没有看不起IDC运维的意思），而且还有很多时间是在做产品测试。。。这与我规划的运维方向差太多了，没办法，只能换公司了。　　<br/>
+　　目前在新浪阅读做助理运维，来之后第一感觉就是自由，上班一个小时的弹性时间，各种盘随便用，当然免费饮料是必不可少的，来的第一天内心就在想，互联网公司毕竟是互联网公司啊。最近接触了yum源搭建和源码打包rpm，yum源搭建以前也做过，不过这次做了有了更多的理解，以前只是纯粹的死记，打包rpm就很烦了，deb包的制作是很方便快捷的，rpm包得书写规则实在是头疼。先讲讲使用http搭建yum源吧。<br/>
+　　yum源的搭建可分为三步：①搭建Apache服务器②挂载ISO镜像，将镜像中的包放至Apache服务器目录下③ISO镜像的包比较老旧，可以定时同步其他源中的包到本地</p>
+
+<h3 id="toc_0">　1、搭建Apache服务器</h3>
+
+<p>　　此步随便使用yum安装还是源码编译安装都可以，只要在后面将包正确的放置到httpd的目录中即可<br/>
+　　我使用的是编译安装，安装目录是/usr/local/apache，安装完毕后修改/usr/local/apache/conf/httpd.conf文件，将DocumentRoot的/var/www/html改为/usr/local/apache/htdocs，说明后面我会将我的包放在/usr/local/apache/htdocs目录下。<br/>
+　　/usr/local/apache/bin/apachectl -k start启动Apache服务，iptables -A INPUT -p tcp --dport 10001 -j ACCEPT,注意，你在Apache中配置开放了那个端口，iptables就允许那个端口进入，iptables设置完毕，使用/etc/init.d/iptables save保存。</p>
+
+<h3 id="toc_1">　2、挂载镜像</h3>
+
+<p>　　进入/usr/local/apache/htdocs目录，创建centos目录，在centos目录下，创建extra，update，x86_64三个平行目录。<br/>
+　　将centos6的镜像挂载到某一目录下，然后将Packages目录中的所有包都拷贝至/usr/local/apache/htdocs/x86_64下。<br/>
+　　操作完毕后，如图所示：<br/>
+<img src="media/15033221654695/15033221773185.jpg" alt=""/><br/>
+　　依次对三个目录进行createrepo操作，目的是生成repodata目录，自动创建索引信息。<br/>
+　　createrepo -pdo /usr/local/apache/htdocs/x86_64 /usr/local/apache/htdocs/x86_64<br/>
+　　createrepo -pdo /usr/local/apache/htdocs/extra /usr/local/apache/htdocs/extra<br/>
+　　createrepo -pdo /usr/local/apache/htdocs/update /usr/local/apache/htdocs/updates<br/>
+　　执行完毕后在x86_64、extra、updates下自动生成了repodata目录，此时yum源已经搭建完毕。</p>
+
+<h3 id="toc_2">　3、客户端访问yum源服务器</h3>
+
+<p>　　查询yum源服务器的ip地址，然后在客户端的/etc/yum.repos.d创建base.repo文件.这里需要特别注意，<strong>如果Apache服务器开启的端口不是80端口，那么在写baseurl的时候需要将端口号写出来，否则客户端默认访问的80端口！</strong><br/>
+<img src="media/15033221654695/15033221851228.jpg" alt=""/><br/>
+　　此时整个过程已经完毕，客户端可以使用yum安装软件包。<strong>如果有新的包添加进了x86_64、extra、updates的任意一个目录中，都需要createrepo --update dir来更新yum源服务器的索引。客户端也需要yum makecache一下。</strong><br/>
+　　TIPS：<br/>
+　　之前说过ISO镜像中的软件包太陈旧了，同时，ISO的包也只有6000个左右，不是很多，那么可以将其他yum源服务器的包同步到本地，可以使用rsync命令直接镜像过来，在此提供几个支持rsync同步的网站<br/>
+　　<a href="http://mirrors.kernel.org">http://mirrors.kernel.org</a><br/>
+　　<a href="http://rsync.mirrors.ustc.edu.cn">http://rsync.mirrors.ustc.edu.cn</a><br/>
+　　<a href="http://mirrors.neusoft.edu.cn">http://mirrors.neusoft.edu.cn</a></p>
+
+<p>　　具体镜像方法：<br/>
+　　1、进入本地yum源服务器的某个要镜像的目录，比如/usr/local/apache/htdocs/extra目录<br/>
+　　2、访问<a href="http://mirrors.kernel.org/centos/%E7%9B%AE%E5%BD%95%E5%8F%AF%E4%BB%A5%E5%8F%91%E7%8E%B0%E6%9C%89%E5%BE%88%E5%A4%9A%E7%9A%84%E6%95%B0%E5%AD%97%E7%9B%AE%E5%BD%95%EF%BC%8C%E8%BF%99%E4%BA%9B%E9%83%BD%E6%98%AF%E4%B8%8D%E5%90%8C%E7%9A%84centos%E7%89%88%E6%9C%AC">http://mirrors.kernel.org/centos/目录可以发现有很多的数字目录，这些都是不同的centos版本</a><br/>
+<img src="media/15033221654695/15033221941450.jpg" alt=""/><br/>
+　　3、进入6目录，可以看到有好几个目录<br/>
+<img src="media/15033221654695/15033222007791.jpg" alt=""/><br/>
+　　一般我们要同步的是os(与本地yum源的x86_64对应)、updates、extras，当然你也可以全部同步。我们目前要同步extras目录，那么就进入extras目录，选择适合自己的路径，我是x86_64架构的电脑，进入x86_64,所有的包都在Packages下，如下图：<br/>
+<img src="media/15033221654695/15033222074940.jpg" alt=""/><br/>
+　　4、找到正确的路径后就可以开始同步了<br/>
+　　在本地yum源服务器上输入<strong>rsync -avrt --delete rsync://mirrors.kernel.org/centos/6/extras/x86_64/Packages/ /usr/local/apache/htdocs/centos/extra</strong><br/>
+　　同步完毕后使用createrepo --update /usr/local/apache/htdocs/centos/extra更新索引。<br/>
+　　<strong>还有一点就是客户端的repo文件的baseurl是很灵活的，你甚至可以在不同的模块写不同的连接，只要你写的url的源可以使用就没问题。</strong></p>
 
 ]]></content>
   </entry>

@@ -1,0 +1,522 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+    
+  ubuntu php5.6源码安装 - 小菜鸡
+  
+  </title>
+ <meta name="description" content="个人博客">
+ <link href="atom.xml" rel="alternate" title="小菜鸡" type="application/atom+xml">
+    <link rel="stylesheet" href="asset/css/foundation.min.css" />
+    <link rel="stylesheet" href="asset/css/docs.css" />
+
+    <script src="asset/js/vendor/modernizr.js"></script>
+    <script src="asset/js/vendor/jquery.js"></script>
+    <script src="asset/highlightjs/highlight.pack.js"></script>
+    <link href="asset/highlightjs/styles/github.css" media="screen, projection" rel="stylesheet" type="text/css">
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+  </head>
+  <body class="antialiased hide-extras">
+    
+    <div class="marketing off-canvas-wrap" data-offcanvas>
+      <div class="inner-wrap">
+
+
+<nav class="top-bar docs-bar hide-for-small" data-topbar>
+
+<div id="header">
+    <h1><a href="index.html">小菜鸡</a></h1>
+</div>
+
+</nav>
+        <nav class="tab-bar show-for-small">
+  <a href="javascript:void(0)" class="left-off-canvas-toggle menu-icon">
+    <span> &nbsp; 小菜鸡</span>
+  </a>
+</nav>
+
+<aside class="left-off-canvas-menu">
+      <ul class="off-canvas-list">
+      <li><a href="index.html">Home</a></li>
+      
+        <li class="divider"></li>
+        <li><label>容器</label></li>
+
+          
+            <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>web服务器</label></li>
+
+          
+            <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+          
+            <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>linux编程</label></li>
+
+          
+            <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+          
+            <li><a title="信号" href="15033227238921.html">信号</a></li>
+          
+            <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+          
+            <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+          
+            <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+          
+            <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+          
+            <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+          
+            <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+          
+            <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+          
+            <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+          
+            <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+          
+            <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>坑</label></li>
+
+          
+            <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+          
+            <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+          
+            <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+          
+            <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>日常运维</label></li>
+
+          
+            <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+          
+            <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+          
+            <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+          
+            <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+          
+            <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+          
+            <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+          
+            <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+          
+            <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+          
+            <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+          
+            <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+          
+            <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+          
+            <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+          
+
+      
+      </ul>
+    </aside>
+
+<a class="exit-off-canvas" href="#"></a>
+
+        <section id="main-content" role="main" class="scroll-container">
+
+          <div class="row">
+            <div class="large-3 medium-3 columns">
+              <div class="hide-for-small">
+                <div class="sidebar">
+                <nav>
+                  <ul id="side-nav" class="side-nav">
+
+                    
+                      <li class="side-title"><span>容器</span></li>
+                        
+                          <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>web服务器</span></li>
+                        
+                          <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+                        
+                          <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>linux编程</span></li>
+                        
+                          <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+                        
+                          <li><a title="信号" href="15033227238921.html">信号</a></li>
+                        
+                          <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+                        
+                          <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+                        
+                          <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+                        
+                          <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+                        
+                          <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+                        
+                          <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+                        
+                          <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+                        
+                          <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+                        
+                          <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+                        
+                          <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>坑</span></li>
+                        
+                          <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+                        
+                          <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+                        
+                          <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+                        
+                          <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>日常运维</span></li>
+                        
+                          <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+                        
+                          <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+                        
+                          <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+                        
+                          <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+                        
+                          <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+                        
+                          <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+                        
+                          <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+                        
+                          <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+                        
+                          <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+                        
+                          <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+                        
+                          <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+                        
+                          <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+                        
+
+                    
+                  </ul>
+                </nav>
+                </div>
+              </div>
+            </div>
+            <div class="large-9 medium-9 columns">
+
+ <div class="markdown-body">
+<h1>ubuntu php5.6源码安装</h1>
+
+<p>　　本系列的lnmp的大框架基本上是按照<a href="http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html">http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html</a>来写的<br/>
+　　下面的nginx配置文件和php配置文件都有一个小错误，之前误打误撞通过了，今天复习的时候发现又报 connect() to unix:/var/run/php-fpm/php-fpm.sock failed (2: No such file or directory) 这个错误，然后就开始了艰苦卓绝的找错。后来在stack overflow上找到了一个解决方法：<br/>
+<a href="http://serverfault.com/questions/477630/impossible-to-run-php-fpm-on-server-restarts-ubuntu-12-04-x64">http://serverfault.com/questions/477630/impossible-to-run-php-fpm-on-server-restarts-ubuntu-12-04-x64</a><br/>
+　　大意是在/usr/local/php/etc/php-fpm.conf中listen的目录在/var/run/php-fpm/php-fpm.sock中，但是/var/run是个动态目录，开机后目录下的文件都会重新加载初始化，而php-fpm这个目录根本就不存在，系统也不会为你自动创建，所以改成listen=/var/run/php-fpm.sock即可。同时/usr/local/nginx/nginx.conf的内容也要改。把fastcgi_pass   unix:/var/run/php-fpm/php-fpm.sock;改成fastcgi_pass   unix:/var/run/php-fpm.sock;<br/>
+　　user和group网上都是www或者www-data而我用会报错permission denied，用nobody可以通过。</p>
+
+<p>　　今天又花了一天时间装了php，感觉php的源码安装也挺麻烦的，整个过程各种报错。下篇文章准备整合所有查找到的报错和解决方法。<br/>
+　　php和nginx一样，在安装前需要装一堆的依赖。有libmcrypt、mcrypt、mhash。其实远不止这三个包，在后面的configure和make中还会陆陆续续安装一些依赖。</p>
+
+<h3 id="toc_0">1.安装libmcrypt、mcrypt、mhash（整个过程都在/usr/local/src/php目录下）</h3>
+
+<blockquote>
+<pre><code>#创建/usr/local/src/php目录并进入
+mkdir /usr/local/src/php
+cd /usr/local/src/php
+#下载libmcrypt，解压，编译，安装
+wget http://sourceforge.net/projects/mcrypt/files/Libmcrypt/2.5.8/libmcrypt-2.5.8.tar.gz
+tar -xzvf libmcrypt-2.5.8.tar.gz &amp;&amp; cd libmcrypt-2.5.8
+./configure
+make -j2 &amp;&amp; make install
+#下载mhash，解压，编译，安装
+wget http://sourceforge.net/projects/mhash/files/mhash/0.9.9.9/mhash-0.9.9.9.tar.gz
+tar -xzvf mhash-0.9.9.9.tar.gz &amp;&amp; cd mhash-0.9.9.9
+./configure &amp;&amp; make -j2 &amp;&amp; make install
+# 这两个包安装完成后要把动态链接库做一个软连接到/usr/lib,以为接下来的mcrypt依赖于这两个包
+ln -s /usr/local/lib/libmcrypt* /usr/lib
+ln -s /usr/local/lib/libmhash.* /usr/lib/
+ln -s /usr/local/bin/libmcrypt-config /usr/bin/libmcrypt-config
+#下载mcrypt，解压，安装，编译
+wget http://sourceforge.net/projects/mcrypt/files/MCrypt/2.6.8/mcrypt-2.6.8.tar.gz/download
+tar -zxvf mcrypt-2.6.8.tar.gz &amp;&amp; cd mcrypt-2.6.8
+./configure &amp;&amp; make -j2 &amp;&amp; make install
+</code></pre>
+</blockquote>
+
+<h3 id="toc_1">2.生成配置文件（整个过程都在/usr/local/src/php/php-5.6.15目录下）</h3>
+
+<blockquote>
+<pre><code>wget http://cn2.php.net/distributions/php-5.6.15.tar.gz
+tar -xzvf php-5.6.15.tar.gz &amp;&amp; cd php-5.6.15
+sudo ./configure --prefix=/usr/local/php --with-mysql=/usr/local/mysql/ --with-zlib --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --with-curl --enable-fpm --with-mcrypt --with-gd --with-openssl --with-mhash --enable-sockets --with-ldap --with-ldap-sasl --with-xmlrpc -enable-zip --enable-soap
+</code></pre>
+</blockquote>
+
+<p>　　在configure的时候要注意，--enable-safe-mode --enable-discard-path --enable-fastcgi --enable-force-cgi-redirect参数从5.3版本开始就默认开启了，5.4开始不支持这些选项，所以在参考其他教程时要注意有些选项不需要写到自己的configure中了。我看到的90%的参考教程都写了一两个不支持的参数的。当然你如果写了也没关系，系统不会计算进去。<br/>
+　　有一个选项需要强调一下，就是--enable-fpm，如果你在搭建环境时是需要php和nginx结合的，那么这个选项必写。由于我是搭建的LNMP，所以这个参数加上了。想要详细了解选项的，使用./configure -h查看。<br/>
+我在configure遇到的问题:<br/>
+①configure: error: Please reinstall the libcurl distribution -easy.h should be in &lt; curl-dir &gt;/include/curl/<br/>
+　　解决方法：需要安装curl-devel，ubuntu源中没有，去官网下载并编译安装（也可以直接apt-get下载php5-curl、curl、libcurl4-gnutls-dev）</p>
+
+<blockquote>
+<pre><code>cd /usr/local/src/php
+wget http://curl.haxx.se/download/curl-7.45.0.tar.gz
+sudo tar xzvf curl-7.45.0.tar.gz &amp;&amp; cd curl-7.45.0.tar.gz
+sudo ./configure &amp;&amp; sudo make -j2 &amp;&amp; sudo make install
+</code></pre>
+</blockquote>
+
+<p>再次configure又遇到问题<br/>
+②configure: error: sasl.h not found!<br/>
+　　解决方法：sudo apt-get install libsasl2-dev <br/>
+再次使用上面的configure，生成配置文件，没有再报错了。</p>
+
+<h3 id="toc_2">3.编译安装(在/usr/local/src/php/php-5.6.15下)</h3>
+
+<p>　　cd /usr/local/src/php/php-5.6.15 &amp;&amp; sudo make -j2</p>
+
+<p>报错①：<br/>
+usr/bin/ld: ext/ldap/.libs/ldap.o: undefined reference to symbol &#39;ber_strdup@@OPENLDAP_2.4_2&#39;<br/>
+//usr/lib/x86_64-linux-gnu/liblber-2.4.so.2: error adding symbols: DSO missing from command line<br/>
+解决方法：<br/>
+一开始我查资料说是没有安装openldap，然后就查了openldap的安装方法，结果openldap用db做存储方案，就是说还要编译安装db（这个db不是mysql，就叫db）。结果搞了半天db和openldap都安装完再编译发现还是报这个错。最后在网上一个一个试，找到了一个解决方法。原文是这么说的</p>
+
+<blockquote>
+<pre><code>遇到这种类似的情况，说明「./configure 」沒抓好一些环境变数值。
+在PHP源码目录下 vi Makefile 找到 EXTRA_LIBS 行，在行末添加 ‘ -llber ‘ 保存退出再次make即可。
+cd /usr/local/src/php/php-5.6.15
+vim Makefile
+找EXTRA_LIBS行，在末尾添加--llber
+</code></pre>
+</blockquote>
+
+<p>希望遇到这个问题的同学可以引以为戒不要走弯路了。<br/>
+再次编译，又报错②：<br/>
+/usr/local/src/php/php-5.6.15/sapi/cli/php: error while loading shared libraies: libmysqlclient.so.20: cannot open shared object file: No such file or directory<br/>
+解决办法：<br/>
+找到libmysqlclient.so.20,并做软链接</p>
+
+<blockquote>
+<pre><code>find / -name &quot;libmysqlclient.so.20&quot;
+/usr/local/mysql/lib/libmysqlclient.so.20
+/usr/local/src/mysql-5.7.9/libmysql/CMakeFiles/CMakeRelink.dir/libmysqlclient.so.20
+/usr/local/src/mysql-5.7.9/libmysql/libmysqlclient.so.20
+echo &quot;/usr/local/lib&quot; &gt;&gt;/etc/ld.so.conf
+echo &quot;/usr/local/mysql/lib&quot; &gt;&gt;/etc/ld.so.conf 
+sudo ldconfig
+make
+</code></pre>
+</blockquote>
+
+<p>再次编译，又他妈报错了，此时我的心情真的是崩溃的</p>
+
+<p>报错③：<br/>
+　　chmod: 无法访问&quot;ext/phar/phar.phar&quot;: 没有那个文件或目录<br/>
+解决办法：<br/>
+　　mkdir -p ext/phar/phar.phar<br/>
+再次编译，没有错了。<br/>
+make install</p>
+
+<p>4、配置php（在/usr/local/src/php/php-5.6.15下）　　</p>
+
+<blockquote>
+<pre><code>cd /usr/local/src/php/php-5.6.15
+cp php.ini-production /usr/local/php/php.ini # 如果是开发就复制php.ini-development
+cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf
+ln -s /usr/local/php/bin/php /usr/bin/
+echo “listen = /var/run/php-fpm.sock” &gt;&gt; /usr/local/php/etc/php-fpm.conf
+</code></pre>
+</blockquote>
+
+<p>使用nginx服务器等待检测php是否安装成功<br/>
+编辑nginx配置文件：</p>
+
+<blockquote>
+<pre><code>vi /usr/local/nginx/conf/nginx.conf
+location ~ \.php$ {
+    fastcgi_pass　　unix:/var/run/php-fpm.sock;
+    fastcgi_index  index.php;
+    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+    include        fastcgi_params;
+    include        fastcgi.conf;
+}
+</code></pre>
+</blockquote>
+
+<p>在/usr/local/nginx/html下创建index.php</p>
+
+<blockquote>
+<pre><code>cd /usr/local/nginx/html
+vi /usr/local/nginx/html/index.php
+&lt;?php
+    phpinfo();
+?&gt;
+</code></pre>
+</blockquote>
+
+<h3 id="toc_3">5.启动php</h3>
+
+<p>mkdir /var/run/php-fpm(这一步在每次启动系统时都要做,因为/var/run是个动态目录,系统重启php-fpm就没了).<br/>
+/usr/local/php/sbin/php-fpm<br/>
+报错①：<br/>
+ERROR: [pool www] cannot get gid for group &#39;nobody&#39;<br/>
+解决方法：<br/>
+groupadd nobody<br/>
+关闭php在开启（不知道php有没有重启选项，只能这样做了）</p>
+
+<blockquote>
+<pre><code>sudo killall php-fpm
+/usr/local/php/sbin/php-fpm
+</code></pre>
+</blockquote>
+
+<p>没报错了，此时我以为我已经成功了，呵呵，too young too simple<br/>
+开始检测是否安装成功。<br/>
+开启nginx：<br/>
+　　sudo /usr/lcoal/nginx/nginx<br/>
+在浏览器输入localhost/index.html,结果如下:<br/>
+<img src="media/15033230316456/15033230556482.jpg" alt=""/></p>
+
+<p>呵呵呵。。。。。。。。。。。。。。。。。。。。。。。。。<br/>
+就快要成功了我会轻易放弃?果断点了个error log，以为他会引领我找到错误日志，结果是这么个鸟玩意<br/>
+<img src="media/15033230316456/15033230619106.jpg" alt=""/><br/>
+等于没说。后来我一想这是nginx服务器啊，应该看nginx的错误日志，进入nginx，果然发现了logs<br/>
+<img src="media/15033230316456/15033230687781.jpg" alt=""/><br/>
+tail -f error.log，实时查看错误日志。再打开一个终端，执行php-fpm，此时error.log刷出了这样的信息：<br/>
+<img src="media/15033230316456/15033230741090.jpg" alt=""/><br/>
+此时报错：connect() to unix:/var/run/php-fpm/php-fpm.sock failed (13: Permission denied) while connecting to upstream<br/>
+我检查了一下 /tmp/php-cgi.sock 发现该文件拥有者是root，而nginx和php-fpm都是www用户来运行的，按理讲，这个sock文件也应该是www才对。于是修改php-fpm.conf文件</p>
+
+<blockquote>
+<pre><code>sudo vim /usr/local/php/etc/php-fpm.conf
+user=nobody
+group=nobody
+listen.owner = nobody
+listen.group = nobody
+listen.mode = 0660
+</code></pre>
+</blockquote>
+
+<p>结果如下图：<br/>
+<img src="media/15033230316456/15033230801227.jpg" alt=""/><br/>
+成功了，但是没有www用户，猛然想起之前增加的组是nobody，于是又把php-fpm.conf改了</p>
+
+<blockquote>
+<pre><code>sudo vim /usr/local/php/etc/php-fpm.conf
+listen.owner = www
+listen.group = www
+listen.mode = 0660
+</code></pre>
+</blockquote>
+
+<p>在浏览器中输入localhost/index.php,如图，成功！！！！！！！！<br/>
+<img src="media/15033230316456/15033230853253.jpg" alt=""/></p>
+
+
+</div>
+
+<br /><br />
+<hr />
+
+<div class="row clearfix">
+  <div class="large-6 columns">
+	<div class="text-left" style="padding:15px 0px;">
+		
+	        <a href="15033230940135.html"  title="Previous Post: ubuntu mysql5.7源码安装">&laquo; ubuntu mysql5.7源码安装</a>
+	    
+	</div>
+  </div>
+  <div class="large-6 columns">
+	<div class="text-right" style="padding:15px 0px;">
+		
+	        <a href="15033229668634.html" 
+	        title="Next Post: ubuntu下nginx的安裝">ubuntu下nginx的安裝 &raquo;</a>
+	    
+	</div>
+  </div>
+</div>
+
+<div class="row">
+<div style="padding:0px 0.93em;" class="share-comments">
+
+</div>
+</div>
+<script type="text/javascript">
+	$(function(){
+		var currentURL = '15033230316456.html';
+		$('#side-nav a').each(function(){
+			if($(this).attr('href') == currentURL){
+				$(this).parent().addClass('active');
+			}
+		});
+	});
+</script>  
+</div></div>
+
+
+<div class="page-bottom">
+  <div class="row">
+  <hr />
+  <div class="small-9 columns">
+  <p class="copyright">Copyright &copy; 2015
+Powered by <a target="_blank" href="http://www.mweb.im">MWeb</a>,&nbsp; 
+Theme used <a target="_blank" href="http://github.com">GitHub CSS</a>.</p>
+  </div>
+  <div class="small-3 columns">
+  <p class="copyright text-right"><a href="#header">TOP</a></p>
+  </div>
+   
+  </div>
+</div>
+
+        </section>
+      </div>
+    </div>
+    
+    
+    <script src="asset/js/foundation.min.js"></script>
+    <script src="asset/js/foundation/foundation.offcanvas.js"></script>
+    <script>
+      $(document).foundation();
+
+     
+    </script>
+    <script src="asset/chart/all-min.js"></script><script type="text/javascript">$(function(){    var mwebii=0;    var mwebChartEleId = 'mweb-chart-ele-';    $('pre>code').each(function(){        mwebii++;        var eleiid = mwebChartEleId+mwebii;        if($(this).hasClass('language-sequence')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = Diagram.parse($(this).text());            diagram.drawSVG(eleiid,{theme: 'simple'});        }else if($(this).hasClass('language-flow')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = flowchart.parse($(this).text());            diagram.drawSVG(eleiid);        }    });});</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({TeX: { equationNumbers: { autoNumber: "AMS" } }});</script>
+
+  </body>
+</html>

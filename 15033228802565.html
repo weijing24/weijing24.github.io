@@ -1,0 +1,407 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+    
+  zabbix安装排错过程 - 小菜鸡
+  
+  </title>
+ <meta name="description" content="个人博客">
+ <link href="atom.xml" rel="alternate" title="小菜鸡" type="application/atom+xml">
+    <link rel="stylesheet" href="asset/css/foundation.min.css" />
+    <link rel="stylesheet" href="asset/css/docs.css" />
+
+    <script src="asset/js/vendor/modernizr.js"></script>
+    <script src="asset/js/vendor/jquery.js"></script>
+    <script src="asset/highlightjs/highlight.pack.js"></script>
+    <link href="asset/highlightjs/styles/github.css" media="screen, projection" rel="stylesheet" type="text/css">
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+  </head>
+  <body class="antialiased hide-extras">
+    
+    <div class="marketing off-canvas-wrap" data-offcanvas>
+      <div class="inner-wrap">
+
+
+<nav class="top-bar docs-bar hide-for-small" data-topbar>
+
+<div id="header">
+    <h1><a href="index.html">小菜鸡</a></h1>
+</div>
+
+</nav>
+        <nav class="tab-bar show-for-small">
+  <a href="javascript:void(0)" class="left-off-canvas-toggle menu-icon">
+    <span> &nbsp; 小菜鸡</span>
+  </a>
+</nav>
+
+<aside class="left-off-canvas-menu">
+      <ul class="off-canvas-list">
+      <li><a href="index.html">Home</a></li>
+      
+        <li class="divider"></li>
+        <li><label>容器</label></li>
+
+          
+            <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>web服务器</label></li>
+
+          
+            <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+          
+            <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>linux编程</label></li>
+
+          
+            <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+          
+            <li><a title="信号" href="15033227238921.html">信号</a></li>
+          
+            <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+          
+            <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+          
+            <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+          
+            <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+          
+            <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+          
+            <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+          
+            <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+          
+            <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+          
+            <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+          
+            <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>坑</label></li>
+
+          
+            <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+          
+            <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+          
+            <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+          
+            <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>日常运维</label></li>
+
+          
+            <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+          
+            <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+          
+            <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+          
+            <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+          
+            <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+          
+            <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+          
+            <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+          
+            <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+          
+            <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+          
+            <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+          
+            <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+          
+            <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+          
+
+      
+      </ul>
+    </aside>
+
+<a class="exit-off-canvas" href="#"></a>
+
+        <section id="main-content" role="main" class="scroll-container">
+
+          <div class="row">
+            <div class="large-3 medium-3 columns">
+              <div class="hide-for-small">
+                <div class="sidebar">
+                <nav>
+                  <ul id="side-nav" class="side-nav">
+
+                    
+                      <li class="side-title"><span>容器</span></li>
+                        
+                          <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>web服务器</span></li>
+                        
+                          <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+                        
+                          <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>linux编程</span></li>
+                        
+                          <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+                        
+                          <li><a title="信号" href="15033227238921.html">信号</a></li>
+                        
+                          <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+                        
+                          <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+                        
+                          <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+                        
+                          <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+                        
+                          <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+                        
+                          <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+                        
+                          <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+                        
+                          <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+                        
+                          <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+                        
+                          <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>坑</span></li>
+                        
+                          <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+                        
+                          <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+                        
+                          <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+                        
+                          <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>日常运维</span></li>
+                        
+                          <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+                        
+                          <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+                        
+                          <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+                        
+                          <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+                        
+                          <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+                        
+                          <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+                        
+                          <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+                        
+                          <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+                        
+                          <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+                        
+                          <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+                        
+                          <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+                        
+                          <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+                        
+
+                    
+                  </ul>
+                </nav>
+                </div>
+              </div>
+            </div>
+            <div class="large-9 medium-9 columns">
+
+ <div class="markdown-body">
+<h1>zabbix安装排错过程</h1>
+
+<p>　　在讲安装过程之前需要先把zabbix的工作流程简单的讲一遍：zabbix是个开源监控软件，通过web才能更直观的监控我们想要监控的主机，同时，zabbix从被监控主机获取到的信息需要存放在数据库中，因此zabbix+nginx/apache+php+mysql是常用的组合方式。nginx/apache提供web服务器，zabbix的web监控是由php写的，因此需要php环境，最后mysql提供存储。<br/>
+　　mysql、nginx、php之前都说过如何编译安装，在此我就只讲编译参数了。<br/>
+　　php:<br/>
+　　　　./configure --prefix=/usr/local/php-5.5.0 --with-config-file-path=/usr/local/php-5.5.0/etc --with-bz2 --with-curl --enable-ftp --enable-sockets --disable-ipv6 --with-gd --with-jpeg-dir=/usr/local --with-png-dir=/usr/local --with-freetype-dir=/usr/local --enable-gd-native-ttf --with-iconv-dir=/usr/local --enable-mbstring --enable-calendar --with-gettext --with-libxml-dir=/usr/local --with-zlib --with-pdo-mysql=mysqlnd --with-mysqli=mysqlnd --with-mysql=mysqlnd --enable-dom --enable-xml --enable-fpm --with-libdir=lib64 --enable-bcmath --with-openssl --enable-mbstring</p>
+
+<p>　　mysql:<br/>
+　　　　cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr/local/mysql -DWITH_MYISAM_STORAGE_ENGINE=1 -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_ARCHIVE_STORAGE_ENGINE=1 -DWITH_BLACKHOLE_STORAGE_ENGINE=1 -DWITH_MEMORY_STORAGE_ENGINE=1 </p>
+
+<p>　　nginx:<br/>
+　　　　--prefix=/usr/local/nginx --with-http_ssl_module --with-http_stub_status_module --with-pcre</p>
+
+<p>　　zabbix:<br/>
+　　　　安装zabbix前需要修改php.ini的几个参数<br/>
+　　　　 max_execution_time = 300<br/>
+ 　　　　memory_limit = 128M<br/>
+ 　　　　post_max_size = 16M<br/>
+ 　　　　upload_max_filesize = 2M<br/>
+ 　　　　max_input_time = 300<br/>
+ 　　　　date.timezone PRC<br/>
+　　　　修改完毕可以开始编译安装zabbix了<br/>
+　　　　./configure --prefix=/usr/local/zabbix/ --enable-server --enable-agent --enable-proxy --with-mysql --with-net-snmp --with-libcurl --with-libxml2</p>
+
+<h3 id="toc_0">所有软件安装完毕后开始配置</h3>
+
+<p>1、mysql中添加zabbix数据库<br/>
+　　在zabbix的源码目录下有个database目录，里面对应不同的数据库<br/>
+<img src="media/15033228802565/15033228940990.jpg" alt=""/></p>
+
+<p>　　我们使用的是mysql数据库，因此表结构从mysql中导入，一共有3个表，mysql，images和schema  </p>
+
+<blockquote>
+<pre><code>create database zabbix character set utf8;
+grant all privileges on zabbix.* to root@&#39;localhost&#39; identified by &#39;123&#39;;
+mysql -uroot -pmysql zabbix &lt; schema.sql　　#导入这三个表必须按照此顺序
+mysql -uroot -pmysql zabbix &lt; images.sql
+mysql -uroot -pmysql zabbix &lt; data.sql
+</code></pre>
+</blockquote>
+
+<p>2、配置zabbix-server<br/>
+　　vim /usr/local/zabbix/zabbix_server.conf</p>
+
+<blockquote>
+<pre><code>ListenPort=10051
+LogFile=/tmp/zabbix_server.log
+PidFile=/tmp/zabbix_server.pid
+DBHost=localhost
+DBName=zabbix
+DBUser=root
+DBPassword=123　　　　　　#这里要注意，密码不需要加引号，直接写就行，当时我加了引号，日志一直报错连接数据库失败，网上找了很久也没找到解决方法，后来自己多次尝试才发现了这个坑
+DBPort=3306
+DBSocket=/data/mysql3306/mysql.sock
+</code></pre>
+</blockquote>
+
+<p>　　到这边zabbix-server基本上配置好了，使用zabbix_server启动，zabbix_server启动不管成功与否都不会有返回值，因此启动完毕需要看一下10051端口开了没。下面说说client<br/>
+　　你可以在一台主机上同时装server和client。编译时加上--enable-agent就是把client模块编译进去。　<br/>
+　　vim /usr/local/zabbix-2.2.2/etc/zabbix_agentd.conf<br/>
+　　Server=127.0.0.1<br/>
+　　ServerActive=127.0.0.1<br/>
+　　Hostname=Zabbix server<br/>
+　　使用zabbix_agentd启动，查看10050端口是否开启。<br/>
+3、配置zabbix管理网站<br/>
+　　　cp -rp /usr/local/src/zabbix-2.2.13/frontends/php/* /www/zabbix<br/>
+　　　vim /usr/local/nginx/conf/nginx.conf　　</p>
+
+<blockquote>
+<pre><code>server {
+    listen       80;
+    index index.html index.php index.html;
+    root /www;
+    location /{
+            try_files $uri $uri/ /index.php?$args;
+    }
+    location ~ ^(.+.php)(.*)$ {
+            fastcgi_split_path_info ^(.+.php)(.*)$;
+            include fastcgi.conf;
+            fastcgi_pass  127.0.0.1:9000;
+            fastcgi_index index.php;
+            fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
+</code></pre>
+</blockquote>
+
+<p>　　配置完毕启动nginx，浏览器输入localhost/zabbix即可在线配置zabbix的网页，配置完网页即可在网页上监控agent</p>
+
+<p>　　提示：想要开启zabbix网页，nginx，php-fpm，mysql都要开启，缺一不可。</p>
+
+
+</div>
+
+<br /><br />
+<hr />
+
+<div class="row clearfix">
+  <div class="large-6 columns">
+	<div class="text-left" style="padding:15px 0px;">
+		
+	        <a href="15033229130846.html"  title="Previous Post: wait和waitpid详解">&laquo; wait和waitpid详解</a>
+	    
+	</div>
+  </div>
+  <div class="large-6 columns">
+	<div class="text-right" style="padding:15px 0px;">
+		
+	        <a href="15033227857622.html" 
+	        title="Next Post: 使用RAID进行磁盘管理">使用RAID进行磁盘管理 &raquo;</a>
+	    
+	</div>
+  </div>
+</div>
+
+<div class="row">
+<div style="padding:0px 0.93em;" class="share-comments">
+
+</div>
+</div>
+<script type="text/javascript">
+	$(function(){
+		var currentURL = '15033228802565.html';
+		$('#side-nav a').each(function(){
+			if($(this).attr('href') == currentURL){
+				$(this).parent().addClass('active');
+			}
+		});
+	});
+</script>  
+</div></div>
+
+
+<div class="page-bottom">
+  <div class="row">
+  <hr />
+  <div class="small-9 columns">
+  <p class="copyright">Copyright &copy; 2015
+Powered by <a target="_blank" href="http://www.mweb.im">MWeb</a>,&nbsp; 
+Theme used <a target="_blank" href="http://github.com">GitHub CSS</a>.</p>
+  </div>
+  <div class="small-3 columns">
+  <p class="copyright text-right"><a href="#header">TOP</a></p>
+  </div>
+   
+  </div>
+</div>
+
+        </section>
+      </div>
+    </div>
+    
+    
+    <script src="asset/js/foundation.min.js"></script>
+    <script src="asset/js/foundation/foundation.offcanvas.js"></script>
+    <script>
+      $(document).foundation();
+
+     
+    </script>
+    <script src="asset/chart/all-min.js"></script><script type="text/javascript">$(function(){    var mwebii=0;    var mwebChartEleId = 'mweb-chart-ele-';    $('pre>code').each(function(){        mwebii++;        var eleiid = mwebChartEleId+mwebii;        if($(this).hasClass('language-sequence')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = Diagram.parse($(this).text());            diagram.drawSVG(eleiid,{theme: 'simple'});        }else if($(this).hasClass('language-flow')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = flowchart.parse($(this).text());            diagram.drawSVG(eleiid);        }    });});</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({TeX: { equationNumbers: { autoNumber: "AMS" } }});</script>
+
+  </body>
+</html>

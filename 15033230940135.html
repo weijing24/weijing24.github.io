@@ -1,0 +1,449 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+    
+  ubuntu mysql5.7源码安装 - 小菜鸡
+  
+  </title>
+ <meta name="description" content="个人博客">
+ <link href="atom.xml" rel="alternate" title="小菜鸡" type="application/atom+xml">
+    <link rel="stylesheet" href="asset/css/foundation.min.css" />
+    <link rel="stylesheet" href="asset/css/docs.css" />
+
+    <script src="asset/js/vendor/modernizr.js"></script>
+    <script src="asset/js/vendor/jquery.js"></script>
+    <script src="asset/highlightjs/highlight.pack.js"></script>
+    <link href="asset/highlightjs/styles/github.css" media="screen, projection" rel="stylesheet" type="text/css">
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+  </head>
+  <body class="antialiased hide-extras">
+    
+    <div class="marketing off-canvas-wrap" data-offcanvas>
+      <div class="inner-wrap">
+
+
+<nav class="top-bar docs-bar hide-for-small" data-topbar>
+
+<div id="header">
+    <h1><a href="index.html">小菜鸡</a></h1>
+</div>
+
+</nav>
+        <nav class="tab-bar show-for-small">
+  <a href="javascript:void(0)" class="left-off-canvas-toggle menu-icon">
+    <span> &nbsp; 小菜鸡</span>
+  </a>
+</nav>
+
+<aside class="left-off-canvas-menu">
+      <ul class="off-canvas-list">
+      <li><a href="index.html">Home</a></li>
+      
+        <li class="divider"></li>
+        <li><label>容器</label></li>
+
+          
+            <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>web服务器</label></li>
+
+          
+            <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+          
+            <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>linux编程</label></li>
+
+          
+            <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+          
+            <li><a title="信号" href="15033227238921.html">信号</a></li>
+          
+            <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+          
+            <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+          
+            <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+          
+            <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+          
+            <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+          
+            <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+          
+            <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+          
+            <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+          
+            <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+          
+            <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>坑</label></li>
+
+          
+            <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+          
+            <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+          
+            <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+          
+            <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>日常运维</label></li>
+
+          
+            <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+          
+            <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+          
+            <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+          
+            <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+          
+            <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+          
+            <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+          
+            <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+          
+            <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+          
+            <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+          
+            <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+          
+            <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+          
+            <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+          
+
+      
+      </ul>
+    </aside>
+
+<a class="exit-off-canvas" href="#"></a>
+
+        <section id="main-content" role="main" class="scroll-container">
+
+          <div class="row">
+            <div class="large-3 medium-3 columns">
+              <div class="hide-for-small">
+                <div class="sidebar">
+                <nav>
+                  <ul id="side-nav" class="side-nav">
+
+                    
+                      <li class="side-title"><span>容器</span></li>
+                        
+                          <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>web服务器</span></li>
+                        
+                          <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+                        
+                          <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>linux编程</span></li>
+                        
+                          <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+                        
+                          <li><a title="信号" href="15033227238921.html">信号</a></li>
+                        
+                          <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+                        
+                          <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+                        
+                          <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+                        
+                          <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+                        
+                          <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+                        
+                          <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+                        
+                          <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+                        
+                          <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+                        
+                          <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+                        
+                          <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>坑</span></li>
+                        
+                          <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+                        
+                          <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+                        
+                          <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+                        
+                          <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>日常运维</span></li>
+                        
+                          <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+                        
+                          <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+                        
+                          <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+                        
+                          <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+                        
+                          <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+                        
+                          <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+                        
+                          <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+                        
+                          <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+                        
+                          <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+                        
+                          <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+                        
+                          <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+                        
+                          <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+                        
+
+                    
+                  </ul>
+                </nav>
+                </div>
+              </div>
+            </div>
+            <div class="large-9 medium-9 columns">
+
+ <div class="markdown-body">
+<h1>ubuntu mysql5.7源码安装</h1>
+
+<p>　　本系列的lnmp的大框架基本上是按照<a href="http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html">http://www.linuxzen.com/lnmphuan-jing-da-jian-wan-quan-shou-ce-si-lnmpda-jian-yuan-ma-an-zhuang.html</a>来写的<br/>
+　　最近在学习搭建LNMP环境，nginx相对来说还是比较好搭的，但是mysql就太坑爹了，之前在网上查资料的时候看到一个人说它花了一周的时间源码搭建mysql，刚开始内心还有点嘲笑他，但是此时此刻我发现是我错了，周日花了一天的时间使用源码安装了mysql，累感不爱。在ubuntu下mysql可以使用apt-get命令一步安装，仅做少许配置，但是源码安装真是掉了一层皮，但是源码安装又是一个运维必须要会的一个东西，所以必须学习。</p>
+
+<h3 id="toc_0">　1.下载mysql</h3>
+
+<p>　　这个是最基本的第一步，下载地址<a href="http://dev.mysql.com/downloads/mysql/">http://dev.mysql.com/downloads/mysql/</a>，我选择了5.7版本的，这一版相对前几版在配置上变化较大，这也是在我之后搭建的过程中发现的，但是后悔已经来不及了。</p>
+
+<h3 id="toc_1">　2、下载相关依赖</h3>
+
+<blockquote>
+<pre><code>sudo apt-get install cmake libncurses5-dev  bison g++
+</code></pre>
+</blockquote>
+
+<p>这里要注意的是ubuntu下的libncurses5-dev在红帽下是另一个名字，这个请自行百度。</p>
+
+<h3 id="toc_2">　3.创建mysql用户、组</h3>
+
+<blockquote>
+<pre><code>groupadd mysql
+useradd -r mysql -G mysql
+</code></pre>
+</blockquote>
+
+<h3 id="toc_3">4.解压mysql</h3>
+
+<p>　　我把下载好的mysql压缩包放在了/root目录下，因为之后要多次使用root权限，索性直接切换到root了。　　</p>
+
+<blockquote>
+<pre><code>tar -xzvf mysql-5.7.9.tar.gz &amp;&amp; cd mysql-5.7.9.tar.gz
+</code></pre>
+</blockquote>
+
+<h3 id="toc_4">5.生成配置文件</h3>
+
+<p>　　在mysql5.7以前，使用configure生成配置文件，但是5.7是使用cmake生成的。这也就是为什么之前要安装cmake的原因。<br/>
+　　在这里要注意的一点是需要事先安装好boost，如果没有，在cmake最后再加个参数-DDOWNLOAD_BOOST=1 -DWITH_BOOST=/usr/local/boost即可，系统会自动帮你下载解压安装boost</p>
+
+<blockquote>
+<pre><code>cmake -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DMYSQL_DATADIR=/usr/local/mysql/data -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DMYSQL_TCP_PORT=3306 -DMYSQL_USER=mysql -DWITH_MYISAM_STORAGE_ENGINE=1 -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_ARCHIVE_STORAGE_ENGINE=1 -DWITH_BLACKHOLE_STORAGE_ENGINE=1 -DWITH_MEMORY_STORAGE_ENGINE=1 -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/usr/local/boost
+make&amp;&amp;make install
+</code></pre>
+</blockquote>
+
+<p>参数含义：　　　　</p>
+
+<blockquote>
+<pre><code>-DCMAKE_INSTALL_PREFIX：指定MySQL程序的安装目录，默认/usr/local/mysql
+-DMYSQL_DATADIR：数据文件目录
+-DDEFAULT_CHARSET：指定服务器默认编码，默认latin1
+-DDEFAULT_COLLATION：指定服务器默认的整理编码，默认latin1_general_ci
+-DMYSQL_UNIX_ADDR：连接数据库socket文件路径，默认/tmp/mysql.sock
+-DENABLED_LOCAL_INFILE：指定是否允许本地执行LOAD DATA INFILE，默认OFF
+-DWITH_DEBUG    bool值，表示是否开启debug模式
+-DWITH_MYISAM_STORAGE_ENGINE= MYISAM引擎支持(1|0)
+-DWITH_INNOBASE_STORAGE_ENGINE= innoDB引擎支持(1|0)
+-DWITH_MEMORY_STORAGE_ENGINE= MEMORY引擎支持(1|0)
+-DWITHOUT_xxx_STORAGE_ENGINE：指定不编译的存储引擎
+SYSCONFDIR：初始化参数文件目录
+-DMYSQL_TCP_PORT：服务端口号，默认3306
+-DWITH_COMMENT：指定编译备注信息
+</code></pre>
+</blockquote>
+
+<h3 id="toc_5">　6.编译安装</h3>
+
+<blockquote>
+<pre><code>mkdir -p /usr/local/mysql/data
+chown -R mysql:mysql /usr/local/mysql
+make&amp;&amp;make install
+</code></pre>
+</blockquote>
+
+<h3 id="toc_6">7.配置（这里的问题最多，出了很多问题，到现在只有这个勉强能用的方法）</h3>
+
+<p>　　①复制my.cnf配置文件<br/>
+　　　　cp /usr/local/mysql/support-files/***.cnf /etc/my.cnf<br/>
+　　②配置/etc/my.conf</p>
+
+<blockquote>
+<pre><code>[mysqld]
+basedir=/usr/local/mysql
+datadir=/usr/local/mysql/data
+log-error=/usr/local/mysql/mysql_error.log
+pid-file=/usr/local/mysql/mysql.pid
+#socket=/usr/local/mysql/mysql.sock
+user=mysql
+port=3306
+explicit_defaults_for_timestamp=true
+[mysqld_safe]
+basedir=/usr/local/mysql
+datadir=/usr/local/mysql/data
+log-error=/usr/local/mysql/mysql_error.log
+pid-file=/usr/local/mysql/mysql.pid
+</code></pre>
+</blockquote>
+
+<p>　　③复制权限文件<br/>
+　　　　cp /usr/local/mysql/support-files/mysql.server /etc/init.d/mysql<br/>
+　　④初始化MySQL（这步完成后/usr/local/mysql/data目录下有数据了，本来是空的）<br/>
+　　　　sudo bin/mysqld --initialize-insecure --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data --pid-file=/usr/local/mysql/data/mysql.pid 生成无密码用户或sudo bin/mysqld --initialize --user=mysql --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data --pid-file=/usr/local/mysql/data/mysql.pid生成随机密码用户<br/>
+　　⑤启动MySQL（修改密码）<br/>
+　　　　如果不先使用mysqld_safe直接启动mysql的话，就会报错<br/>
+<img src="media/15033230940135/15033231284056.jpg" alt=""/></p>
+
+<blockquote>
+<pre><code>/usr/local/mysql/bin/mysqld_safe --user=mysql &amp;
+service mysql start
+/usr/local/bin/mysql -u root -h 127.0.0.1 --skip-password（无密码）
+或/usr/lcoal/bin/mysql -u root -h 127.0.0.1 -p （有密码）
+mysql&gt; ALTER USER &#39;root&#39;@&#39;localhost&#39; IDENTIFIED BY &#39;new-password&#39;;　　（注意前面的mysql&gt;是进入mysql的标志，不是命令）
+mysql&gt; quit
+service mysql stop
+</code></pre>
+</blockquote>
+
+<p><img src="media/15033230940135/15033231360131.jpg" alt=""/><br/>
+可以看到退出mysql服务时是把mysqld_safe也关闭的<br/>
+　　⑧启动mysql（登陆）<br/>
+　　　　/usr/local/bin/mysqld_safe &amp;<br/>
+　　　　service mysql start</p>
+
+<p>　　　　mysql -u root -p</p>
+
+<p>　　从上面可以看出每次启动mysql时都要先启动mysqld_safe，在启动mysql，关闭mysql时会把mysqld_safe一起关掉，所以这就是我认为安装的不完美的地方，如果是终端apt-get安装的话从来没有发生过这种情况。看了mysql的官网在介绍安装的时候也是这么讲的也许是5.7版本就是这样操作的，连接：<br/>
+　　<a href="http://dev.mysql.com/doc/refman/5.7/en/data-directory-initialization-mysqld.html">http://dev.mysql.com/doc/refman/5.7/en/data-directory-initialization-mysqld.html</a><br/>
+　　<a href="http://dev.mysql.com/doc/refman/5.7/en/data-directory-initialization-mysql-install-db.html">http://dev.mysql.com/doc/refman/5.7/en/data-directory-initialization-mysql-install-db.html</a></p>
+
+<p><img src="media/15033230940135/15033231552482.jpg" alt=""/><br/>
+<img src="media/15033230940135/15033231589939.jpg" alt=""/><br/>
+<img src="media/15033230940135/15033231614946.jpg" alt=""/><br/>
+<img src="media/15033230940135/15033231637871.jpg" alt=""/></p>
+
+
+</div>
+
+<br /><br />
+<hr />
+
+<div class="row clearfix">
+  <div class="large-6 columns">
+	<div class="text-left" style="padding:15px 0px;">
+		
+	</div>
+  </div>
+  <div class="large-6 columns">
+	<div class="text-right" style="padding:15px 0px;">
+		
+	        <a href="15033230316456.html" 
+	        title="Next Post: ubuntu php5.6源码安装">ubuntu php5.6源码安装 &raquo;</a>
+	    
+	</div>
+  </div>
+</div>
+
+<div class="row">
+<div style="padding:0px 0.93em;" class="share-comments">
+
+</div>
+</div>
+<script type="text/javascript">
+	$(function(){
+		var currentURL = '15033230940135.html';
+		$('#side-nav a').each(function(){
+			if($(this).attr('href') == currentURL){
+				$(this).parent().addClass('active');
+			}
+		});
+	});
+</script>  
+</div></div>
+
+
+<div class="page-bottom">
+  <div class="row">
+  <hr />
+  <div class="small-9 columns">
+  <p class="copyright">Copyright &copy; 2015
+Powered by <a target="_blank" href="http://www.mweb.im">MWeb</a>,&nbsp; 
+Theme used <a target="_blank" href="http://github.com">GitHub CSS</a>.</p>
+  </div>
+  <div class="small-3 columns">
+  <p class="copyright text-right"><a href="#header">TOP</a></p>
+  </div>
+   
+  </div>
+</div>
+
+        </section>
+      </div>
+    </div>
+    
+    
+    <script src="asset/js/foundation.min.js"></script>
+    <script src="asset/js/foundation/foundation.offcanvas.js"></script>
+    <script>
+      $(document).foundation();
+
+     
+    </script>
+    <script src="asset/chart/all-min.js"></script><script type="text/javascript">$(function(){    var mwebii=0;    var mwebChartEleId = 'mweb-chart-ele-';    $('pre>code').each(function(){        mwebii++;        var eleiid = mwebChartEleId+mwebii;        if($(this).hasClass('language-sequence')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = Diagram.parse($(this).text());            diagram.drawSVG(eleiid,{theme: 'simple'});        }else if($(this).hasClass('language-flow')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = flowchart.parse($(this).text());            diagram.drawSVG(eleiid);        }    });});</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({TeX: { equationNumbers: { autoNumber: "AMS" } }});</script>
+
+  </body>
+</html>
