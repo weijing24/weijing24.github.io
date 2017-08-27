@@ -1,0 +1,551 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+    
+  docker随谈 - 小菜鸡
+  
+  </title>
+ <meta name="description" content="个人博客">
+ <link href="atom.xml" rel="alternate" title="小菜鸡" type="application/atom+xml">
+    <link rel="stylesheet" href="asset/css/foundation.min.css" />
+    <link rel="stylesheet" href="asset/css/docs.css" />
+
+    <script src="asset/js/vendor/modernizr.js"></script>
+    <script src="asset/js/vendor/jquery.js"></script>
+    <script src="asset/highlightjs/highlight.pack.js"></script>
+    <link href="asset/highlightjs/styles/github.css" media="screen, projection" rel="stylesheet" type="text/css">
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+  </head>
+  <body class="antialiased hide-extras">
+    
+    <div class="marketing off-canvas-wrap" data-offcanvas>
+      <div class="inner-wrap">
+
+
+<nav class="top-bar docs-bar hide-for-small" data-topbar>
+
+<div id="header">
+    <h1><a href="index.html">小菜鸡</a></h1>
+</div>
+
+</nav>
+        <nav class="tab-bar show-for-small">
+  <a href="javascript:void(0)" class="left-off-canvas-toggle menu-icon">
+    <span> &nbsp; 小菜鸡</span>
+  </a>
+</nav>
+
+<aside class="left-off-canvas-menu">
+      <ul class="off-canvas-list">
+      <li><a href="index.html">Home</a></li>
+      
+        <li class="divider"></li>
+        <li><label>容器</label></li>
+
+          
+            <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>web服务器</label></li>
+
+          
+            <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+          
+            <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>卓越班学习</label></li>
+
+          
+            <li><a title="ELF和a.out文件格式的比较" href="15038328822812.html">ELF和a.out文件格式的比较</a></li>
+          
+            <li><a title="linux多线程编程入门" href="15038316827096.html">linux多线程编程入门</a></li>
+          
+            <li><a title="linux进程编程入门" href="15038316680304.html">linux进程编程入门</a></li>
+          
+            <li><a title="shell系统管理" href="15038311430982.html">shell系统管理</a></li>
+          
+            <li><a title="shell编程入门" href="15038311023811.html">shell编程入门</a></li>
+          
+            <li><a title="shell网络管理" href="15038310714574.html">shell网络管理</a></li>
+          
+            <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+          
+            <li><a title="信号" href="15033227238921.html">信号</a></li>
+          
+            <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+          
+            <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+          
+            <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+          
+            <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+          
+            <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+          
+            <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+          
+            <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+          
+            <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+          
+            <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+          
+            <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>坑</label></li>
+
+          
+            <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+          
+            <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+          
+            <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+          
+            <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>日常运维</label></li>
+
+          
+            <li><a title="dns服务器报错解决" href="15038329582108.html">dns服务器报错解决</a></li>
+          
+            <li><a title="docker随谈" href="15038329005848.html">docker随谈</a></li>
+          
+            <li><a title="i节点，容易被人遗忘的节点" href="15038322315997.html">i节点，容易被人遗忘的节点</a></li>
+          
+            <li><a title="libc.so.6被删后导致系统无法使用的原因及解决方法" href="15038321032705.html">libc.so.6被删后导致系统无法使用的原因及解决方法</a></li>
+          
+            <li><a title="linux下nginx模块开发入门" href="15038318990451.html">linux下nginx模块开发入门</a></li>
+          
+            <li><a title="Linux下配置rsync服务器" href="15038318551859.html">Linux下配置rsync服务器</a></li>
+          
+            <li><a title="mysql初始化" href="15038316518471.html">mysql初始化</a></li>
+          
+            <li><a title="nagios安装" href="15038316187109.html">nagios安装</a></li>
+          
+            <li><a title="nagios配置" href="15038315676757.html">nagios配置</a></li>
+          
+            <li><a title="nginx、mysql、php等各编译参数查询" href="15038315492978.html">nginx、mysql、php等各编译参数查询</a></li>
+          
+            <li><a title="nginx性能优化技巧" href="15038314081873.html">nginx性能优化技巧</a></li>
+          
+            <li><a title="php安装memcache扩展" href="15038313472966.html">php安装memcache扩展</a></li>
+          
+            <li><a title="puppet和ansible比较" href="15038313193415.html">puppet和ansible比较</a></li>
+          
+            <li><a title="puppet学习笔记(二)" href="15038312823109.html">puppet学习笔记(二)</a></li>
+          
+            <li><a title="puppet学习笔记（一）" href="15038311899167.html">puppet学习笔记（一）</a></li>
+          
+            <li><a title="ssh大坑" href="15038309933322.html">ssh大坑</a></li>
+          
+            <li><a title="svn同步大坑" href="15038308908725.html">svn同步大坑</a></li>
+          
+            <li><a title="svn服务器搭建与迁移" href="15038308118838.html">svn服务器搭建与迁移</a></li>
+          
+            <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+          
+            <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+          
+            <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+          
+            <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+          
+            <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+          
+            <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+          
+            <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+          
+            <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+          
+            <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+          
+            <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+          
+            <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+          
+            <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>http</label></li>
+
+          
+            <li><a title="HTTP协议 (七) Cookie" href="15038327056467.html">HTTP协议 (七) Cookie</a></li>
+          
+            <li><a title="HTTP协议 (六) 状态码详解" href="15038326831174.html">HTTP协议 (六) 状态码详解</a></li>
+          
+            <li><a title="HTTP协议 (五) 代理" href="15038326274764.html">HTTP协议 (五) 代理</a></li>
+          
+            <li><a title="HTTP协议 (四) 缓存" href="15038325535184.html">HTTP协议 (四) 缓存</a></li>
+          
+            <li><a title="HTTP协议 (三) 压缩" href="15038324866170.html">HTTP协议 (三) 压缩</a></li>
+          
+            <li><a title="HTTP协议 (二) 基本认证" href="15038324138209.html">HTTP协议 (二) 基本认证</a></li>
+          
+            <li><a title="HTTP协议 (一) HTTP协议详解" href="15038322654511.html">HTTP协议 (一) HTTP协议详解</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>监控</label></li>
+
+          
+            <li><a title="zabbix安装排错过程" href="15033228802565.html">zabbix安装排错过程</a></li>
+          
+
+      
+      </ul>
+    </aside>
+
+<a class="exit-off-canvas" href="#"></a>
+
+        <section id="main-content" role="main" class="scroll-container">
+
+          <div class="row">
+            <div class="large-3 medium-3 columns">
+              <div class="hide-for-small">
+                <div class="sidebar">
+                <nav>
+                  <ul id="side-nav" class="side-nav">
+
+                    
+                      <li class="side-title"><span>容器</span></li>
+                        
+                          <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>web服务器</span></li>
+                        
+                          <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+                        
+                          <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>卓越班学习</span></li>
+                        
+                          <li><a title="ELF和a.out文件格式的比较" href="15038328822812.html">ELF和a.out文件格式的比较</a></li>
+                        
+                          <li><a title="linux多线程编程入门" href="15038316827096.html">linux多线程编程入门</a></li>
+                        
+                          <li><a title="linux进程编程入门" href="15038316680304.html">linux进程编程入门</a></li>
+                        
+                          <li><a title="shell系统管理" href="15038311430982.html">shell系统管理</a></li>
+                        
+                          <li><a title="shell编程入门" href="15038311023811.html">shell编程入门</a></li>
+                        
+                          <li><a title="shell网络管理" href="15038310714574.html">shell网络管理</a></li>
+                        
+                          <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+                        
+                          <li><a title="信号" href="15033227238921.html">信号</a></li>
+                        
+                          <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+                        
+                          <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+                        
+                          <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+                        
+                          <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+                        
+                          <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+                        
+                          <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+                        
+                          <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+                        
+                          <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+                        
+                          <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+                        
+                          <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>坑</span></li>
+                        
+                          <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+                        
+                          <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+                        
+                          <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+                        
+                          <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>日常运维</span></li>
+                        
+                          <li><a title="dns服务器报错解决" href="15038329582108.html">dns服务器报错解决</a></li>
+                        
+                          <li><a title="docker随谈" href="15038329005848.html">docker随谈</a></li>
+                        
+                          <li><a title="i节点，容易被人遗忘的节点" href="15038322315997.html">i节点，容易被人遗忘的节点</a></li>
+                        
+                          <li><a title="libc.so.6被删后导致系统无法使用的原因及解决方法" href="15038321032705.html">libc.so.6被删后导致系统无法使用的原因及解决方法</a></li>
+                        
+                          <li><a title="linux下nginx模块开发入门" href="15038318990451.html">linux下nginx模块开发入门</a></li>
+                        
+                          <li><a title="Linux下配置rsync服务器" href="15038318551859.html">Linux下配置rsync服务器</a></li>
+                        
+                          <li><a title="mysql初始化" href="15038316518471.html">mysql初始化</a></li>
+                        
+                          <li><a title="nagios安装" href="15038316187109.html">nagios安装</a></li>
+                        
+                          <li><a title="nagios配置" href="15038315676757.html">nagios配置</a></li>
+                        
+                          <li><a title="nginx、mysql、php等各编译参数查询" href="15038315492978.html">nginx、mysql、php等各编译参数查询</a></li>
+                        
+                          <li><a title="nginx性能优化技巧" href="15038314081873.html">nginx性能优化技巧</a></li>
+                        
+                          <li><a title="php安装memcache扩展" href="15038313472966.html">php安装memcache扩展</a></li>
+                        
+                          <li><a title="puppet和ansible比较" href="15038313193415.html">puppet和ansible比较</a></li>
+                        
+                          <li><a title="puppet学习笔记(二)" href="15038312823109.html">puppet学习笔记(二)</a></li>
+                        
+                          <li><a title="puppet学习笔记（一）" href="15038311899167.html">puppet学习笔记（一）</a></li>
+                        
+                          <li><a title="ssh大坑" href="15038309933322.html">ssh大坑</a></li>
+                        
+                          <li><a title="svn同步大坑" href="15038308908725.html">svn同步大坑</a></li>
+                        
+                          <li><a title="svn服务器搭建与迁移" href="15038308118838.html">svn服务器搭建与迁移</a></li>
+                        
+                          <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+                        
+                          <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+                        
+                          <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+                        
+                          <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+                        
+                          <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+                        
+                          <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+                        
+                          <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+                        
+                          <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+                        
+                          <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+                        
+                          <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+                        
+                          <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+                        
+                          <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>http</span></li>
+                        
+                          <li><a title="HTTP协议 (七) Cookie" href="15038327056467.html">HTTP协议 (七) Cookie</a></li>
+                        
+                          <li><a title="HTTP协议 (六) 状态码详解" href="15038326831174.html">HTTP协议 (六) 状态码详解</a></li>
+                        
+                          <li><a title="HTTP协议 (五) 代理" href="15038326274764.html">HTTP协议 (五) 代理</a></li>
+                        
+                          <li><a title="HTTP协议 (四) 缓存" href="15038325535184.html">HTTP协议 (四) 缓存</a></li>
+                        
+                          <li><a title="HTTP协议 (三) 压缩" href="15038324866170.html">HTTP协议 (三) 压缩</a></li>
+                        
+                          <li><a title="HTTP协议 (二) 基本认证" href="15038324138209.html">HTTP协议 (二) 基本认证</a></li>
+                        
+                          <li><a title="HTTP协议 (一) HTTP协议详解" href="15038322654511.html">HTTP协议 (一) HTTP协议详解</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>监控</span></li>
+                        
+                          <li><a title="zabbix安装排错过程" href="15033228802565.html">zabbix安装排错过程</a></li>
+                        
+
+                    
+                  </ul>
+                </nav>
+                </div>
+              </div>
+            </div>
+            <div class="large-9 medium-9 columns">
+
+ <div class="markdown-body">
+<h1>docker随谈</h1>
+
+<p>　　最近在搞Docker，其实去年就听老师说过这个东西，说非常火，当时不以为然，还错把它当成docky。当时想想docky不就是一个快速启动工具么，有什么。现在想想真是惭愧。。。</p>
+
+<p>　　Docker的牛逼之处网上找找也有一大堆：轻量化、占用系统资源少（基本不占用）、部署快、扩展性强，可以说是虚拟化的未来。</p>
+
+<p>　　Docker直接作用在宿主机上，不需要虚拟机管理系统。下图摘自网上：<br/>
+<img src="media/15038329005848/15038329169605.jpg" alt=""/><br/>
+　　可以看出使用Docker比一般的虚拟机少了两层东西，可见Docker的轻量。<br/>
+　　Docker诞生之初也是为了能让开发者更专心的做开发，系统管理员更专注于系统的构架。所以Docker可以一次打包，在任何地方运行。它的官网也是这么说的：Build, Ship and Run Any App, Anywhere！试想一下当迁移服务器的时候你可能需要先将数据和应用迁出再部署到其他的服务器上，非常麻烦不说还有可能在这个过程中丢失数据。使用docker就没有这么多问题，你只需要将Docker image先上传到Docker Hub中然后在新的服务器中pull下来即可，是不是感觉这个过程和Git类似？Docker就是运用了集装箱的原理，它不在乎你是什么系统什么架构，它只负责把你关心的打包，然后交付给别人使用。<br/>
+　　Docker有三个核心概念：容器、镜像、仓库。这三个如果铺开来讲恐怕这能成一个系列了，既然是随笔就力求用最短的话把它说清楚讲明白<br/>
+　　镜像：镜像这个东西计算机专业的应该都能懂，它和我们装系统的镜像是一个东西。开发者把写好的程序打包放入镜像中就可以交付给别人使用（在这里可以不用纠结于这个镜像的具体内容），一般都是先从Docker Hub中下载一个现成的镜像然后开始开发自己要开发的东西。<br/>
+　　容器：容器的概念比较绕，一开始我以为镜像是运行在容器中的，因为字面意思来看容器是容纳东西的嘛，但是事实是容器运行在镜像之上。我们知道镜像是不会改动的，当我们运行一个镜像那么他就生成了一个容器。可以把镜像想象成是一个程序，容器就是一个进程。镜像（程序）是静态的，容器（进程）是动态的。我们的开发部署工作都是在容器中<br/>
+　　仓库：仓库就是存放镜像的地方。你可以建自己的私有仓库也可以建共有仓库。push可以把本地的镜像上传到Hub中，pull可以把Hub中的镜像下载到本地。把它想象成Github可以容易理解的多（暂时不要想版本控制，就单纯的上传和下载）。<br/>
+　　这里必须要提Docker很牛的一个地方，就是容器的灵活性。镜像本身是由很多层文件系统组成的，当我们运行一个镜像产生了一个容器就会在镜像上添加一层<strong>读写层（位于下图的Container和Image之间的一层）！</strong>我们在容器中的所有操作都是作用在读写层上不会写入到镜像中。如果多次运行同一个镜像就会产生多个不同的容器（在镜像上平行的添加的读写层）。在这里可能会有疑问开这么多容器不就搞混了吗？容器是可以自己取名的，所以这完全不是问题。当你在容器内开发完程序就可以把容器打包为一个新的镜像，把没用的容器全部删掉。把你开发的具有稳定版程序的容器保留，下次开发使用start就能瞬间启动容器。<br/>
+<img src="media/15038329005848/15038329277919.jpg" alt=""/><br/>
+　　同时还有一个很重要的地方就是：<strong>Docker不是容器，而是管理容器的引擎。</strong>很多地方都会把Docker和容器划上等号，这是十分误导人的。</p>
+
+<h3 id="toc_0">关于Docker安全性问题的思考</h3>
+
+<p>　　Docker目前在安全性和稳定性上面还有待时间的检验。不过Docker在未正式发布时就有好几家金融机构开始使用了，要知道金融公司对于平台的稳定性和安全性要求是十分之高的，由此可见Docker的魅力。然而Docker在实际生产中还是有一些安全性问题的。<br/>
+　　①由于Docker的仓库是开放的，任何人都可以下载使用，难保不会有人在<strong>镜像中植入后门。</strong><br/>
+　　②尽管Docker有Namespace这层保障，但是由于<strong>Docker依赖于宿主机内核调度</strong>的先天特性，一旦内核出现Bug可以通过宿主机入侵容器，窃取生产环境信息。<br/>
+　　③严格来说Docker不是虚拟机，普通虚拟机的root和宿主机的root是分开的，而Docker容器的root和宿主机的root是同一个用户，一旦<strong>容器内的用户提权至root，他就有了无限制的操作，要知道Docker容器是可以和宿主机共享文件系统的，容器内的用户提权了宿主机等于被提权了。</strong>Docker的本质是进程隔离，为进程创建隔离开的运行空间，这样就可以隔离有问题的应用。<strong>进程间的隔离是通过Namespace（作用：隔离）和Cgroup（作用：配额限制），隔离出来的进程组对外表现就是一个Container。</strong></p>
+
+<h3 id="toc_1">新手使用Docker会遇到的坑</h3>
+
+<p>　　此坑仅适用于中国程序员。感谢GFW，下载Docker并不是那么的简单，Ubuntu和Centos源中有Docker安装包，但是想要下载最新版或特定版本的并不是那么容易，因为Docker的网站在中国访问极慢，个人不是很推荐网上找不明来源的安装包下载安装，毕竟官方的才是最好的。这些问题都不是很大，最大的问题是下载和上传Docker镜像，<a href="https://hub.docker.com">https://hub.docker.com</a> 这个网站就跟段誉的武功一样时灵时不灵的（大多数时候不灵，能访问也是小水管），下面我分别给出下载Docker和镜像的解决方法：<br/>
+　　①下载Docker：<br/>
+　　　方法一：<br/>
+　　　添加一个源，这个源貌似是老毛子的，里面Docker的版本还是比较全的，从它的源中下载你想要的Docker版本（偶尔也会抽疯，没办法）　</p>
+
+<blockquote>
+<pre><code>sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
+sudo sh -c &quot;echo deb http://mirror.yandex.ru/mirrors/docker/ docker main &gt; /etc/apt/sources.list.d/docker.list&quot;
+sudo apt-get update
+sudo apt-get install lxc-docker-×××
+</code></pre>
+</blockquote>
+
+<p><img src="media/15038329005848/15038329399736.jpg" alt=""/></p>
+
+<p>　　方法二：<br/>
+　　这是Docker官方给出的方法，没试过，可以试试　　</p>
+
+<blockquote>
+<pre><code>sudo apt-get update
+sudo apt-get install wget
+wget -qO- https://get.docker.com/ | sh
+wget -qO- https://get.docker.com/gpg | sudo apt-key add -
+</code></pre>
+</blockquote>
+
+<p>　　Docker安装完毕可以先看看是否安装成功<br/>
+<img src="media/15038329005848/15038329472263.jpg" alt=""/></p>
+
+<p>　　②下载镜像<br/>
+　　下载完Docker就可以下载镜像来一发试试了，在这里你可以使用官方镜像下载：　　</p>
+
+<blockquote>
+<pre><code>sudo docker pull hello-world　 下载镜像
+sudo docker run hello-world　　运行镜像
+</code></pre>
+</blockquote>
+
+<p>　　run是运行一个镜像，由于刚开始使用本地没有任何镜像，Docker检测到没有会自动去Docker Hub中下载。这个命令大多数时候是抽疯的（感谢GFW）。<br/>
+　　所以我推荐一个更好的方法：使用第三方镜像库。网上找了半天好像也就有一个Daocloud的可以用（真的不是广告），看来中国的Docker还需要发展几年。　　</p>
+
+<blockquote>
+<pre><code>curl -sSL https://get.daocloud.io/docker | sh
+curl -sSL https://get.daocloud.io/daomonit/install.sh | sh -s 4995bde401f6afc9dc5cd89a043111079ec442bb 
+sudo daomonit -token=4995bde401f6afc9dc5cd89a043111079ec442bb save-config
+sudo service daomonit start
+</code></pre>
+</blockquote>
+
+<p>　　然后使用dao pull 下载镜像　　</p>
+
+<blockquote>
+<pre><code>sudo dao pull ×××
+sudo dao --help　　查询使用方法
+</code></pre>
+</blockquote>
+
+<p>　　具体使用方法可以看<a href="http://get.daocloud.io/#install-docker">http://get.daocloud.io/#install-docker</a><br/>
+　　当然最好的方法还是开个VPN，我就是使用了VPN所以这些步骤都没走，pull、push随便用无压力，哈哈哈。</p>
+
+
+</div>
+
+<br /><br />
+<hr />
+
+<div class="row clearfix">
+  <div class="large-6 columns">
+	<div class="text-left" style="padding:15px 0px;">
+		
+	        <a href="15038329582108.html"  title="Previous Post: dns服务器报错解决">&laquo; dns服务器报错解决</a>
+	    
+	</div>
+  </div>
+  <div class="large-6 columns">
+	<div class="text-right" style="padding:15px 0px;">
+		
+	        <a href="15038328822812.html" 
+	        title="Next Post: ELF和a.out文件格式的比较">ELF和a.out文件格式的比较 &raquo;</a>
+	    
+	</div>
+  </div>
+</div>
+
+<div class="row">
+<div style="padding:0px 0.93em;" class="share-comments">
+
+</div>
+</div>
+<script type="text/javascript">
+	$(function(){
+		var currentURL = '15038329005848.html';
+		$('#side-nav a').each(function(){
+			if($(this).attr('href') == currentURL){
+				$(this).parent().addClass('active');
+			}
+		});
+	});
+</script>  
+</div></div>
+
+
+<div class="page-bottom">
+  <div class="row">
+  <hr />
+  <div class="small-9 columns">
+  <p class="copyright">Copyright &copy; 2015
+Powered by <a target="_blank" href="http://www.mweb.im">MWeb</a>,&nbsp; 
+Theme used <a target="_blank" href="http://github.com">GitHub CSS</a>.</p>
+  </div>
+  <div class="small-3 columns">
+  <p class="copyright text-right"><a href="#header">TOP</a></p>
+  </div>
+   
+  </div>
+</div>
+
+        </section>
+      </div>
+    </div>
+    
+    
+    <script src="asset/js/foundation.min.js"></script>
+    <script src="asset/js/foundation/foundation.offcanvas.js"></script>
+    <script>
+      $(document).foundation();
+
+     
+    </script>
+    <script src="asset/chart/all-min.js"></script><script type="text/javascript">$(function(){    var mwebii=0;    var mwebChartEleId = 'mweb-chart-ele-';    $('pre>code').each(function(){        mwebii++;        var eleiid = mwebChartEleId+mwebii;        if($(this).hasClass('language-sequence')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = Diagram.parse($(this).text());            diagram.drawSVG(eleiid,{theme: 'simple'});        }else if($(this).hasClass('language-flow')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = flowchart.parse($(this).text());            diagram.drawSVG(eleiid);        }    });});</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({TeX: { equationNumbers: { autoNumber: "AMS" } }});</script>
+
+  </body>
+</html>

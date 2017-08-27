@@ -1,0 +1,579 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+    
+  HTTP协议 (四) 缓存 - 小菜鸡
+  
+  </title>
+ <meta name="description" content="个人博客">
+ <link href="atom.xml" rel="alternate" title="小菜鸡" type="application/atom+xml">
+    <link rel="stylesheet" href="asset/css/foundation.min.css" />
+    <link rel="stylesheet" href="asset/css/docs.css" />
+
+    <script src="asset/js/vendor/modernizr.js"></script>
+    <script src="asset/js/vendor/jquery.js"></script>
+    <script src="asset/highlightjs/highlight.pack.js"></script>
+    <link href="asset/highlightjs/styles/github.css" media="screen, projection" rel="stylesheet" type="text/css">
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+  </head>
+  <body class="antialiased hide-extras">
+    
+    <div class="marketing off-canvas-wrap" data-offcanvas>
+      <div class="inner-wrap">
+
+
+<nav class="top-bar docs-bar hide-for-small" data-topbar>
+
+<div id="header">
+    <h1><a href="index.html">小菜鸡</a></h1>
+</div>
+
+</nav>
+        <nav class="tab-bar show-for-small">
+  <a href="javascript:void(0)" class="left-off-canvas-toggle menu-icon">
+    <span> &nbsp; 小菜鸡</span>
+  </a>
+</nav>
+
+<aside class="left-off-canvas-menu">
+      <ul class="off-canvas-list">
+      <li><a href="index.html">Home</a></li>
+      
+        <li class="divider"></li>
+        <li><label>容器</label></li>
+
+          
+            <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>web服务器</label></li>
+
+          
+            <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+          
+            <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>卓越班学习</label></li>
+
+          
+            <li><a title="ELF和a.out文件格式的比较" href="15038328822812.html">ELF和a.out文件格式的比较</a></li>
+          
+            <li><a title="linux多线程编程入门" href="15038316827096.html">linux多线程编程入门</a></li>
+          
+            <li><a title="linux进程编程入门" href="15038316680304.html">linux进程编程入门</a></li>
+          
+            <li><a title="shell系统管理" href="15038311430982.html">shell系统管理</a></li>
+          
+            <li><a title="shell编程入门" href="15038311023811.html">shell编程入门</a></li>
+          
+            <li><a title="shell网络管理" href="15038310714574.html">shell网络管理</a></li>
+          
+            <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+          
+            <li><a title="信号" href="15033227238921.html">信号</a></li>
+          
+            <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+          
+            <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+          
+            <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+          
+            <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+          
+            <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+          
+            <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+          
+            <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+          
+            <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+          
+            <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+          
+            <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>坑</label></li>
+
+          
+            <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+          
+            <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+          
+            <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+          
+            <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>日常运维</label></li>
+
+          
+            <li><a title="dns服务器报错解决" href="15038329582108.html">dns服务器报错解决</a></li>
+          
+            <li><a title="docker随谈" href="15038329005848.html">docker随谈</a></li>
+          
+            <li><a title="i节点，容易被人遗忘的节点" href="15038322315997.html">i节点，容易被人遗忘的节点</a></li>
+          
+            <li><a title="libc.so.6被删后导致系统无法使用的原因及解决方法" href="15038321032705.html">libc.so.6被删后导致系统无法使用的原因及解决方法</a></li>
+          
+            <li><a title="linux下nginx模块开发入门" href="15038318990451.html">linux下nginx模块开发入门</a></li>
+          
+            <li><a title="Linux下配置rsync服务器" href="15038318551859.html">Linux下配置rsync服务器</a></li>
+          
+            <li><a title="mysql初始化" href="15038316518471.html">mysql初始化</a></li>
+          
+            <li><a title="nagios安装" href="15038316187109.html">nagios安装</a></li>
+          
+            <li><a title="nagios配置" href="15038315676757.html">nagios配置</a></li>
+          
+            <li><a title="nginx、mysql、php等各编译参数查询" href="15038315492978.html">nginx、mysql、php等各编译参数查询</a></li>
+          
+            <li><a title="nginx性能优化技巧" href="15038314081873.html">nginx性能优化技巧</a></li>
+          
+            <li><a title="php安装memcache扩展" href="15038313472966.html">php安装memcache扩展</a></li>
+          
+            <li><a title="puppet和ansible比较" href="15038313193415.html">puppet和ansible比较</a></li>
+          
+            <li><a title="puppet学习笔记(二)" href="15038312823109.html">puppet学习笔记(二)</a></li>
+          
+            <li><a title="puppet学习笔记（一）" href="15038311899167.html">puppet学习笔记（一）</a></li>
+          
+            <li><a title="ssh大坑" href="15038309933322.html">ssh大坑</a></li>
+          
+            <li><a title="svn同步大坑" href="15038308908725.html">svn同步大坑</a></li>
+          
+            <li><a title="svn服务器搭建与迁移" href="15038308118838.html">svn服务器搭建与迁移</a></li>
+          
+            <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+          
+            <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+          
+            <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+          
+            <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+          
+            <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+          
+            <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+          
+            <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+          
+            <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+          
+            <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+          
+            <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+          
+            <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+          
+            <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>http</label></li>
+
+          
+            <li><a title="HTTP协议 (七) Cookie" href="15038327056467.html">HTTP协议 (七) Cookie</a></li>
+          
+            <li><a title="HTTP协议 (六) 状态码详解" href="15038326831174.html">HTTP协议 (六) 状态码详解</a></li>
+          
+            <li><a title="HTTP协议 (五) 代理" href="15038326274764.html">HTTP协议 (五) 代理</a></li>
+          
+            <li><a title="HTTP协议 (四) 缓存" href="15038325535184.html">HTTP协议 (四) 缓存</a></li>
+          
+            <li><a title="HTTP协议 (三) 压缩" href="15038324866170.html">HTTP协议 (三) 压缩</a></li>
+          
+            <li><a title="HTTP协议 (二) 基本认证" href="15038324138209.html">HTTP协议 (二) 基本认证</a></li>
+          
+            <li><a title="HTTP协议 (一) HTTP协议详解" href="15038322654511.html">HTTP协议 (一) HTTP协议详解</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>监控</label></li>
+
+          
+            <li><a title="zabbix安装排错过程" href="15033228802565.html">zabbix安装排错过程</a></li>
+          
+
+      
+      </ul>
+    </aside>
+
+<a class="exit-off-canvas" href="#"></a>
+
+        <section id="main-content" role="main" class="scroll-container">
+
+          <div class="row">
+            <div class="large-3 medium-3 columns">
+              <div class="hide-for-small">
+                <div class="sidebar">
+                <nav>
+                  <ul id="side-nav" class="side-nav">
+
+                    
+                      <li class="side-title"><span>容器</span></li>
+                        
+                          <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>web服务器</span></li>
+                        
+                          <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+                        
+                          <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>卓越班学习</span></li>
+                        
+                          <li><a title="ELF和a.out文件格式的比较" href="15038328822812.html">ELF和a.out文件格式的比较</a></li>
+                        
+                          <li><a title="linux多线程编程入门" href="15038316827096.html">linux多线程编程入门</a></li>
+                        
+                          <li><a title="linux进程编程入门" href="15038316680304.html">linux进程编程入门</a></li>
+                        
+                          <li><a title="shell系统管理" href="15038311430982.html">shell系统管理</a></li>
+                        
+                          <li><a title="shell编程入门" href="15038311023811.html">shell编程入门</a></li>
+                        
+                          <li><a title="shell网络管理" href="15038310714574.html">shell网络管理</a></li>
+                        
+                          <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+                        
+                          <li><a title="信号" href="15033227238921.html">信号</a></li>
+                        
+                          <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+                        
+                          <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+                        
+                          <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+                        
+                          <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+                        
+                          <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+                        
+                          <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+                        
+                          <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+                        
+                          <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+                        
+                          <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+                        
+                          <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>坑</span></li>
+                        
+                          <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+                        
+                          <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+                        
+                          <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+                        
+                          <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>日常运维</span></li>
+                        
+                          <li><a title="dns服务器报错解决" href="15038329582108.html">dns服务器报错解决</a></li>
+                        
+                          <li><a title="docker随谈" href="15038329005848.html">docker随谈</a></li>
+                        
+                          <li><a title="i节点，容易被人遗忘的节点" href="15038322315997.html">i节点，容易被人遗忘的节点</a></li>
+                        
+                          <li><a title="libc.so.6被删后导致系统无法使用的原因及解决方法" href="15038321032705.html">libc.so.6被删后导致系统无法使用的原因及解决方法</a></li>
+                        
+                          <li><a title="linux下nginx模块开发入门" href="15038318990451.html">linux下nginx模块开发入门</a></li>
+                        
+                          <li><a title="Linux下配置rsync服务器" href="15038318551859.html">Linux下配置rsync服务器</a></li>
+                        
+                          <li><a title="mysql初始化" href="15038316518471.html">mysql初始化</a></li>
+                        
+                          <li><a title="nagios安装" href="15038316187109.html">nagios安装</a></li>
+                        
+                          <li><a title="nagios配置" href="15038315676757.html">nagios配置</a></li>
+                        
+                          <li><a title="nginx、mysql、php等各编译参数查询" href="15038315492978.html">nginx、mysql、php等各编译参数查询</a></li>
+                        
+                          <li><a title="nginx性能优化技巧" href="15038314081873.html">nginx性能优化技巧</a></li>
+                        
+                          <li><a title="php安装memcache扩展" href="15038313472966.html">php安装memcache扩展</a></li>
+                        
+                          <li><a title="puppet和ansible比较" href="15038313193415.html">puppet和ansible比较</a></li>
+                        
+                          <li><a title="puppet学习笔记(二)" href="15038312823109.html">puppet学习笔记(二)</a></li>
+                        
+                          <li><a title="puppet学习笔记（一）" href="15038311899167.html">puppet学习笔记（一）</a></li>
+                        
+                          <li><a title="ssh大坑" href="15038309933322.html">ssh大坑</a></li>
+                        
+                          <li><a title="svn同步大坑" href="15038308908725.html">svn同步大坑</a></li>
+                        
+                          <li><a title="svn服务器搭建与迁移" href="15038308118838.html">svn服务器搭建与迁移</a></li>
+                        
+                          <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+                        
+                          <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+                        
+                          <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+                        
+                          <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+                        
+                          <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+                        
+                          <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+                        
+                          <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+                        
+                          <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+                        
+                          <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+                        
+                          <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+                        
+                          <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+                        
+                          <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>http</span></li>
+                        
+                          <li><a title="HTTP协议 (七) Cookie" href="15038327056467.html">HTTP协议 (七) Cookie</a></li>
+                        
+                          <li><a title="HTTP协议 (六) 状态码详解" href="15038326831174.html">HTTP协议 (六) 状态码详解</a></li>
+                        
+                          <li><a title="HTTP协议 (五) 代理" href="15038326274764.html">HTTP协议 (五) 代理</a></li>
+                        
+                          <li><a title="HTTP协议 (四) 缓存" href="15038325535184.html">HTTP协议 (四) 缓存</a></li>
+                        
+                          <li><a title="HTTP协议 (三) 压缩" href="15038324866170.html">HTTP协议 (三) 压缩</a></li>
+                        
+                          <li><a title="HTTP协议 (二) 基本认证" href="15038324138209.html">HTTP协议 (二) 基本认证</a></li>
+                        
+                          <li><a title="HTTP协议 (一) HTTP协议详解" href="15038322654511.html">HTTP协议 (一) HTTP协议详解</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>监控</span></li>
+                        
+                          <li><a title="zabbix安装排错过程" href="15033228802565.html">zabbix安装排错过程</a></li>
+                        
+
+                    
+                  </ul>
+                </nav>
+                </div>
+              </div>
+            </div>
+            <div class="large-9 medium-9 columns">
+
+ <div class="markdown-body">
+<h1>HTTP协议 (四) 缓存</h1>
+
+<p>这次继续介绍HTTP协议中的缓存机制。HTTP协议提供了非常强大的缓存机制， 了解这些缓存机制，对提高网站的性能非常有帮助。 本文介绍浏览器和Web服务器之间如何处理&quot;浏览器缓存&quot;，以及控制缓存的http header.</p>
+
+<h3 id="toc_0">缓存的概念</h3>
+
+<p>缓存这个东西真的是无处不在， 有浏览器端的缓存， 有服务器端的缓存，有代理服务器的缓存， 有ASP.NET页面缓存，对象缓存。 数据库也有缓存， 等等。<br/>
+http中具有缓存功能的是浏览器缓存，以及缓存代理服务器。<br/>
+http缓存的是指:当Web请求抵达缓存时， 如果本地有“已缓存的”副本，就可以从本地存储设备而不是从原始服务器中提取这个文档。</p>
+
+<h3 id="toc_1">缓存的好处</h3>
+
+<p>缓存的好处是显而易见的， 好处有，<br/>
+1. 减少了冗余的数据传输，节省了网费。<br/>
+2. 减少了服务器的负担， 大大提高了网站的性能<br/>
+3. 加快了客户端加载网页的速度</p>
+
+<h3 id="toc_2">Fiddler可以方便地查看缓存的header</h3>
+
+<p>Fiddler中把header都分门别类的放在一起，这样方便查看。<br/>
+<img src="media/15038325535184/15038325644897.jpg" alt=""/></p>
+
+<h3 id="toc_3">如何判断缓存新鲜度</h3>
+
+<p>Web服务器通过2种方式来判断浏览器缓存是否是最新的。<br/>
+第一种， 浏览器把缓存文件的最后修改时间通过 header ”If-Modified-Since“来告诉Web服务器。<br/>
+第二种， 浏览器把缓存文件的ETag, 通过header &quot;If-None-Match&quot;, 来告诉Web服务器。</p>
+
+<h3 id="toc_4">通过最后修改时间, 来判断缓存新鲜度</h3>
+
+<ol>
+<li>浏览器客户端想请求一个文档，  首先检查本地缓存，发现存在这个文档的缓存，  获取缓存中文档的最后修改时间，通过： If-Modified-Since， 发送Request给Web服务器。</li>
+<li><p>Web服务器收到Request，将服务器的文档修改时间（Last-Modified）: 跟request header 中的，If-Modified-Since相比较， 如果时间是一样的， 说明缓存还是最新的， Web服务器将发送304 Not Modified给浏览器客户端， 告诉客户端直接使用缓存里的版本。如下图。<br/>
+<img src="media/15038325535184/15038325722769.jpg" alt=""/></p></li>
+<li><p>假如该文档已经被更新了。Web服务器将发送该文档的最新版本给浏览器客户端， 如下图。<br/>
+<img src="media/15038325535184/15038325788499.jpg" alt=""/></p></li>
+</ol>
+
+<p>实例： 打开Fiddler, 然后打开博客园首页。然后F5刷新几次浏览器。 你会看到博客园首页也用了缓存。<br/>
+<img src="media/15038325535184/15038325851441.jpg" alt=""/></p>
+
+<h3 id="toc_5">与缓存有关的header</h3>
+
+<p>我们来看看每个header的具体含义。<br/>
+Request</p>
+
+<blockquote>
+<pre><code>Cache-Control: max-age=0                               以秒为单位
+If-Modified-Since: Mon, 19 Nov 2012 08:38:01 GMT    缓存文件的最后修改时间。
+If-None-Match: &quot;0693f67a67cc1:0&quot;                    缓存文件的Etag值
+Cache-Control: no-cache                                不使用缓存
+Pragma: no-cache                                   不使用缓存
+</code></pre>
+</blockquote>
+
+<p>Response</p>
+
+<blockquote>
+<pre><code>Cache-Control: public             响应被缓存，并且在多用户间共享
+Cache-Control: private       响应只能作为私有缓存，不能在用户之间共享
+Cache-Control:no-cache       提醒浏览器要从服务器提取文档进行验证
+Cache-Control:no-store       绝对禁止缓存（用于机密，敏感文件）
+Cache-Control: max-age=60       60秒之后缓存过期（相对时间）
+Date: Mon, 19 Nov 2012 08:39:00 GMT     当前response发送的时间
+Expires: Mon, 19 Nov 2012 08:40:01 GMT      缓存过期的时间（绝对时间）
+Last-Modified: Mon, 19 Nov 2012 08:38:01 GMT    服务器端文件的最后修改时间
+ETag: &quot;20b1add7ec1cd1:0&quot;                       服务器端文件的Etag值
+</code></pre>
+</blockquote>
+
+<p>如果同时存在cache-control和Expires怎么办呢？<br/>
+浏览器总是优先使用cache-control，如果没有cache-control才考虑Expires </p>
+
+<h3 id="toc_6">ETag</h3>
+
+<p>ETag是实体标签（Entity Tag）的缩写， 根据实体内容生成的一段hash字符串（类似于MD5或者SHA1之后的结果），可以标识资源的状态。 当资源发送改变时，ETag也随之发生变化。<br/>
+ETag是Web服务端产生的，然后发给浏览器客户端。浏览器客户端是不用关心Etag是如何产生的。<br/>
+为什么使用ETag呢？ 主要是为了解决Last-Modified 无法解决的一些问题。<br/>
+1. 某些服务器不能精确得到文件的最后修改时间， 这样就无法通过最后修改时间来判断文件是否更新了。<br/>
+2. 某些文件的修改非常频繁，在秒以下的时间内进行修改. Last-Modified只能精确到秒。<br/>
+3. 一些文件的最后修改时间改变了，但是内容并未改变。 我们不希望客户端认为这个文件修改了。<br/>
+实例， 打开Fiddler, 打开博客园首页。  你可以看到很多图片，或者CSS文件都是用了缓存。 这些都是通过比较ETag的值，来判断文件是否更新了。<br/>
+<img src="media/15038325535184/15038325952640.jpg" alt=""/></p>
+
+<h3 id="toc_7">浏览器不使用缓存</h3>
+
+<p>CTRL+F5强制刷新浏览器，或者设置IE。  可以让浏览器不使用缓存。<br/>
+1. 浏览器发送Http request, 给Web 服务器， header中带有Cache-Control: no-cache.   明确告诉Web服务器，客户端不使用缓存。 <br/>
+2. Web服务器将把最新的文档发送给浏览器客户端.<br/>
+实例:<br/>
+打开Fiddler, 打开博客园首页， 然后按CTRL+F5强制刷新浏览器，你将看到<br/>
+<img src="media/15038325535184/15038326056638.jpg" alt=""/></p>
+
+<p>Pragma: no-cache的作用和Cache-Control: no-cache一模一样。 都是不使用缓存。 <br/>
+Pragma: no-cache 是HTTP 1.0中定义的， 所以为了兼容HTTP 1.0. 所以会同时使用Pragma: no-cache和Cache-Control: no-cache</p>
+
+<h3 id="toc_8">直接使用缓存，不去服务器验证</h3>
+
+<p>按F5刷新浏览器和在地址栏里输入网址然后回车。 这两个行为是不一样的。<br/>
+按F5刷新浏览器， 浏览器会去Web服务器验证缓存。<br/>
+如果是在地址栏输入网址然后回车，浏览器会&quot;直接使用有效的缓存&quot;, 而不会发http request 去服务器验证缓存，这种情况叫做缓存命中，如下图<br/>
+<img src="media/15038325535184/15038326137221.jpg" alt=""/></p>
+
+<p>实例： 比较第一次访问博客园主页和第二次博客园主页<br/>
+1. 启动Fiddler, 用firefox打开博客园主页， 发现有50多个session。<br/>
+2. 按CTRL+X将Fiddler中的所有session删除。 关闭firefox,重新打开一个firefox，打开博客园主页。发现只有30多个session.<br/>
+分析:少了的session是因为firefox直接用了缓存，而没有发http request。<br/>
+<img src="media/15038325535184/15038326196474.jpg" alt=""/></p>
+
+<h3 id="toc_9">公有缓存和私有缓存的区别</h3>
+
+<p>Cache-Control: public 指可以公有缓存， 可以是数千名用户共享的。<br/>
+Cache-Control: private 指只支持私有缓存， 私有缓存是单个用户专用的。<br/>
+<img src="media/15038325535184/15038326252661.jpg" alt=""/></p>
+
+
+</div>
+
+<br /><br />
+<hr />
+
+<div class="row clearfix">
+  <div class="large-6 columns">
+	<div class="text-left" style="padding:15px 0px;">
+		
+	        <a href="15038326274764.html"  title="Previous Post: HTTP协议 (五) 代理">&laquo; HTTP协议 (五) 代理</a>
+	    
+	</div>
+  </div>
+  <div class="large-6 columns">
+	<div class="text-right" style="padding:15px 0px;">
+		
+	        <a href="15038324866170.html" 
+	        title="Next Post: HTTP协议 (三) 压缩">HTTP协议 (三) 压缩 &raquo;</a>
+	    
+	</div>
+  </div>
+</div>
+
+<div class="row">
+<div style="padding:0px 0.93em;" class="share-comments">
+
+</div>
+</div>
+<script type="text/javascript">
+	$(function(){
+		var currentURL = '15038325535184.html';
+		$('#side-nav a').each(function(){
+			if($(this).attr('href') == currentURL){
+				$(this).parent().addClass('active');
+			}
+		});
+	});
+</script>  
+</div></div>
+
+
+<div class="page-bottom">
+  <div class="row">
+  <hr />
+  <div class="small-9 columns">
+  <p class="copyright">Copyright &copy; 2015
+Powered by <a target="_blank" href="http://www.mweb.im">MWeb</a>,&nbsp; 
+Theme used <a target="_blank" href="http://github.com">GitHub CSS</a>.</p>
+  </div>
+  <div class="small-3 columns">
+  <p class="copyright text-right"><a href="#header">TOP</a></p>
+  </div>
+   
+  </div>
+</div>
+
+        </section>
+      </div>
+    </div>
+    
+    
+    <script src="asset/js/foundation.min.js"></script>
+    <script src="asset/js/foundation/foundation.offcanvas.js"></script>
+    <script>
+      $(document).foundation();
+
+     
+    </script>
+    <script src="asset/chart/all-min.js"></script><script type="text/javascript">$(function(){    var mwebii=0;    var mwebChartEleId = 'mweb-chart-ele-';    $('pre>code').each(function(){        mwebii++;        var eleiid = mwebChartEleId+mwebii;        if($(this).hasClass('language-sequence')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = Diagram.parse($(this).text());            diagram.drawSVG(eleiid,{theme: 'simple'});        }else if($(this).hasClass('language-flow')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = flowchart.parse($(this).text());            diagram.drawSVG(eleiid);        }    });});</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({TeX: { equationNumbers: { autoNumber: "AMS" } }});</script>
+
+  </body>
+</html>

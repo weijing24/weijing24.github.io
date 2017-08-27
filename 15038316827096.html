@@ -1,0 +1,1013 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+    
+  linux多线程编程入门 - 小菜鸡
+  
+  </title>
+ <meta name="description" content="个人博客">
+ <link href="atom.xml" rel="alternate" title="小菜鸡" type="application/atom+xml">
+    <link rel="stylesheet" href="asset/css/foundation.min.css" />
+    <link rel="stylesheet" href="asset/css/docs.css" />
+
+    <script src="asset/js/vendor/modernizr.js"></script>
+    <script src="asset/js/vendor/jquery.js"></script>
+    <script src="asset/highlightjs/highlight.pack.js"></script>
+    <link href="asset/highlightjs/styles/github.css" media="screen, projection" rel="stylesheet" type="text/css">
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+  </head>
+  <body class="antialiased hide-extras">
+    
+    <div class="marketing off-canvas-wrap" data-offcanvas>
+      <div class="inner-wrap">
+
+
+<nav class="top-bar docs-bar hide-for-small" data-topbar>
+
+<div id="header">
+    <h1><a href="index.html">小菜鸡</a></h1>
+</div>
+
+</nav>
+        <nav class="tab-bar show-for-small">
+  <a href="javascript:void(0)" class="left-off-canvas-toggle menu-icon">
+    <span> &nbsp; 小菜鸡</span>
+  </a>
+</nav>
+
+<aside class="left-off-canvas-menu">
+      <ul class="off-canvas-list">
+      <li><a href="index.html">Home</a></li>
+      
+        <li class="divider"></li>
+        <li><label>容器</label></li>
+
+          
+            <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>web服务器</label></li>
+
+          
+            <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+          
+            <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>卓越班学习</label></li>
+
+          
+            <li><a title="ELF和a.out文件格式的比较" href="15038328822812.html">ELF和a.out文件格式的比较</a></li>
+          
+            <li><a title="linux多线程编程入门" href="15038316827096.html">linux多线程编程入门</a></li>
+          
+            <li><a title="linux进程编程入门" href="15038316680304.html">linux进程编程入门</a></li>
+          
+            <li><a title="shell系统管理" href="15038311430982.html">shell系统管理</a></li>
+          
+            <li><a title="shell编程入门" href="15038311023811.html">shell编程入门</a></li>
+          
+            <li><a title="shell网络管理" href="15038310714574.html">shell网络管理</a></li>
+          
+            <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+          
+            <li><a title="信号" href="15033227238921.html">信号</a></li>
+          
+            <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+          
+            <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+          
+            <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+          
+            <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+          
+            <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+          
+            <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+          
+            <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+          
+            <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+          
+            <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+          
+            <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>坑</label></li>
+
+          
+            <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+          
+            <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+          
+            <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+          
+            <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>日常运维</label></li>
+
+          
+            <li><a title="dns服务器报错解决" href="15038329582108.html">dns服务器报错解决</a></li>
+          
+            <li><a title="docker随谈" href="15038329005848.html">docker随谈</a></li>
+          
+            <li><a title="i节点，容易被人遗忘的节点" href="15038322315997.html">i节点，容易被人遗忘的节点</a></li>
+          
+            <li><a title="libc.so.6被删后导致系统无法使用的原因及解决方法" href="15038321032705.html">libc.so.6被删后导致系统无法使用的原因及解决方法</a></li>
+          
+            <li><a title="linux下nginx模块开发入门" href="15038318990451.html">linux下nginx模块开发入门</a></li>
+          
+            <li><a title="Linux下配置rsync服务器" href="15038318551859.html">Linux下配置rsync服务器</a></li>
+          
+            <li><a title="mysql初始化" href="15038316518471.html">mysql初始化</a></li>
+          
+            <li><a title="nagios安装" href="15038316187109.html">nagios安装</a></li>
+          
+            <li><a title="nagios配置" href="15038315676757.html">nagios配置</a></li>
+          
+            <li><a title="nginx、mysql、php等各编译参数查询" href="15038315492978.html">nginx、mysql、php等各编译参数查询</a></li>
+          
+            <li><a title="nginx性能优化技巧" href="15038314081873.html">nginx性能优化技巧</a></li>
+          
+            <li><a title="php安装memcache扩展" href="15038313472966.html">php安装memcache扩展</a></li>
+          
+            <li><a title="puppet和ansible比较" href="15038313193415.html">puppet和ansible比较</a></li>
+          
+            <li><a title="puppet学习笔记(二)" href="15038312823109.html">puppet学习笔记(二)</a></li>
+          
+            <li><a title="puppet学习笔记（一）" href="15038311899167.html">puppet学习笔记（一）</a></li>
+          
+            <li><a title="ssh大坑" href="15038309933322.html">ssh大坑</a></li>
+          
+            <li><a title="svn同步大坑" href="15038308908725.html">svn同步大坑</a></li>
+          
+            <li><a title="svn服务器搭建与迁移" href="15038308118838.html">svn服务器搭建与迁移</a></li>
+          
+            <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+          
+            <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+          
+            <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+          
+            <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+          
+            <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+          
+            <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+          
+            <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+          
+            <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+          
+            <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+          
+            <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+          
+            <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+          
+            <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>http</label></li>
+
+          
+            <li><a title="HTTP协议 (七) Cookie" href="15038327056467.html">HTTP协议 (七) Cookie</a></li>
+          
+            <li><a title="HTTP协议 (六) 状态码详解" href="15038326831174.html">HTTP协议 (六) 状态码详解</a></li>
+          
+            <li><a title="HTTP协议 (五) 代理" href="15038326274764.html">HTTP协议 (五) 代理</a></li>
+          
+            <li><a title="HTTP协议 (四) 缓存" href="15038325535184.html">HTTP协议 (四) 缓存</a></li>
+          
+            <li><a title="HTTP协议 (三) 压缩" href="15038324866170.html">HTTP协议 (三) 压缩</a></li>
+          
+            <li><a title="HTTP协议 (二) 基本认证" href="15038324138209.html">HTTP协议 (二) 基本认证</a></li>
+          
+            <li><a title="HTTP协议 (一) HTTP协议详解" href="15038322654511.html">HTTP协议 (一) HTTP协议详解</a></li>
+          
+
+      
+        <li class="divider"></li>
+        <li><label>监控</label></li>
+
+          
+            <li><a title="zabbix安装排错过程" href="15033228802565.html">zabbix安装排错过程</a></li>
+          
+
+      
+      </ul>
+    </aside>
+
+<a class="exit-off-canvas" href="#"></a>
+
+        <section id="main-content" role="main" class="scroll-container">
+
+          <div class="row">
+            <div class="large-3 medium-3 columns">
+              <div class="hide-for-small">
+                <div class="sidebar">
+                <nav>
+                  <ul id="side-nav" class="side-nav">
+
+                    
+                      <li class="side-title"><span>容器</span></li>
+                        
+                          <li><a title="制作nginx和php的rpm包" href="15033225667618.html">制作nginx和php的rpm包</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>web服务器</span></li>
+                        
+                          <li><a title="图解正向代理、反向代理、透明代理" href="15033223691311.html">图解正向代理、反向代理、透明代理</a></li>
+                        
+                          <li><a title="详解apache的allow和deny" href="15033200332645.html">详解apache的allow和deny</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>卓越班学习</span></li>
+                        
+                          <li><a title="ELF和a.out文件格式的比较" href="15038328822812.html">ELF和a.out文件格式的比较</a></li>
+                        
+                          <li><a title="linux多线程编程入门" href="15038316827096.html">linux多线程编程入门</a></li>
+                        
+                          <li><a title="linux进程编程入门" href="15038316680304.html">linux进程编程入门</a></li>
+                        
+                          <li><a title="shell系统管理" href="15038311430982.html">shell系统管理</a></li>
+                        
+                          <li><a title="shell编程入门" href="15038311023811.html">shell编程入门</a></li>
+                        
+                          <li><a title="shell网络管理" href="15038310714574.html">shell网络管理</a></li>
+                        
+                          <li><a title="wait和waitpid详解" href="15033229130846.html">wait和waitpid详解</a></li>
+                        
+                          <li><a title="信号" href="15033227238921.html">信号</a></li>
+                        
+                          <li><a title="僵尸进程和孤儿进程" href="15033226512813.html">僵尸进程和孤儿进程</a></li>
+                        
+                          <li><a title="共享内存" href="15033226237472.html">共享内存</a></li>
+                        
+                          <li><a title="基于TCP的字符串传输程序" href="15033223148818.html">基于TCP的字符串传输程序</a></li>
+                        
+                          <li><a title="文件搜索" href="15033220404521.html">文件搜索</a></li>
+                        
+                          <li><a title="文件比较" href="15033218983068.html">文件比较</a></li>
+                        
+                          <li><a title="文件编辑" href="15033218793219.html">文件编辑</a></li>
+                        
+                          <li><a title="文件设置" href="15033218534320.html">文件设置</a></li>
+                        
+                          <li><a title="系统文件操作开发" href="15033218072587.html">系统文件操作开发</a></li>
+                        
+                          <li><a title="系统环境变量" href="15033217888989.html">系统环境变量</a></li>
+                        
+                          <li><a title="静态库和共享库开发" href="%E9%9D%99%E6%80%81%E5%BA%93%E5%92%8C%E5%85%B1%E4%BA%AB%E5%BA%93%E5%BC%80%E5%8F%91.html">静态库和共享库开发</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>坑</span></li>
+                        
+                          <li><a title="<center>数据库非正常关闭导致无法启动问题</center>" href="15033220957416.html"><center>数据库非正常关闭导致无法启动问题</center></a></li>
+                        
+                          <li><a title="解决virtualbox安装增强工具失败的问题" href="15033217564988.html">解决virtualbox安装增强工具失败的问题</a></li>
+                        
+                          <li><a title="记一次ftp服务器搭建走过的坑" href="15033217230950.html">记一次ftp服务器搭建走过的坑</a></li>
+                        
+                          <li><a title="记一次mysql主从一致校验走过的坑" href="15033215794872.html">记一次mysql主从一致校验走过的坑</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>日常运维</span></li>
+                        
+                          <li><a title="dns服务器报错解决" href="15038329582108.html">dns服务器报错解决</a></li>
+                        
+                          <li><a title="docker随谈" href="15038329005848.html">docker随谈</a></li>
+                        
+                          <li><a title="i节点，容易被人遗忘的节点" href="15038322315997.html">i节点，容易被人遗忘的节点</a></li>
+                        
+                          <li><a title="libc.so.6被删后导致系统无法使用的原因及解决方法" href="15038321032705.html">libc.so.6被删后导致系统无法使用的原因及解决方法</a></li>
+                        
+                          <li><a title="linux下nginx模块开发入门" href="15038318990451.html">linux下nginx模块开发入门</a></li>
+                        
+                          <li><a title="Linux下配置rsync服务器" href="15038318551859.html">Linux下配置rsync服务器</a></li>
+                        
+                          <li><a title="mysql初始化" href="15038316518471.html">mysql初始化</a></li>
+                        
+                          <li><a title="nagios安装" href="15038316187109.html">nagios安装</a></li>
+                        
+                          <li><a title="nagios配置" href="15038315676757.html">nagios配置</a></li>
+                        
+                          <li><a title="nginx、mysql、php等各编译参数查询" href="15038315492978.html">nginx、mysql、php等各编译参数查询</a></li>
+                        
+                          <li><a title="nginx性能优化技巧" href="15038314081873.html">nginx性能优化技巧</a></li>
+                        
+                          <li><a title="php安装memcache扩展" href="15038313472966.html">php安装memcache扩展</a></li>
+                        
+                          <li><a title="puppet和ansible比较" href="15038313193415.html">puppet和ansible比较</a></li>
+                        
+                          <li><a title="puppet学习笔记(二)" href="15038312823109.html">puppet学习笔记(二)</a></li>
+                        
+                          <li><a title="puppet学习笔记（一）" href="15038311899167.html">puppet学习笔记（一）</a></li>
+                        
+                          <li><a title="ssh大坑" href="15038309933322.html">ssh大坑</a></li>
+                        
+                          <li><a title="svn同步大坑" href="15038308908725.html">svn同步大坑</a></li>
+                        
+                          <li><a title="svn服务器搭建与迁移" href="15038308118838.html">svn服务器搭建与迁移</a></li>
+                        
+                          <li><a title="ubuntu mysql5.7源码安装" href="15033230940135.html">ubuntu mysql5.7源码安装</a></li>
+                        
+                          <li><a title="ubuntu php5.6源码安装" href="15033230316456.html">ubuntu php5.6源码安装</a></li>
+                        
+                          <li><a title="ubuntu下nginx的安裝" href="15033229668634.html">ubuntu下nginx的安裝</a></li>
+                        
+                          <li><a title="ubuntu安装php常见错误集锦" href="15033229497885.html">ubuntu安装php常见错误集锦</a></li>
+                        
+                          <li><a title="vim常用命令" href="15033229297218.html">vim常用命令</a></li>
+                        
+                          <li><a title="使用RAID进行磁盘管理" href="15033227857622.html">使用RAID进行磁盘管理</a></li>
+                        
+                          <li><a title="使用virt-manager创建和管理虚拟机" href="15033227559982.html">使用virt-manager创建和管理虚拟机</a></li>
+                        
+                          <li><a title="关于mysqld_safe" href="15033226078265.html">关于mysqld_safe</a></li>
+                        
+                          <li><a title="安装linux各种桌面环境" href="15033222846104.html">安装linux各种桌面环境</a></li>
+                        
+                          <li><a title="常用软件编译参数以及软件地址" href="15033222695994.html">常用软件编译参数以及软件地址</a></li>
+                        
+                          <li><a title="打造属于自己的vim利器" href="15033222443468.html">打造属于自己的vim利器</a></li>
+                        
+                          <li><a title="搭建本地yum源服务器" href="15033221654695.html">搭建本地yum源服务器</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>http</span></li>
+                        
+                          <li><a title="HTTP协议 (七) Cookie" href="15038327056467.html">HTTP协议 (七) Cookie</a></li>
+                        
+                          <li><a title="HTTP协议 (六) 状态码详解" href="15038326831174.html">HTTP协议 (六) 状态码详解</a></li>
+                        
+                          <li><a title="HTTP协议 (五) 代理" href="15038326274764.html">HTTP协议 (五) 代理</a></li>
+                        
+                          <li><a title="HTTP协议 (四) 缓存" href="15038325535184.html">HTTP协议 (四) 缓存</a></li>
+                        
+                          <li><a title="HTTP协议 (三) 压缩" href="15038324866170.html">HTTP协议 (三) 压缩</a></li>
+                        
+                          <li><a title="HTTP协议 (二) 基本认证" href="15038324138209.html">HTTP协议 (二) 基本认证</a></li>
+                        
+                          <li><a title="HTTP协议 (一) HTTP协议详解" href="15038322654511.html">HTTP协议 (一) HTTP协议详解</a></li>
+                        
+
+                    
+                      <li class="side-title"><span>监控</span></li>
+                        
+                          <li><a title="zabbix安装排错过程" href="15033228802565.html">zabbix安装排错过程</a></li>
+                        
+
+                    
+                  </ul>
+                </nav>
+                </div>
+              </div>
+            </div>
+            <div class="large-9 medium-9 columns">
+
+ <div class="markdown-body">
+<h1>linux多线程编程入门</h1>
+
+<h3 id="toc_0">背景知识:</h3>
+
+<p>　　在前一个实训中我们介绍了进程，但有时人们认为用fork调用来创建新进程的代价太高。在这种情况下，如果能让一个进程同时做零件事情或至少看起来是这样将会非常有用。而且，你可能希望能有两件或更多的事情以一种非常紧密的方式同时发生。这就是需要线程发挥作用的时候了。<br/>
+　　线程，有时被称为轻量级进程(Lightweight Process，LWP），是<strong>程序执行流的最小单元。一个标准的线程由线程ID，当前指令指针(PC），寄存器集合和堆栈组成。</strong>另外，线程是进程中的一个实体，是被系统独立调度和分派的基本单位，<strong>线程自己不拥有系统资源</strong>，只拥有一点儿在运行中必不可少的资源，<strong>但它可与同属一个进程的其它线程共享进程所拥有的全部资源。</strong>一个线程可以创建和撤消另一个线程，同一进程中的多个线程之间可以并发执行。由于线程之间的相互制约，致使线程在运行中呈现出间断性。线程也有就绪、阻塞和运行三种基本状态。每一个程序都至少有一个线程，若程序只有一个线程，那就是程序本身。<br/>
+　　线程是程序中一个单一的顺序控制流程。在单个程序中同时运行多个线程完成不同的工作，称为多线程。</p>
+
+<h4 id="toc_1">1.创建线程</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>在主线程中创建一个新线程</li>
+<li>在新线程中输出运行信息，在结束时返回主线程</li>
+</ul>
+
+<p>相关知识:<br/>
+int pthread_create(pthread_t *thread, pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);<br/>
+参数说明：<br/>
+thread：指向pthread_create类型的指针，用于引用新创建的线程。<br/>
+attr：用于设置线程的属性，一般不需要特殊的属性，所以可以简单地设置为NULL。<br/>
+*(*start_routine)(void *)：传递新线程所要执行的函数地址。<br/>
+<strong>arg：新线程所要执行的函数的参数</strong></p>
+
+<p>thread_exit函数<br/>
+　　原型：void pthread_exit（void *retval）<br/>
+　　功能：使用函数pthread_exit退出线程，这是线程的主动行为；由于一个进程中的多个线程是共享数据段的，因此通常在线程退出之后，退出线程所占用的资源并不会随着线程的终止而得到释放，但是可以用pthread_join()函数来同步并释放资源。<br/>
+　　说明：retval：pthread_exit()调用线程的返回值，可由其他函数如pthread_join来检索获取。如果在线程中使用exit()函数退出，那么整个的进程将会退出，那么如果此时你还有一些其它需要做的事情没有完成呢，这并不是我们所希望的。</p>
+
+<p>pthread_join函数<br/>
+　　原型：extern int pthread_join __P ((pthread_t __th, void **__thread_return));<br/>
+　　功能：函数pthread_join用来等待一个线程的结束。这个函数是一个线程阻塞的函数，调用它的线程将一直等待到被等待的线程结束为止，当函数返回时，被等待线程的资源被收回。一个线程的结束有两种途径，一种是象我们上面的例子一样，函数结束了，调用它的线程也就结束了<br/>
+　　说明：第一个参数为被等待的线程标识符，第二个参数为一个用户定义的指针，它可以用来存储被等待线程的返回值。pthread_join()的调用者将挂起并等待th线程终止，retval是pthread_exit()调用者线程（线程ID为th）的返回值，如果thread_return不为NULL,则*thread_return=retval。需要注意的是一个线程仅允许唯一的一个线程使用 pthread_join()等待它的终止，并且被等待的线程应该处于可join状态，即非DETACHED状态。</p>
+
+<p>编译和链接：<br/>
+gcc –o thread1 thread1.c –lpthread<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+void print_message_function(void *ptr){
+    int i;
+    for(i=0;i&lt;5;i++)
+        printf(&quot;%s:%d\n&quot;,(char *)ptr,i);
+    pthread_exit(&quot;success&quot;);
+}
+int main(void){
+    int tmp1;
+    void *retval;
+    //pthread_t用于声明线程ID
+    pthread_t thread1;
+    char *message1=&quot;thread1&quot;;
+    int ret_thrd1;
+    ret_thrd1=pthread_create(&amp;thread1,NULL,(void *)&amp;print_message_function,(void *)message1);
+    if(ret_thrd1!=0)
+        printf(&quot;fail to create thread1\n&quot;);
+    else
+        printf(&quot;success to create thread1\n&quot;);
+    //挂起并等待thread1线程终止，retval是pthread_exit()调用者线程（线程ID为th）的返回值
+    tmp1=pthread_join(thread1,&amp;retval);
+    printf(&quot;%s\n&quot;,(char *)retval);
+    if(tmp1!=0){
+        printf(&quot;can&#39;t join with thread1\n&quot;);
+        return -1;
+    }
+    printf(&quot;thread1 end\n&quot;);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_2">2.在两个线程之间实现交替执行输出</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>主线程先输出“This is a thread0”，然后新线程输出”this is thread2“，一直交替到结束</li>
+<li>同时访问全局变量，修改变量的值，并打印</li>
+</ul>
+
+<p>相关知识：<br/>
+　　如果电脑是单核的，按照操作系统理论严格来说，多线程并不是多个线程一起运行的。因为多线程实际上是多个线程之间轮流执行的，就是将一个时间段分成若干个时间片，每个线程只运行一个时间片，由于时间片极短,而且电脑运行极快，线程之间切换也极快,几乎可以看做是并行运行的，也就是说可以看成是同时运行的.但实际却不是的同时运行的。<br/>
+main.c：</p>
+
+<blockquote>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;pthread.h&gt;
+int flag=0,a=0;
+void *thread(){
+    int i=0;
+    while(i&lt;10){
+        if(flag==1){
+            i++;a++;
+            printf(&quot;This is a pthread,a=%d\n&quot;,a);
+            flag=0;
+        }
+    }
+    pthread_exit(NULL);
+}
+int main(void){
+    pthread_t id;
+    int i=0,ret;
+    ret=pthread_create(&amp;id,NULL,thread,NULL);
+    if(ret!=0){
+        printf (&quot;Create pthread error!\n&quot;);
+        exit(1);
+    }
+    while(i&lt;10){
+        if(flag==0){ 
+            i++;a++;
+            printf(&quot;This is the main process,a=%d\n&quot;,a);
+            flag=1; 
+        }
+    }   
+    pthread_join(id,NULL);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_3">3.使用信号量进行线程同步</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>主线程输入字符,输入end结束</li>
+<li>副线程统一字符个数,使用信号量进行同步</li>
+</ul>
+
+<p>相关知识:<br/>
+①信号量创建<br/>
+　　信号量通过sem_init函数创建，它的定义如下所示：<br/>
+　　　　#include &quot;semaphore.h&quot;<br/>
+　　　　int sem_init(sem_t *sem, int pshared, unsigned int value);</p>
+
+<p>　　参数说明：<br/>
+　　sem：信号量对象。<br/>
+　　pshared：控制信号量的类型，0表示这个信号量是当前进程的局部信号量，否则，这个信号量就可以在多个进程之间共享。<br/>
+　　value：信号量的初始值。<br/>
+　　这个函数初始化由sem指向的信号量对象，设置它的共享选项，并给它一个初始的整数值。pshared参数控制信号量的类型。</p>
+
+<p>②信号量控制<br/>
+　　#include &quot;semaphore.h&quot;<br/>
+　　int sem_wait(sem_t *sem);<br/>
+　　int sem_post(sem_t *sem);<br/>
+　　这两个函数都以一个指针为参数，该指针指向的对象是由sem_init调用初始化的信号量。<br/>
+　　sem_post的作用是以原子操作的方式给信号量的值加1。所谓原子操作是指，如果两个线程企图同时给一个信号量加1，它们之间不会互相干扰，而不像如果两个程序同时对同一个文件进行读取、增加、写入操作时可能会引起冲突。 <br/>
+　　sem_wait的作用是以原子操作的方式给信号量的值减1，但它会等到信号量非0时才会开始减法操作。如果对值为0的信号量调用sem_wait，这个函数就会等待，直到有线程增加了该信号量的值使其不再为0。<br/>
+　　还有另外一个信号量函数sem_trywait，它是sem_wait的非阻塞版本。</p>
+
+<p>③信号量销毁<br/>
+　　#include &quot;semaphore.h&quot;<br/>
+　　int sem_destory(sem_t *sem);<br/>
+　　与前几个函数一样，这个函数也以一个信号量指针为参数。并清理该信号量所拥有的资源。如果试图清理的信号量正被一些线程等待，就会收到一个错误。<br/>
+　　与大多数Linux函数一样，这些函数在成功时都返回0。</p>
+
+<blockquote>
+<pre><code>#include &quot;unistd.h&quot;
+#include &lt;pthread.h&gt;  
+#include &quot;semaphore.h&quot;
+#include &lt;stdlib.h&gt;  
+#include &lt;stdio.h&gt;  
+#include &lt;string.h&gt;  
+//线程函数  
+void *thread_func(void *msg);  
+sem_t sem;//信号量
+#define MSG_SIZE 512
+void* thread_func(void *msg){  
+    //此时信号量为0，子线程阻塞自身等待主线程信号量+1  
+    sem_wait(&amp;sem);  
+    char *ptr = msg;  
+    while(strcmp(&quot;end\n&quot;, msg) != 0){  
+        int i = 0; 
+        for(; ptr[i] != &#39;\0&#39;; ++i);
+        printf(&quot;You input %d characters\n&quot;, i-1);  
+        //此时信号量为1，把信号量减1  
+        sem_wait(&amp;sem);  
+    }  
+    //退出线程  
+    pthread_exit(NULL);  
+}
+int main(void){  
+    int res = -1;  
+    pthread_t thread;  
+    void *thread_result = NULL;  
+    char msg[MSG_SIZE];  
+    //初始化信号量，其初值为0  
+    res = sem_init(&amp;sem, 0, 0);  
+    if(res == -1){  
+        perror(&quot;semaphore intitialization failed\n&quot;);  
+        exit(EXIT_FAILURE);  
+    }
+    //创建线程，并把msg作为线程函数的参数  
+    res = pthread_create(&amp;thread, NULL, thread_func,(void *)msg);  
+    if(res != 0){  
+        perror(&quot;pthread_create failed\n&quot;);  
+        exit(EXIT_FAILURE);  
+    }
+    //输入信息，以输入end结束，由于fgets会把回车（\n）也读入，所以判断时就变成了“end\n”  
+    printf(&quot;Input some text. Enter &#39;end&#39;to finish...\n&quot;);  
+    while(strcmp(&quot;end\n&quot;, msg) != 0){  
+        fgets(msg, MSG_SIZE, stdin);  
+        //把信号量加1，让子线程执行  
+        sem_post(&amp;sem);  
+    }  
+    printf(&quot;Waiting for thread to finish...\n&quot;);  
+    //等待子线程结束  
+    res = pthread_join(thread, &amp;thread_result);  
+    if(res != 0){  
+        perror(&quot;pthread_join failed\n&quot;);  
+        exit(EXIT_FAILURE);  
+    }  
+    printf(&quot;Thread joined\n&quot;);  
+    //清理信号量  
+    sem_destroy(&amp;sem);  
+    exit(EXIT_SUCCESS);  
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_4">4.用互斥量实现同步</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>模拟实现一个简单的火车售票系统,两个线程分别打印出票号,票号不能重复</li>
+</ul>
+
+<p>相关知识:<br/>
+　　另一种用在多线程程序中同步访问的方法是使用互斥量。它允许程序员锁住某个对象，使得每次只能有一个线程访问它。为了控制对关键代码的访问，必须在进入这段代码之前锁住一个互斥量，然后在完成操作之后解锁它。<br/>
+　　用于互斥量的基本函数和用于信号量的函数非常相似，它们的定义如下所示：</p>
+
+<blockquote>
+<pre><code>#include &lt;pthread.h&gt; 
+int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t, *mutexattr);
+int pthread_mutex_lock(pthread_mutex_t *mutex); 
+int pthread_mutex_unlock(pthread_mutex_t *mutex);
+</code></pre>
+</blockquote>
+
+<p>　　与其他函数一样，成功时返回0，失败时将返回错误代码，但这些函数并不设置errno，所以必须对函数的返回代码进行检查。<br/>
+　　与信号量类似，这些函数的参数都是一个先前申明过的对象的指针。对互斥量来说，这个对象的类型为pthread_mutex_t.<br/>
+　　pthread_mutex_init函数中的属性参数允许我们设置互斥量的属性，而属性控制着互斥量的行为。属性类型默认为fast，但它有一个缺点：如果程序试图对一个已经加了锁的互斥量调用pthread_mutex_lock，程序就会被阻塞，而又因为拥有互斥量的这个线程正是现在被阻塞的线程，所以互斥量就永远也不会被解锁了，程序也就进入死锁状态。这个问题可以通过改变互斥量的属性来解决。int pthread_mutex_destroy(pthread_mutex_t *mutex);<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code>#include &quot;unistd.h&quot;
+#include &lt;pthread.h&gt;  
+#include &lt;stdlib.h&gt;  
+#include &lt;stdio.h&gt;  
+#include &lt;string.h&gt;    
+//声明线程函数和互斥量  
+void* thread_func(void *msg);  
+pthread_mutex_t mutex;  
+#define MSG_SIZE 512  
+int a=0,flag=0;
+void* thread_func(void *msg){  
+    int i = 1;  
+    char *ptr = msg;  
+    while(i&lt;10){
+    //把互斥量mutex加锁，以确保同一时间只有该线程可以访问  
+        pthread_mutex_lock(&amp;mutex); 
+        if(flag==0){ 
+            i++;a++;
+            printf(&quot;This is the main process,a=%d\n&quot;,a);
+            flag=1;
+            sleep(1);
+        }
+     //把互斥量mutex解锁，让其他的线程可以访问  
+        pthread_mutex_unlock(&amp;mutex);  
+    }
+    //退出线程  
+    pthread_exit(NULL);  
+}  
+int main(void){  
+    int res = -1,i=1;  
+    pthread_t thread;  
+    void *thread_result = NULL;  
+    char msg[MSG_SIZE] = {&#39;\0&#39;};  
+    //初始化互斥量，使用默认的互斥量属性  
+    res = pthread_mutex_init(&amp;mutex, NULL);  
+    if(res != 0){  
+        perror(&quot;pthread_mutex_init failed\n&quot;);  
+        exit(EXIT_FAILURE);  
+    }  
+    //创建子线程，并把msg作为线程函数的参数传递给thread_func  
+    res = pthread_create(&amp;thread, NULL, thread_func, msg);  
+    if(res != 0){  
+        perror(&quot;pthread_create failed\n&quot;);  
+        exit(EXIT_FAILURE);  
+    }
+    while(i&lt;10){
+        //把互斥量mutex加锁，以确保同一时间只有该线程可以访问  
+        pthread_mutex_lock(&amp;mutex);  
+        if(flag==1){
+            i++;a++;
+            printf(&quot;This is a pthread,a=%d\n&quot;,a);
+            flag=0;
+            sleep(1);
+        }
+        //把互斥量mutex解锁，让其他的线程可以访问  
+        pthread_mutex_unlock(&amp;mutex);
+    } 
+    printf(&quot;\nWaiting for thread finish...\n&quot;);  
+    //等待子线程结束  
+    res = pthread_join(thread, &amp;thread_result);  
+    if(res != 0){  
+        perror(&quot;pthread_join failed\n&quot;);  
+        exit(EXIT_FAILURE);  
+    }  
+    printf(&quot;Thread joined\n&quot;);  
+    //清理互斥量  
+    pthread_mutex_destroy(&amp;mutex);  
+    exit(EXIT_SUCCESS);  
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_5">5.线程属性设置</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>创建一个脱线线程,即该线程不需要返回主线程.可以通过修改线程属性来设置</li>
+</ul>
+
+<p>相关知识:<br/>
+　　在前面的示例中，我们都在程序退出之前用pthread_join对线程再次进行同步，如果我们想让线程向创建它的线程返回数据就需要这样做。但有时也会有这种情况，我们既不需要第二个线程向主线程返回信息，也不想主线程等待它结束.我们可以创建这一类型的线程，它们被称为脱离线程(detached thread)。可以通过修改线程属性或调用pthread_detach的方法来创建它们。<br/>
+　　第一种方法需要用到的最重要的函数是pthread_attr_init，它的作用是初始化一个线程属性对象。<br/>
+　　下面来介绍一些常用函数<br/>
+　　(1) int pthread_attr_init (pthread_attr_t* attr);<br/>
+　　功能：对线程属性变量的初始化。<br/>
+　　attr：线程属性。<br/>
+　　函数返回值：成功：0，失败：-1<br/>
+　　(2) int pthread_attr_setscope (pthread_attr_t* attr, int scope);<br/>
+　　功能：设置线程绑定属性。<br/>
+　　attr：线程属性。<br/>
+　　scope：PTHREAD_SCOPE_SYSTEM(绑定)；PTHREAD_SCOPE_PROCESS(非绑定)<br/>
+　　函数返回值：成功：0，失败：-1<br/>
+　　(3) int pthread_attr_setdetachstate (pthread_attr_t* attr, int detachstate);<br/>
+　　功能：设置线程分离属性。<br/>
+　　attr：线程属性。<br/>
+　　detachstate：PTHREAD_CREATE_DETACHED(分离)；PTHREAD_CREATE_JOINABLE（非分离）<br/>
+　　函数返回值：成功：0，失败：-1<br/>
+　　(4) int pthread_attr_setschedpolicy(pthread_attr_t* attr, int policy);<br/>
+　　功能：设置创建线程的调度策略。<br/>
+　　attr：线程属性；<br/>
+　　policy：线程调度策略：SCHED_FIFO、SCHED_RR和SCHED_OTHER。<br/>
+　　函数返回值：成功：0，失败：-1<br/>
+　　(5) int pthread_attr_setschedparam (pthread_attr_t* attr, struct sched_param* param);<br/>
+　　功能：设置线程优先级。<br/>
+　　attr：线程属性。<br/>
+　　param：线程优先级。<br/>
+　　函数返回值：成功：0，失败：-1<br/>
+　　(6) int pthread_attr_destroy (pthread_attr_t* attr);<br/>
+　　功能：对线程属性变量的销毁。<br/>
+　　attr：线程属性。<br/>
+　　函数返回值：成功：0，失败：-1<br/>
+　　(7)其他<br/>
+　　int pthread_attr_setguardsize(pthread_attr_t* attr,size_t guardsize);//设置新创建线程栈的保护区大小。<br/>
+　　int pthread_attr_setinheritsched(pthread_attr_t* attr, int inheritsched);//决定怎样设置新创建线程的调度属性。<br/>
+　　int pthread_attr_setstack(pthread_attr_t* attr, void* stackader,size_t stacksize);//两者共同决定了线程栈的基地址以及堆栈的最小尺寸（以字节为单位）。<br/>
+　　int pthread_attr_setstackaddr(pthread_attr_t* attr, void* stackader);//决定了新创建线程的栈的基地址。<br/>
+　　int pthread_attr_setstacksize(pthread_attr_t* attr, size_t stacksize);//决定了新创建线程的栈的最小尺寸（以字节为单位）。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+#include &quot;unistd.h&quot;
+char message[]=&quot;hello world&quot;;
+int thread_finished=0;
+void *thread(void *arg){
+    printf(&quot;thread is running\n&quot;);
+    sleep(5);
+    thread_finished=1;
+    pthread_exit(NULL);
+}
+int main(void){
+    int  res;
+    pthread_t a_thread;
+    pthread_attr_t thread_attr;
+    //初始化线程属性对象
+    res=pthread_attr_init(&amp;thread_attr);
+    if(res!=0){
+        perror(&quot;Attribute creation failed\n&quot;);
+        exit(EXIT_FAILURE);
+    }    
+    res=pthread_attr_setdetachstate(&amp;thread_attr,PTHREAD_CREATE_DETACHED);
+    if(res!=0){
+        perror(&quot;Setting detached attribute failed\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+    res=pthread_create(&amp;a_thread,&amp;thread_attr, thread,(void *)message);
+    if (res!=0){
+        perror(&quot;Thread creation failed\n&quot;);
+        exit(EXIT_FAILURE);
+    }    
+    (void)pthread_attr_destroy(&amp;thread_attr);
+    while(!thread_finished){
+        sleep(1);
+        printf(&quot;Waiting for thread to finish...\n&quot;);
+    }
+    printf(&quot;thread finished,bye\n&quot;);
+    exit(EXIT_SUCCESS);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_6">6.取消一个线程</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>在主线程中取消创建的线程</li>
+</ul>
+
+<p>相关知识:<br/>
+　　有时，我们想让一个线程可以要求另一个线程终止，线程有方法做到这一点，与信号处理一样，线程可以在被要求终止时改变其行为。<br/>
+　　先来看用于请求一个线程终止的函数： <br/>
+int pthread_cancel(pthread_t thread);<br/>
+　　这个函数简单易懂，提供一个线程标识符，我们就可以发送请求来取消它。线程可以用pthread_setcancelstate设置自己的取消状态。　　<br/>
+int pthread_setcancelstate(int state, int *oldstate);<br/>
+　　参数说明：<br/>
+　　state：可以是PTHREAD_CANCEL_ENABLE允许线程接收取消请求，也可以是PTHREAD_CANCEL_DISABLE忽略取消请求。<br/>
+　　oldstate：获取先前的取消状态。如果对它没兴趣，可以简单地设置为NULL。如果取消请求被接受了，线程可以进入第二个控制层次，用pthread_setcanceltype设置取消类型。 <br/>
+int pthread_setcanceltype(int type, int *oldtype);<br/>
+　　参数说明：<br/>
+　　type：可以取PTHREAD_CANCEL_ASYNCHRONOUS，它将使得在接收到取消请求后立即采取行动；另一个是PTHREAD_CANCEL_DEFERRED，它将使得在接收到取消请求后，一直等待直到线程执行了下述函数之一后才采取行动：pthread_join、pthread_cond_wait、pthread_cond_timedwait、pthread_testcancel、sem_wait或sigwait。<br/>
+　　oldtype：允许保存先前的状态，如果不想知道先前的状态，可以传递NULL。<br/>
+　　默认情况下，线程在启动时的取消状态为PTHREAD_CANCEL_ENABLE，取消类型是PTHREAD_CANCEL_DEFERRED。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+#include &quot;unistd.h&quot;
+void *thread(){
+    int i,res;
+    res=pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
+    if(res!=0){
+        perror(&quot;Thread pthread_seetcancelstate failed\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+    res=pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
+    if(res!=0){
+        perror(&quot;Thread pthread_seetcanceltype failed\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+    for(i=0;i&lt;10;i++){
+        printf(&quot;Thread is running ...\n&quot;);
+        sleep(1);
+    }
+    pthread_exit(0);
+}
+int main(void){
+    int  res;
+    pthread_t a_thread;
+    void *thread_result;
+    res=pthread_create(&amp;a_thread, NULL, thread, NULL);
+    if (res!=0){
+        perror(&quot;Thread creation failed\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+    sleep(3);
+    printf(&quot;Canceling thread...\n&quot;);
+    res=pthread_cancel(a_thread);
+    if (res!=0){
+        perror(&quot;Thread cancelation failed\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+    printf(&quot;Waiting for thread to finish...\n&quot;);
+    res=pthread_join(a_thread, &amp;thread_result);
+    if (res!=0){
+        perror(&quot;Thread join failed\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+    printf(&quot;thread finished\n&quot;);
+    exit(EXIT_SUCCESS);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_7">7.创建多线程</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>要求这些线程以随机的顺序结束</li>
+<li>在每个创建的线程下打印线程产生顺序,例如:如果是第三个产生的线程,打印&quot;我是第三个线程&quot;.在线程结束的时候打印&quot;第三个线程结束了&quot;</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code>#include &lt;stdio.h&gt;
+#include &quot;unistd.h&quot;
+#include &lt;stdlib.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;pthread.h&gt;
+#define NUM_THREADS 6
+void *thread_function(void *arg){
+    int my_number = *(int *)arg;
+    int rand_num;
+    printf(&quot;I&#39;m numner %d thread\n&quot;, my_number);
+    rand_num=1+(int)(9.0*rand()/(RAND_MAX+1.0));
+    sleep(rand_num);
+    printf(&quot;number %d thread end\n&quot;,my_number);
+    pthread_exit(NULL);
+}
+int main(void){
+    int res;
+    pthread_t a_thread[NUM_THREADS];
+    void *thread_result;
+    int lots_of_threads;
+    for(lots_of_threads = 0;lots_of_threads&lt;NUM_THREADS;lots_of_threads++) {
+        res=pthread_create(&amp;(a_thread[lots_of_threads]),NULL, thread_function, (void *)&amp;lots_of_threads);
+        if (res != 0){
+            perror(&quot;Thread creation failed&quot;);
+            exit(EXIT_FAILURE);
+        }
+        sleep(1);
+    }
+    printf(&quot;Waiting for threads to finish...\n&quot;);
+    for(lots_of_threads = NUM_THREADS - 1; lots_of_threads &gt;= 0;lots_of_threads--){
+        res = pthread_join(a_thread[lots_of_threads], &amp;thread_result);
+        if(res != 0){
+            perror(&quot;pthread_join failed\n&quot;);
+        }
+    }
+    printf(&quot;All done\n&quot;);
+    exit(EXIT_SUCCESS);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+
+</div>
+
+<br /><br />
+<hr />
+
+<div class="row clearfix">
+  <div class="large-6 columns">
+	<div class="text-left" style="padding:15px 0px;">
+		
+	        <a href="15038318551859.html"  title="Previous Post: Linux下配置rsync服务器">&laquo; Linux下配置rsync服务器</a>
+	    
+	</div>
+  </div>
+  <div class="large-6 columns">
+	<div class="text-right" style="padding:15px 0px;">
+		
+	        <a href="15038316680304.html" 
+	        title="Next Post: linux进程编程入门">linux进程编程入门 &raquo;</a>
+	    
+	</div>
+  </div>
+</div>
+
+<div class="row">
+<div style="padding:0px 0.93em;" class="share-comments">
+
+</div>
+</div>
+<script type="text/javascript">
+	$(function(){
+		var currentURL = '15038316827096.html';
+		$('#side-nav a').each(function(){
+			if($(this).attr('href') == currentURL){
+				$(this).parent().addClass('active');
+			}
+		});
+	});
+</script>  
+</div></div>
+
+
+<div class="page-bottom">
+  <div class="row">
+  <hr />
+  <div class="small-9 columns">
+  <p class="copyright">Copyright &copy; 2015
+Powered by <a target="_blank" href="http://www.mweb.im">MWeb</a>,&nbsp; 
+Theme used <a target="_blank" href="http://github.com">GitHub CSS</a>.</p>
+  </div>
+  <div class="small-3 columns">
+  <p class="copyright text-right"><a href="#header">TOP</a></p>
+  </div>
+   
+  </div>
+</div>
+
+        </section>
+      </div>
+    </div>
+    
+    
+    <script src="asset/js/foundation.min.js"></script>
+    <script src="asset/js/foundation/foundation.offcanvas.js"></script>
+    <script>
+      $(document).foundation();
+
+     
+    </script>
+    <script src="asset/chart/all-min.js"></script><script type="text/javascript">$(function(){    var mwebii=0;    var mwebChartEleId = 'mweb-chart-ele-';    $('pre>code').each(function(){        mwebii++;        var eleiid = mwebChartEleId+mwebii;        if($(this).hasClass('language-sequence')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = Diagram.parse($(this).text());            diagram.drawSVG(eleiid,{theme: 'simple'});        }else if($(this).hasClass('language-flow')){            var ele = $(this).addClass('nohighlight').parent();            $('<div id="'+eleiid+'"></div>').insertAfter(ele);            ele.hide();            var diagram = flowchart.parse($(this).text());            diagram.drawSVG(eleiid);        }    });});</script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({TeX: { equationNumbers: { autoNumber: "AMS" } }});</script>
+
+  </body>
+</html>
