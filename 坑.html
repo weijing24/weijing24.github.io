@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  记一次mysql主从一致校验走过的坑 - 小菜鸡儿
+  坑 - 小菜鸡儿
   
   </title>
  <meta name="description" content="">
@@ -381,10 +381,14 @@
             </div>
             <div class="large-9 medium-9 columns">
 
- <div class="markdown-body">
-<h1>记一次mysql主从一致校验走过的坑</h1>
+ 
 
-<p>前言：<br/>
+
+	
+		<div class="markdown-body">
+		<h1>记一次mysql主从一致校验走过的坑</h1>
+
+		<p>前言：<br/>
 　　最近一台db master宕机，立刻迁到了一台从库上。这次的宕机在恢复后我做了主从一致校验，发现有部分数据不一致，细细想想还是挺可怕的，万一数据不一致的很多，主库挂了，切从库，那后果简直不敢想象。。。<br/>
 　　因此主从一致校验是必要的，但是这个东西比较费时，因此一般来说没有出故障一周校验一次即可。本来准备自己写个校验脚本后来发现要考虑的问题太多，于是发现pt-table-checksum这个神器，踩坑之旅开始。<br/>
 　　先说一下生产环境，目前所有的端口都是一主多从的架构，因为对读的要求高，主从分离，多从库有利于读。</p>
@@ -665,44 +669,23 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
 没有唯一索引</p>
 
 
-</div>
+		</div>
+	
 
-<br /><br />
-<hr />
+ 
+	
 
-<div class="row clearfix">
-  <div class="large-6 columns">
-	<div class="text-left" style="padding:15px 0px;">
-		
-	        <a href="megacli%20%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.html"  title="Previous Post: megacli 常用命令">&laquo; megacli 常用命令</a>
-	    
-	</div>
-  </div>
-  <div class="large-6 columns">
-	<div class="text-right" style="padding:15px 0px;">
-		
-	        <a href="dns%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3.html" 
-	        title="Next Post: dns服务器报错解决">dns服务器报错解决 &raquo;</a>
-	    
-	</div>
-  </div>
-</div>
+ 
+	
 
-<div class="row">
-<div style="padding:0px 0.93em;" class="share-comments">
+ 
+	
 
-</div>
-</div>
-<script type="text/javascript">
-	$(function(){
-		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1mysql%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
-		$('#side-nav a').each(function(){
-			if($(this).attr('href') == currentURL){
-				$(this).parent().addClass('active');
-			}
-		});
-	});
-</script>  
+ 
+	
+
+  
+  
 </div></div>
 
 

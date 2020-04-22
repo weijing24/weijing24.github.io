@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  记一次mysql主从一致校验走过的坑 - 小菜鸡儿
+  记一次 mysql 主从一致校验走过的坑 - 小菜鸡儿
   
   </title>
  <meta name="description" content="">
@@ -382,7 +382,7 @@
             <div class="large-9 medium-9 columns">
 
  <div class="markdown-body">
-<h1>记一次mysql主从一致校验走过的坑</h1>
+<h1>记一次 mysql 主从一致校验走过的坑</h1>
 
 <p>前言：<br/>
 　　最近一台db master宕机，立刻迁到了一台从库上。这次的宕机在恢复后我做了主从一致校验，发现有部分数据不一致，细细想想还是挺可怕的，万一数据不一致的很多，主库挂了，切从库，那后果简直不敢想象。。。<br/>
@@ -411,13 +411,13 @@
 <p>　　上面说了pt-table-checksum默认主从的数据库和表结构一致，对于主从某些库、表、字段不一致(这里的不一致主要指的是多了或者少了)，它无法检测出来。<br/>
 下面是四种情况的输出:<br/>
 从库少asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907089990574.jpg" alt=""/><br/>
+<img src="media/15033215794872/15033216308009.jpg" alt=""/><br/>
 从库多asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090229580.jpg" alt=""/><br/>
+<img src="media/15033215794872/15033216356053.jpg" alt=""/><br/>
 从库少user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090362061.jpg" alt=""/><br/>
+<img src="media/15033215794872/15033216416668.jpg" alt=""/><br/>
 从库多user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090454889.jpg" alt=""/><br/>
+<img src="media/15033215794872/15033216487626.jpg" alt=""/><br/>
 　　可以看出在主库不存在某个库某个表的情况下，使用pt-table-checksum检测从库是不会有任何报错信息的，但其实从库是多了库/表的。<br/>
 　　因此在使用pt-table-checksum检测前需要先检测主从的库、表以及字段是否一致(是否多库多表少库少表多字段少字段)。有多/少的记录到一个文件report中，然后以主库为的数据库、表为依据，依次遍历，使用pt-table-checksum检查从库上相应的数据库和表，将结果追加到report中。最后对report做处理，发送给自己邮箱。</p>
 
@@ -674,15 +674,15 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
   <div class="large-6 columns">
 	<div class="text-left" style="padding:15px 0px;">
 		
-	        <a href="megacli%20%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.html"  title="Previous Post: megacli 常用命令">&laquo; megacli 常用命令</a>
+	        <a href="%E8%AE%B0%E4%B8%80%E6%AC%A1%20ftp%20%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%90%AD%E5%BB%BA%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html"  title="Previous Post: 记一次 ftp 服务器搭建走过的坑">&laquo; 记一次 ftp 服务器搭建走过的坑</a>
 	    
 	</div>
   </div>
   <div class="large-6 columns">
 	<div class="text-right" style="padding:15px 0px;">
 		
-	        <a href="dns%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3.html" 
-	        title="Next Post: dns服务器报错解决">dns服务器报错解决 &raquo;</a>
+	        <a href="%E8%AF%A6%E8%A7%A3%20apache%20%E7%9A%84%20allow%20%E5%92%8C%20deny.html" 
+	        title="Next Post: 详解 apache 的 allow 和 deny">详解 apache 的 allow 和 deny &raquo;</a>
 	    
 	</div>
   </div>
@@ -695,7 +695,7 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
 </div>
 <script type="text/javascript">
 	$(function(){
-		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1mysql%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
+		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1%20mysql%20%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
 		$('#side-nav a').each(function(){
 			if($(this).attr('href') == currentURL){
 				$(this).parent().addClass('active');

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  记一次mysql主从一致校验走过的坑 - 小菜鸡儿
+  小菜鸡儿
   
   </title>
  <meta name="description" content="">
@@ -381,328 +381,116 @@
             </div>
             <div class="large-9 medium-9 columns">
 
- <div class="markdown-body">
-<h1>记一次mysql主从一致校验走过的坑</h1>
-
-<p>前言：<br/>
-　　最近一台db master宕机，立刻迁到了一台从库上。这次的宕机在恢复后我做了主从一致校验，发现有部分数据不一致，细细想想还是挺可怕的，万一数据不一致的很多，主库挂了，切从库，那后果简直不敢想象。。。<br/>
-　　因此主从一致校验是必要的，但是这个东西比较费时，因此一般来说没有出故障一周校验一次即可。本来准备自己写个校验脚本后来发现要考虑的问题太多，于是发现pt-table-checksum这个神器，踩坑之旅开始。<br/>
-　　先说一下生产环境，目前所有的端口都是一主多从的架构，因为对读的要求高，主从分离，多从库有利于读。</p>
-
-<h2 id="toc_0">1、可能情况：</h2>
-
-<p>若发现主从数据不一致可能有以下原因导致：<br/>
-①原来的主库down机，将从库升为主库期间导致数据丢失，从而发生数据不一致<br/>
-②误在从库上操作了<br/>
-③负载过大导致复制线程资源不足<br/>
-对于主从不一致无非以下三种：<br/>
-主库数据多余从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据少于从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据量和从库一样，但是数据有差异(记录条数相同，但是记录内容有偏差)</p>
-
-<h2 id="toc_1">2、工具选用：</h2>
-
-<p>　　一开始是想自己写个主从检查脚本的，大致用select count(1) from db.table，后来发现写出来的不严谨，只能检查数据量是否一致万一数据不一致就无法检测出来，而且太耗费系统资源不可取。后来发现有现成的工具pt-table-checksum。它的大体执行流程是:<br/>
-<strong><em>登录主库-&gt;根据唯一索引将表分块(没有唯一索引会报错)-&gt;对块校验-&gt;将校验结果默认写入percona.checksums表-&gt;比较percona.checksums中master db和slave db不一致的值，输出</em></strong>。<br/>
-　　pt-table-checksum默认主从的数据库和表结构一致，若从库的表结构与主库不一致，会导致主从复制中断。同时pt-table-checksum要求复制是基于STATEMENT格式的，它在运行时会在主库上设置binlog_format=STATEMENT(需要super权限)，但是由于MySQL的限制，这一设置并不会传递到从库，因此当从库的binlog格式是ROW格式时，无法直接对从库进行校验。</p>
-
-<h2 id="toc_2">3、大致思路：</h2>
-
-<p>　　上面说了pt-table-checksum默认主从的数据库和表结构一致，对于主从某些库、表、字段不一致(这里的不一致主要指的是多了或者少了)，它无法检测出来。<br/>
-下面是四种情况的输出:<br/>
-从库少asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907089990574.jpg" alt=""/><br/>
-从库多asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090229580.jpg" alt=""/><br/>
-从库少user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090362061.jpg" alt=""/><br/>
-从库多user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090454889.jpg" alt=""/><br/>
-　　可以看出在主库不存在某个库某个表的情况下，使用pt-table-checksum检测从库是不会有任何报错信息的，但其实从库是多了库/表的。<br/>
-　　因此在使用pt-table-checksum检测前需要先检测主从的库、表以及字段是否一致(是否多库多表少库少表多字段少字段)。有多/少的记录到一个文件report中，然后以主库为的数据库、表为依据，依次遍历，使用pt-table-checksum检查从库上相应的数据库和表，将结果追加到report中。最后对report做处理，发送给自己邮箱。</p>
-
-<h2 id="toc_3">4、操作脚本</h2>
-
-<pre><code class="language-text">#!/bin/bash
-#set -x
-
-PASSWORD=       #登录用户的密码
-SOCK=               #端口
-#SLAVE=()
-SLAVE=()            #从库ip(有几个写几个，注意是一个数组，用空格隔开)
-MASTER=         #主库ip
-
-#连接语句
-MYSQL_CONN=&quot;mysql -uchecksum -p$PASSWORD&quot;
-
-#存放产生临时文件的文件夹
-mysql_checksum=/tmp/mysql_checksum      
-#获取主库和从库的数据库、表
-get_db_table_field_name() {
-    if [ -d $mysql_checksum/$SOCK ];then
-        rm -r $mysql_checksum/$SOCK
-    fi
-    mkdir -p $mysql_checksum/$SOCK
-    echo &quot;#########start get port $SOCK master db #########&quot;
-    #获取主库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db
-    #获取上一步中的数据库中的表名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table
-    done
-    #获取上一步中得到的表中的字段名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table`;do
-        $MYSQL_CONN -P ${SOCK} -h $MASTER -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field
-        done
-    done
-    #获取从库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    echo &quot;#########start get port $SOCK slave db #########&quot;
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db
-        #获取上一步中的数据库中的表名     for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table
-        done
-        #获取上一步中得到的表中的字段名
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table`;do
-                $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-            done
-        done
-    done
-}
-
-#检查从库是否多库少库多表少表多字段少字段
-checksum_db_table() {
-    if [ -e $mysql_checksum/$SOCK/report ];then
-        rm $mysql_checksum/$SOCK/report
-    fi
-    #将主库的数据库名排序
-    cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort
-
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        #将从库的数据库名排序
-        cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort
-        #comm命令检测从库是多还是少库，注意comm后面跟的两个文件顺序不能错
-        slave_surplus_db=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        slave_lack_db=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        if [ ! -z &quot;$slave_surplus_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} surplus database $slave_surplus_db&quot; | tee -a $mysql_checksum/$SOCK/report 
-        fi
-        if [ ! -z &quot;$slave_lack_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} lack database $slave_lack_db&quot; &gt;&gt; $mysql_checksum/$SOCK/report
-        fi
-        #库检查完了，就以主库包含的库为基准，comm命令检测从库是多还是少表，同样comm后面跟的两个文件顺序不能错
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-            cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table| sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort
-            cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table |sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort
-            slave_surplus_table=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            slave_lack_table=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            if [ ! -z &quot;$slave_surplus_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} surplus table $slave_surplus_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-            if [ ! -z &quot;$slave_lack_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} lack table ${DB}.$slave_lack_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-        #表检查完了，就以主库包含的表为基准，diff命令检测从库是多还是少字段，diff后面的文件顺序无所谓
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-                diff $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-                if [ $? -ne 0 ];then
-                    echo &quot;port $SOCK slave ${SLAVE[$j]} have different field in ${DB}.${TABLE}&quot; |tee -a $mysql_checksum/$SOCK/report
-                fi
-            done
-        done
-    done
-}
-
-#以主库有的库和表为基准，检测从库的记录是否与主库一致
-check_table_field() {
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-            echo &quot;#########port ${SOCK} database ${DB} table ${TABLE}&quot;
-            PTDEBUG=1 pt-table-checksum --user=checksum --password=$PASSWORD --host=$MASTER --port=${SOCK} --databases=$DB --tables=$TABLE --empty-replicate-table --replicate=percona.${SOCK}_checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=${SOCK}_dsns &gt;&gt; $mysql_checksum/$SOCK/report 2&gt;&amp;1
-        done
-    done
-}
-
-#将生成的report进行处理
-process_report() {
-    sed -i -ne &#39;/^port/p&#39; -ne &#39;/checksum diffs/p&#39; -ne &#39;/^[0-1][1-9]-[0-3][1-9]/p&#39; $mysql_checksum/$SOCK/report
-    grep &quot;^port&quot; $mysql_checksum/$SOCK/report &gt; $mysql_checksum/$SOCK/mail
-    awk &#39;$3!=0&#39; $mysql_checksum/$SOCK/report |egrep -B ${#SLAVE[@]} &#39;^[0-1][1-9]-[0-3][1-9]&#39; &gt;&gt; $mysql_checksum/$SOCK/mail
-    if [ ! -s $mysql_checksum/$SOCK/mail ];then
-        echo &quot;$SOCK no problem&quot;|mail -s &quot;port $SOCK checksum report&quot; weijing3@book.sina.com
-    else
-        cat $mysql_checksum/$SOCK/mail|mail -s &quot;port $SOCK mysql checksum report&quot; weijing3@book.sina.com
-    fi
-}
-
-get_db_table_field_name
-checksum_db_table
-check_table_field
-process_report
-</code></pre>
-
-<h2 id="toc_4">5、脚本解读</h2>
-
-<p>　　每个函数基本都注释的很清楚了，process_report函数需要讲一下，脚本中把所有的信息都重定向到了report中，report的大致样子是这样的</p>
-
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers 
-# /usr/bin/perl 5.010001
-# Linux HP11012317.rb.simulation 2.6.32-431.11.2.el6.toa.2.x86_64 #1 SMP Wed Apr 9 15:55:33 CST 2014 x86_64 x86_64 x86_64 GNU/Linux 
-...此处省略n多PTDEBUG的调试信息
-OALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt;this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 1 checksum diffs on D11059841.rb.weibo.cn
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11060340.rb.db
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11059852.rb.weibo.cn
-...此处省略n多PTDEBUG的调试信息
-        TS ERRORS  DIFFS     ROWS  CHUNKS SKIPPED    TIME TABLE
-03-23T14:23:14      0      1    83350       5       0   3.983   books.bag_collection_1
-</code></pre>
-</blockquote>
-
-<p>　　首部分是从库多库少库多表少表多字段少字段的情况，然后就是pt-table-checksum的调试信息了，包含了输出信息。sed过滤所有的无用信息，保留从库多库少库多表少表多字段少字段的情况，和从库信息，以及pt-table-checksum的标准输出，如下：</p>
-
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers
-# pt_table_checksum:10150 15046 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 15046 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 15046 0 checksum diffs on D11060339.rb.db
-03-21T09:24:54      0      0  1042909      17       0  23.607 asd.test1
-# pt_table_checksum:10150 16227 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 16227 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 16227 0 checksum diffs on D11060339.rb.db
-03-21T09:25:23      0      1  1278316      19       0  28.421 asd.test2
-</code></pre>
-</blockquote>
-
-<p>　　此时的信息已经可读了，使用awk截取第三个字段列非0的行，并截取该行上面n行(n是slave的数量)，得到的结果就是所有有问题的库,表,字段和记录了.</p>
-
-<h2 id="toc_5">6、操作步骤：</h2>
-
-<p>　　随便找一台机器，本地机器也行，将脚本部署上去，然后登陆主库执行以下命令</p>
-
-<blockquote>
-<pre><code class="language-text">mysql&gt; GRANT select,insert,update,delete,create,process,super,replication slave,lock tables ON *.* to &#39;checksum&#39;@&#39;脚本所在机器的ip&#39; IDENTIFIED by &#39;xxx&#39;; 
-mysql&gt; CREATE DATABASE `percona` ;
-mysql&gt; use percona;
-mysql&gt; CREATE TABLE `port_checksums` (    #这里的port要改成你的数据库的端口
-`db` char(64) NOT NULL,
-`tbl` char(64) NOT NULL,
-`chunk` int(11) NOT NULL,
-`chunk_time` float DEFAULT NULL,
-`chunk_index` varchar(200) DEFAULT NULL,
-`lower_boundary` text,
-`upper_boundary` text,
-`this_crc` char(40) NOT NULL,
-`this_cnt` int(11) NOT NULL,
-`master_crc` char(40) DEFAULT NULL,
-`master_cnt` int(11) DEFAULT NULL,
-`ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-PRIMARY KEY (`db`,`tbl`,`chunk`),
-KEY `ts_db_tbl` (`ts`,`db`,`tbl`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-mysql&gt; CREATE TABLE `port_dsns` (   #这里的port要改成你的数据库的端口
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-</code></pre>
-</blockquote>
-
-<p>　　select,process,super是pt-table-checksum需要的权限,insert,update,delete,create,super,replication slave,lock tables是pt-table-sync需要的权限.<br/>
-主库把这些操作完毕后就可以执行脚本了，有问题会发送邮件给自己，没问题会发送no problem给自己。<br/>
-在这里创建dsns是因为该方法比较灵活，下一部分会讲到。</p>
-
-<h2 id="toc_6">7、特殊情况</h2>
-
-<p>　　线上有个数据库是两小时备份一次的,一开始--recursion-method使用的processlist，表示主库自己找从库，当两小时备份库不运行的时候pt-table-checksum会等待这个两小时备份库,直到它开始备份为止,等如此长的时间显然是不行的.因此可以换--recursion-method=hosts或dsn方法<br/>
-　　对于hosts方法,在从库的配置文件中添加report_host和report_port，但不在两小时备份库的配置文件添加report_host和report_port，这样pt-table-checksum登录主库检查时show hosts slave就找不到两小时备份库，也就忽略对两小时备份库的检查了。该方法需要修改配置文件并重启从库，不推荐。<br/>
-　　对于dsn方法，在主库创建percona.port_dsns表,表中插入从库的信息,执行pt-table-checksum的时候指定dsn方法,就会去percona.port_dsns表找从库信息.可以看出这种方法灵活且不影响线上服务,是比较好的,脚本中也是使用的这个方法.<br/>
-以3306为例<br/>
-在192.168.1.1(主库)上创建dsns表，并插入以下语句（从库的信息插入进去）</p>
-
-<blockquote>
-<pre><code class="language-text">CREATE DATABASE `percona` ;
-CREATE TABLE `3306_dsns` (
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.2,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.3,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.4,P=3306,u=checksum,p=123&#39;);
-</code></pre>
-</blockquote>
-
-<p>　　在主库或10191上执行pt-table-checksum --user=checksum --password=123 --host=192.168.1.1 --port=3306 --databases=asd --tables=user1 --empty-replicate-table --replicate=percona.checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=3306_dsns即可</p>
-
-<h2 id="toc_7">8、使用pt-table-checksum可能的报错：</h2>
-
-<p>1、mysql table is marked as crashed<br/>
-表损坏，使用以下命令修复</p>
-
-<blockquote>
-<pre><code class="language-text">mysql&gt; myisamchk -r $TABLE_NAME
-mysql&gt; myisamchk -r -v -f $TABLE_NAME
-</code></pre>
-</blockquote>
-
-<p>2、no slaves were found<br/>
-主库找不到从库，一般用dsn方法不会有这个情况，除非在主库的percona.portdsn插入从库信息有误<br/>
-3、03-23T15:16:40 Skipping chunk 1 of asd.user1 because it is oversized.  The current chunk size limit is 2000 rows (chunk size=1000 * chunk size limit=2.0), but MySQL estimates that there are 2008 rows in the chunk.<br/>
-这种情况是分的块太大了，设置--chunk-size-limit<br/>
-4、03-21T12:16:08 Error checksumming table asd.user1: Possible infinite loop detected!  The lower boundary for chunk 1 is <1> and the lower boundary for chunk 2 is also <1>.  This usually happens when using a non-unique single column index.  The current chunk index for table asd.user1 is idx_bid which is not unique and covers 1 column.<br/>
-没有唯一索引</p>
+ 
 
 
-</div>
+	
+		<div class="markdown-body">
+		<h1>HTTP协议 (七) Cookie</h1>
 
-<br /><br />
-<hr />
+		<p>Cookie是HTTP协议中非常重要的东西， 之前拜读了Fish Li 写的<a href="http://www.cnblogs.com/fish-li/archive/2011/07/03/2096903.html">细说Cookie</a>， 让我学到了很多东西。Fish的这篇文章写得太经典了。 所以我这篇文章就没有太多内容了。 <br/>
+最近我打算写一个系列的HTTP文章，我站在HTTP协议的角度， 说说我对Cookie的理解。</p>
 
-<div class="row clearfix">
-  <div class="large-6 columns">
-	<div class="text-left" style="padding:15px 0px;">
-		
-	        <a href="megacli%20%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.html"  title="Previous Post: megacli 常用命令">&laquo; megacli 常用命令</a>
-	    
-	</div>
-  </div>
-  <div class="large-6 columns">
-	<div class="text-right" style="padding:15px 0px;">
-		
-	        <a href="dns%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3.html" 
-	        title="Next Post: dns服务器报错解决">dns服务器报错解决 &raquo;</a>
-	    
-	</div>
-  </div>
-</div>
+<h3 id="toc_0">Cookie是什么，有什么用，为什么要用到Cookie</h3>
 
-<div class="row">
-<div style="padding:0px 0.93em;" class="share-comments">
+<p>请看Fish Li 写的<a href="http://www.cnblogs.com/fish-li/archive/2011/07/03/2096903.html">细说Cookie</a></p>
 
-</div>
-</div>
-<script type="text/javascript">
-	$(function(){
-		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1mysql%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
-		$('#side-nav a').each(function(){
-			if($(this).attr('href') == currentURL){
-				$(this).parent().addClass('active');
-			}
-		});
-	});
-</script>  
+<h3 id="toc_1">Cookie的分类</h3>
+
+<p>可以大致把Cookie分为2类： 回话cookie和持久cookie<br/>
+会话cookie: 是一种临时的cookie，它记录了用户访问站点时的设置和偏好，关闭浏览器，会话cookie就被删除了<br/>
+持久cookie: 存储在硬盘上，（不管浏览器退出，或者电脑重启，持久cookie都存在）， 持久cookie有过期时间</p>
+
+<h3 id="toc_2">Cookie存在哪里</h3>
+
+<p>Cookie是存在硬盘上，  IE存cookie的地方和Firefox存cookie的地方不一样。  不同的操作系统也可能存cookie的地方不一样。<br/>
+不同的浏览器会在各自的独立空间存放Cookie, 互不干涉<br/>
+以我的windows7， IE8为例，  cookie存在这： C:\Users\xiaoj\AppData\Local\Microsoft\Windows\Temporary Internet Files<br/>
+注意： 缓存文件和cookie文件，是存在一起的, 都在这个目录下。<br/>
+你也可以这样找, 打开IE，点击Tools-&gt;Internet Options-&gt;General Tab下的-&gt;Browsing history下的Setting按钮，弹出的对话框中点击View files.<br/>
+<img src="media/15038327056467/15038327504167.jpg" alt=""/><br/>
+不同的网站会有不同的cookie文件<br/>
+<img src="media/15038327056467/15038328209258.jpg" alt=""/></p>
+
+<h3 id="toc_3">使用和禁用Cookie</h3>
+
+<p>IE:   工具-&gt;Internet 选项 -&gt; 隐私<br/>
+<img src="media/15038327056467/15038327401476.jpg" alt=""/></p>
+
+<h3 id="toc_4">Fiddler查看HTTP中的Cookie</h3>
+
+<p>浏览器把cookie通过HTTP Request 中的“Cookie: header”发送给Web服务器<br/>
+Web服务器通过HTTP Response中的&quot;Set-Cookie: header&quot;把cookie发送给浏览器<br/>
+使用Fiddler可以清楚地看到cookie在HTTP中传递。 Fiddler工具中可以清晰的看到Http Request 中的Cookie， 和Http Response中的cookie<br/><br/>
+实例： 启动Fiddler,  启动浏览器访问一些购物网站，就可以看到。<br/>
+<img src="media/15038327056467/15038328374970.jpg" alt=""/></p>
+
+<h3 id="toc_5">网站自动登陆的原理</h3>
+
+<p>我们以”博客园自动登陆“的例子，来说明cookie是如何传递的。<br/>
+大家知道博客园是可以自动登陆的。 如下图，这个是什么原理呢?<br/>
+<img src="media/15038327056467/15038328427264.jpg" alt=""/></p>
+
+<p>假如我已经在登陆页面输入了用户名，密码，选择了保存密码，登陆。（这时候，其实在你的机器上保存好了登陆的cookie, 不信你可以按照上节介绍方法去你的电脑上找下博客园的cookie）<br/><br/>
+当我下次访问博客园流程如下。</p>
+
+<ol>
+<li>用户打开IE浏览器，在地址栏上输入www.cnblogs.com.</li>
+<li>IE首先会在硬盘中查找关于cnblogs.com的cookie. 然后把cookie放到HTTP Request中，再把Request发给Web服务器。</li>
+<li>Web服务器返回博客园首页（你会看到你已经登陆了）。</li>
+</ol>
+
+<p><img src="media/15038327056467/15038328501782.jpg" alt=""/></p>
+
+<h3 id="toc_6">截获Cookie，冒充别人身份</h3>
+
+<p>通过上面这个例子，可以看到cookie是很重要的，识别是否是登陆用户，就是通过cookie。  假如截获了别人的cookie是否可以冒充他人的身份登陆呢？  当然可以， 这就是一种黑客技术叫Cookie欺骗。<br/>
+利用Cookie 欺骗， 不需要知道用户名密码。就可以直接登录，使用别人的账户做坏事。<br/>
+我知道有两种方法可以截获他人的cookie，</p>
+
+<ol>
+<li>通过XSS脚步攻击， 获取他人的cookie. 具体原理可以看 [Web安全性测试之XSS]</li>
+<li>想办法获取别人电脑上保存的cookie文件（这个比较难）</li>
+</ol>
+
+<p>拿到cookie后，就可以冒充别人的身份了。 这个过程我就不演示了。</p>
+
+<h3 id="toc_7">Cookie和文件缓存的区别</h3>
+
+<p>很多人会把cookie和文件缓存弄混淆， 这两个完全是不一样的东西。唯一的相同之处可能是它们俩都存在硬盘上，而且是存在同一个文件夹下。<br/>
+关于HTTP缓存请看这 【HTTP协议之缓存】<br/>
+我们在IE中可以选择分别删除Cookie和缓存文件<br/>
+<img src="media/15038327056467/15038328592628.jpg" alt=""/></p>
+
+<h3 id="toc_8">Cookie 泄露隐私</h3>
+
+<p>2013年央视的315晚会上， 曝光了很多不法公司利用Cookie跟踪并采集用户的个人信息，并转卖给网络广告商，形成了一条窃取用户信息的灰色产业链。从而实现广告准确投放。严重干扰了用户的正常网络应用，侵害了个人的隐私和利益。<br/>
+我经常就在门户网站上发现广告位上显示的是我在电商网站上流量过的商品。  这就是我的cookie被泄露了。<br/>
+目前在欧洲， 已经对Cookie立法， 如果网站需要保存用户的cookie, 必须弹出一个对话框，要用户确认后才能保存Cookie.</p>
+
+<h3 id="toc_9">P3P协议</h3>
+
+<p>从上面看来， Cookie 是一个比较容易泄露用户隐私和危险的东西。  有没有办法保护个人用户隐私呢？    那就是P3P协议<br/>
+P3P是一种被称为个人隐私安全平台项目（the Platform for Privacy Preferences）的标准，能够保护在线隐私权，使Internet冲浪者可以选择在浏览网页时，是否被第三方收集并利用自己的个人信息。如果一个 站点不遵守P3P标准的话，那么有关它的Cookies将被自动拒绝，并且P3P还能够自动识破多种Cookies的嵌入方式。p3p是由全球资讯联盟网 所开发的。</p>
+
+
+		</div>
+	
+
+ 
+	
+
+ 
+	
+
+ 
+	
+
+ 
+	
+
+  
+  
 </div></div>
 
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  记一次mysql主从一致校验走过的坑 - 小菜鸡儿
+  信号 - 小菜鸡儿
   
   </title>
  <meta name="description" content="">
@@ -382,287 +382,423 @@
             <div class="large-9 medium-9 columns">
 
  <div class="markdown-body">
-<h1>记一次mysql主从一致校验走过的坑</h1>
+<h1>信号</h1>
 
-<p>前言：<br/>
-　　最近一台db master宕机，立刻迁到了一台从库上。这次的宕机在恢复后我做了主从一致校验，发现有部分数据不一致，细细想想还是挺可怕的，万一数据不一致的很多，主库挂了，切从库，那后果简直不敢想象。。。<br/>
-　　因此主从一致校验是必要的，但是这个东西比较费时，因此一般来说没有出故障一周校验一次即可。本来准备自己写个校验脚本后来发现要考虑的问题太多，于是发现pt-table-checksum这个神器，踩坑之旅开始。<br/>
-　　先说一下生产环境，目前所有的端口都是一主多从的架构，因为对读的要求高，主从分离，多从库有利于读。</p>
+<h3 id="toc_0">背景知识：</h3>
 
-<h2 id="toc_0">1、可能情况：</h2>
+<p>　　信号机制是进程之间相互传递消息的一种方法，信号全称为软中断信号，也有人称作软中断。从它的命名可以看出，它的实质和使用很象中断。所以，信号可以说是进程控制的一部分。 <br/>
+　　软中断信号（signal，又简称为信号）用来通知进程发生了异步事件。进程之间可以互相通过系统调用kill发送软中断信号。内核也可以因为内部事件而给进程发送信号，通知进程发生了某个事件。注意，信号只是用来通知某进程发生了什么事件，并不给该进程传递任何数据。 <br/>
+　　收到信号的进程对各种信号有不同的处理方法。处理方法可以分为三类：第一种是类似中断的处理程序，对于需要处理的信号，进程可以指定处理函数，由该函数来处理。第二种方法是，忽略某个信号，对该信号不做任何处理，就象未发生过一样。第三种方法是，对该信号的处理保留系统的默认值，这种缺省操作，对大部分的信 号的缺省操作是使得进程终止。进程通过系统调用signal来指定进程对某个信号的处理行为。 <br/>
+　　在进程表的表项中有一个软中断信号域，该域中每一位对应一个信号，当有信号发送给进程时，对应位置位。由此可以看出，进程对不同的信号可以同时保留，但对于同一个信号，进程并不知道在处理之前来过多少个。 <br/>
+　　发出信号的原因很多，这里按发出信号的原因简单分类，以了解各种信号： <br/>
+　　①与进程终止相关的信号。当进程退出，或者子进程终止时，发出这类信号。 <br/>
+　　②与进程例外事件相关的信号。如进程越界，或企图写一个只读的内存区域（如程序正文区），或执行一个特权指令及其他各种硬件错误。 <br/>
+　　③与在系统调用期间遇到不可恢复条件相关的信号。如执行系统调用exec时，原有资源已经释放，而目前系统资源又已经耗尽。 <br/>
+　　④与执行系统调用时遇到非预测错误条件相关的信号。如执行一个并不存在的系统调用。 <br/>
+　　⑤在用户态下的进程发出的信号。如进程调用系统调用kill向其他进程发送信号。 <br/>
+　　⑥与终端交互相关的信号。如用户关闭一个终端，或按下break键等情况。 <br/>
+　　⑦跟踪进程执行的信号。</p>
 
-<p>若发现主从数据不一致可能有以下原因导致：<br/>
-①原来的主库down机，将从库升为主库期间导致数据丢失，从而发生数据不一致<br/>
-②误在从库上操作了<br/>
-③负载过大导致复制线程资源不足<br/>
-对于主从不一致无非以下三种：<br/>
-主库数据多余从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据少于从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据量和从库一样，但是数据有差异(记录条数相同，但是记录内容有偏差)</p>
+<p>相关函数和头文件:<br/>
+　　①signal.h<br/>
+　　系统调用signal用来设定某个信号的处理方法。该调用声明的格式如下：<br/>
+　　　　void (*signal(int signum, void (*handler)(int)))(int); </p>
 
-<h2 id="toc_1">2、工具选用：</h2>
+<p>　　在使用该调用的进程中加入以下头文件： <br/>
+　　#include &quot;signal.h&quot;</p>
 
-<p>　　一开始是想自己写个主从检查脚本的，大致用select count(1) from db.table，后来发现写出来的不严谨，只能检查数据量是否一致万一数据不一致就无法检测出来，而且太耗费系统资源不可取。后来发现有现成的工具pt-table-checksum。它的大体执行流程是:<br/>
-<strong><em>登录主库-&gt;根据唯一索引将表分块(没有唯一索引会报错)-&gt;对块校验-&gt;将校验结果默认写入percona.checksums表-&gt;比较percona.checksums中master db和slave db不一致的值，输出</em></strong>。<br/>
-　　pt-table-checksum默认主从的数据库和表结构一致，若从库的表结构与主库不一致，会导致主从复制中断。同时pt-table-checksum要求复制是基于STATEMENT格式的，它在运行时会在主库上设置binlog_format=STATEMENT(需要super权限)，但是由于MySQL的限制，这一设置并不会传递到从库，因此当从库的binlog格式是ROW格式时，无法直接对从库进行校验。</p>
+<p>　　②sigaction函数<br/>
+　　int sigaction(int signo,const struct sigaction *restrict act,struct sigaction *restrict oact);<br/>
+　　sigaction函数用于改变进程接收到特定信号后的行为。该函数的第一个参数为信号的值，可以为除SIGKILL及SIGSTOP外的任何一个特定有效的信号（为这两个信号定义自己的处理函数，将导致信号安装错误）。第二个参数是指向结构sigaction的一个实例的指针，在结构sigaction的实例中，指定了对特定信号的处理，可以为空，进程会以缺省方式对信号处理；第三个参数oldact指向的对象用来保存返回的原来对相应信号的处理，可指定oldact为NULL。如果把第二、第三个参数都设为NULL，那么该函数可用于检查信号的有效性.第二个参数最为重要，其中包含了对指定信号的处理、信号所传递的信息、信号处理函数执行过程中应屏蔽掉哪些信号等等。<br/>
+结构sigaction定义如下：</p>
 
-<h2 id="toc_2">3、大致思路：</h2>
+<blockquote>
+<pre><code class="language-text">struct sigaction{
+    void (*sa_handler)(int);
+    sigset_t sa_mask;
+    int sa_flag;
+    void (*sa_sigaction)(int,siginfo_t *,void *);
+};
+</code></pre>
+</blockquote>
 
-<p>　　上面说了pt-table-checksum默认主从的数据库和表结构一致，对于主从某些库、表、字段不一致(这里的不一致主要指的是多了或者少了)，它无法检测出来。<br/>
-下面是四种情况的输出:<br/>
-从库少asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907089990574.jpg" alt=""/><br/>
-从库多asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090229580.jpg" alt=""/><br/>
-从库少user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090362061.jpg" alt=""/><br/>
-从库多user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090454889.jpg" alt=""/><br/>
-　　可以看出在主库不存在某个库某个表的情况下，使用pt-table-checksum检测从库是不会有任何报错信息的，但其实从库是多了库/表的。<br/>
-　　因此在使用pt-table-checksum检测前需要先检测主从的库、表以及字段是否一致(是否多库多表少库少表多字段少字段)。有多/少的记录到一个文件report中，然后以主库为的数据库、表为依据，依次遍历，使用pt-table-checksum检查从库上相应的数据库和表，将结果追加到report中。最后对report做处理，发送给自己邮箱。</p>
+<p>sa_handler字段包含一个信号捕捉函数的地址<br/>
+sa_mask字段说明了一个信号集，在调用该信号捕捉函数之前，这一信号集要加进进程的信号屏蔽字中。仅当从信号捕捉函数返回时再将进程的信号屏蔽字复位为原先值。<br/>
+sa_flag是一个选项，主要理解两个:<br/>
+　　　　SA_INTERRUPT 由此信号中断的系统调用不会自动重启<br/>
+　　　　SA_RESTART 由此信号中断的系统调用会自动重启<br/>
+　　　　SA_SIGINFO 提供附加信息，一个指向siginfo结构的指针以及一个指向进程上下文标识符的指针<br/>
+最后一个参数是一个替代的信号处理程序，当设置SA_SIGINFO时才会用他。</p>
 
-<h2 id="toc_3">4、操作脚本</h2>
+<p>③sigemptyset <br/>
+　　函数初始化信号集合set，将set 设置为空。 </p>
 
-<pre><code class="language-text">#!/bin/bash
-#set -x
+<p>④信号所传递的每一个整数都被赋予了特殊的意义，并有一个信号名对应该整数。常见的信号有SIGINT, SIGQUIT, SIGCONT, SIGTSTP, SIGALRM等。这些都是信号的名字。你可以通过$man 7 signal来查阅更多的信号。上面几个信号中，<br/>
+　　<strong>SIGINT   当键盘按下CTRL+C从shell中发出信号，信号被传递给shell中前台运行的进程，对应该信号的默认操作是中断 (INTERRUPT) 该进程。</strong><br/>
+　　<strong>SIGQUIT  当键盘按下CTRL+\从shell中发出信号，信号被传递给shell中前台运行的进程，对应该信号的默认操作是退出 (QUIT) 该进程。</strong><br/>
+　　SIGTSTP  当键盘按下CTRL+Z从shell中发出信号，信号被传递给shell中前台运行的进程，对应该信号的默认操作是暂停 (STOP) 该进程。 <br/>
+　　<strong>SIG_DFL：默认信号处理程序</strong><br/>
+　　SIG_IGN：忽略信号的处理程序<br/>
+　　SIGCONT  用于通知暂停的进程继续。<br/>
+　　SIGALRM  起到定时器的作用，通常是程序在一定的时间之后才生成该信号。</p>
 
-PASSWORD=       #登录用户的密码
-SOCK=               #端口
-#SLAVE=()
-SLAVE=()            #从库ip(有几个写几个，注意是一个数组，用空格隔开)
-MASTER=         #主库ip
+<p>⑤kill()<br/>
+　　原型:int kill(pid_t pid,int signo)<br/>
+　　作用:该系统调用可以用来向任何进程或进程组发送任何信号。参数pid的值为信号的接收进程;sinno是信号值，当为0时（即空信号），实际不发送任何信号，但照常进行错误检查，因此，可用于检查目标进程是否存在，以及当前进程是否具有向目标发送信号的权限（root权限的进程可以向任何进程发送信号，非root权限的进程只能向属于同一个session或者同一个用户的进程发送信号）。<br/>
+⑥pause()<br/>
+　　阻塞进程,直到有信号产生</p>
 
-#连接语句
-MYSQL_CONN=&quot;mysql -uchecksum -p$PASSWORD&quot;
+<h4 id="toc_1">1.接收SIGINT信号,始终执行自定义处理</h4>
 
-#存放产生临时文件的文件夹
-mysql_checksum=/tmp/mysql_checksum      
-#获取主库和从库的数据库、表
-get_db_table_field_name() {
-    if [ -d $mysql_checksum/$SOCK ];then
-        rm -r $mysql_checksum/$SOCK
-    fi
-    mkdir -p $mysql_checksum/$SOCK
-    echo &quot;#########start get port $SOCK master db #########&quot;
-    #获取主库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db
-    #获取上一步中的数据库中的表名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table
-    done
-    #获取上一步中得到的表中的字段名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table`;do
-        $MYSQL_CONN -P ${SOCK} -h $MASTER -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field
-        done
-    done
-    #获取从库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    echo &quot;#########start get port $SOCK slave db #########&quot;
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db
-        #获取上一步中的数据库中的表名     for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table
-        done
-        #获取上一步中得到的表中的字段名
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table`;do
-                $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-            done
-        done
-    done
+<p>任务描述:</p>
+
+<ul>
+<li>打印字符串,忽略ctrl+c的中断信号</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot;
+struct sigaction act;
+void doit(int sig){
+    printf(&quot;ha ha you can&#39;t close me\n&quot;);
 }
-
-#检查从库是否多库少库多表少表多字段少字段
-checksum_db_table() {
-    if [ -e $mysql_checksum/$SOCK/report ];then
-        rm $mysql_checksum/$SOCK/report
-    fi
-    #将主库的数据库名排序
-    cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort
-
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        #将从库的数据库名排序
-        cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort
-        #comm命令检测从库是多还是少库，注意comm后面跟的两个文件顺序不能错
-        slave_surplus_db=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        slave_lack_db=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        if [ ! -z &quot;$slave_surplus_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} surplus database $slave_surplus_db&quot; | tee -a $mysql_checksum/$SOCK/report 
-        fi
-        if [ ! -z &quot;$slave_lack_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} lack database $slave_lack_db&quot; &gt;&gt; $mysql_checksum/$SOCK/report
-        fi
-        #库检查完了，就以主库包含的库为基准，comm命令检测从库是多还是少表，同样comm后面跟的两个文件顺序不能错
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-            cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table| sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort
-            cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table |sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort
-            slave_surplus_table=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            slave_lack_table=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            if [ ! -z &quot;$slave_surplus_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} surplus table $slave_surplus_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-            if [ ! -z &quot;$slave_lack_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} lack table ${DB}.$slave_lack_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-        #表检查完了，就以主库包含的表为基准，diff命令检测从库是多还是少字段，diff后面的文件顺序无所谓
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-                diff $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-                if [ $? -ne 0 ];then
-                    echo &quot;port $SOCK slave ${SLAVE[$j]} have different field in ${DB}.${TABLE}&quot; |tee -a $mysql_checksum/$SOCK/report
-                fi
-            done
-        done
-    done
+int main(void){
+    act.sa_handler=doit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    if(sigaction(SIGINT,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(1);
+    }
+    while(1){
+        printf(&quot;hello,world\n&quot;);
+        sleep(1);   
+    }
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#以主库有的库和表为基准，检测从库的记录是否与主库一致
-check_table_field() {
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-            echo &quot;#########port ${SOCK} database ${DB} table ${TABLE}&quot;
-            PTDEBUG=1 pt-table-checksum --user=checksum --password=$PASSWORD --host=$MASTER --port=${SOCK} --databases=$DB --tables=$TABLE --empty-replicate-table --replicate=percona.${SOCK}_checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=${SOCK}_dsns &gt;&gt; $mysql_checksum/$SOCK/report 2&gt;&amp;1
-        done
-    done
+<h4 id="toc_2">2.接收SIGINT信号,执行一次自定义处理后,恢复默认行为</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>打印字符串,第一次按ctrl+c没有用,第二次按生效</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot;
+struct sigaction act;
+void doit(int sig){
+    printf(&quot;ha ha you can&#39;t close me\n&quot;);
+    act.sa_handler=SIG_DFL;
+    sigaction(SIGINT,&amp;act,NULL);
 }
-
-#将生成的report进行处理
-process_report() {
-    sed -i -ne &#39;/^port/p&#39; -ne &#39;/checksum diffs/p&#39; -ne &#39;/^[0-1][1-9]-[0-3][1-9]/p&#39; $mysql_checksum/$SOCK/report
-    grep &quot;^port&quot; $mysql_checksum/$SOCK/report &gt; $mysql_checksum/$SOCK/mail
-    awk &#39;$3!=0&#39; $mysql_checksum/$SOCK/report |egrep -B ${#SLAVE[@]} &#39;^[0-1][1-9]-[0-3][1-9]&#39; &gt;&gt; $mysql_checksum/$SOCK/mail
-    if [ ! -s $mysql_checksum/$SOCK/mail ];then
-        echo &quot;$SOCK no problem&quot;|mail -s &quot;port $SOCK checksum report&quot; weijing3@book.sina.com
-    else
-        cat $mysql_checksum/$SOCK/mail|mail -s &quot;port $SOCK mysql checksum report&quot; weijing3@book.sina.com
-    fi
+int main(void) {
+    struct sigaction act;
+    act.sa_handler=doit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    if(sigaction(SIGINT,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(1);
+    }
+    while(1){
+        printf(&quot;hello,world\n&quot;);
+        sleep(1);   
+    }
+    return 0;
 }
-
-get_db_table_field_name
-checksum_db_table
-check_table_field
-process_report
-</code></pre>
-
-<h2 id="toc_4">5、脚本解读</h2>
-
-<p>　　每个函数基本都注释的很清楚了，process_report函数需要讲一下，脚本中把所有的信息都重定向到了report中，report的大致样子是这样的</p>
-
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers 
-# /usr/bin/perl 5.010001
-# Linux HP11012317.rb.simulation 2.6.32-431.11.2.el6.toa.2.x86_64 #1 SMP Wed Apr 9 15:55:33 CST 2014 x86_64 x86_64 x86_64 GNU/Linux 
-...此处省略n多PTDEBUG的调试信息
-OALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt;this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 1 checksum diffs on D11059841.rb.weibo.cn
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11060340.rb.db
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11059852.rb.weibo.cn
-...此处省略n多PTDEBUG的调试信息
-        TS ERRORS  DIFFS     ROWS  CHUNKS SKIPPED    TIME TABLE
-03-23T14:23:14      0      1    83350       5       0   3.983   books.bag_collection_1
 </code></pre>
 </blockquote>
 
-<p>　　首部分是从库多库少库多表少表多字段少字段的情况，然后就是pt-table-checksum的调试信息了，包含了输出信息。sed过滤所有的无用信息，保留从库多库少库多表少表多字段少字段的情况，和从库信息，以及pt-table-checksum的标准输出，如下：</p>
+<h4 id="toc_3">3.模拟时钟</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>在5秒内,如果没有接受到其他信号,则提示时间到了</li>
+</ul>
+
+<p>main.c:</p>
 
 <blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers
-# pt_table_checksum:10150 15046 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 15046 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 15046 0 checksum diffs on D11060339.rb.db
-03-21T09:24:54      0      0  1042909      17       0  23.607 asd.test1
-# pt_table_checksum:10150 16227 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 16227 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 16227 0 checksum diffs on D11060339.rb.db
-03-21T09:25:23      0      1  1278316      19       0  28.421 asd.test2
+<pre><code class="language-text">#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot; 
+struct sigaction act;
+void doit(int sig){
+    printf(&quot;It&#39;s time to get up\n&quot;);
+}
+int main(void) {
+    act.sa_handler=doit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    if(sigaction(SIGALRM,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(1);
+    }
+    pid_t pid;
+    pid=fork();
+    if(pid&lt;0){
+        printf(&quot;error\n&quot;);
+        return -1;
+    }
+    if(pid==0){
+        sleep(5);
+        kill(getppid(),SIGALRM);      
+    }else{
+        printf(&quot;get a signal\n&quot;);
+        pause();
+    }  
+    return 0;
+}
 </code></pre>
 </blockquote>
 
-<p>　　此时的信息已经可读了，使用awk截取第三个字段列非0的行，并截取该行上面n行(n是slave的数量)，得到的结果就是所有有问题的库,表,字段和记录了.</p>
+<h4 id="toc_4">4.带有超时功能的read</h4>
 
-<h2 id="toc_5">6、操作步骤：</h2>
+<p>任务描述:</p>
 
-<p>　　随便找一台机器，本地机器也行，将脚本部署上去，然后登陆主库执行以下命令</p>
+<ul>
+<li>在5秒内输入字符串,否则提示超时</li>
+</ul>
+
+<p>相关知识:<br/>
+　　①setjmp.h是C标准函数库中提供“非本地跳转”的头文件：控制流偏离了通常的子程序调用与返回序列。互补的两个函数setjmp与longjmp提供了这种功能。<br/>
+　　setjmp/longjmp的典型用途是异常处理机制的实现：利用longjmp恢复程序或线程的状态，甚至可以跳过栈中多层的函数调用。<br/>
+　　在信号处理机制中，进程在检查收到的信号，会从原来的系统调用中直接返回，而不是等到该调用完成。这种进程突然改变其上下文的情况，就是通过使用setjmp和longjmp来实现的。setjmp将保存的上下文载入用户空间，并继续在旧的上下文中继续执行。这就是说，进程执行一个系统调用，当因为资源或其他原因要去睡眠时，内核为进程作了一次setjmp，如果在睡眠中被信号唤醒，进程不能再进入睡眠时，内核为进程调用longjmp，该操作是内核为进程将现在的上下文切换成原先通过setjmp调用保存在进程用户区的上下文，这样就使得进程可以恢复等待资源前的状态，而且内核为setjmp返回1，使得进程知道该次系统调用失败。另一种用在多线程程序中同步访问的方法是使用互斥量。它允许程序员锁住某个对象，使得每次只能有一个线程访问它。为了控制对关键代码的访问，必须在进入这段代码之前锁住一个互斥量，然后在完成操作之后解锁它。</p>
+
+<p>　　②int setjmp(jmp_buf env)<br/>
+　　建立本地的jmp_buf缓冲区并且初始化，用于将来跳转回此处。这个子程序[保存程序的调用环境于env参数所指的缓冲区，env将被longjmp使用。<strong>如果是从setjmp直接调用返回，setjmp返回值为0。如果是从longjmp恢复的程序调用环境返回，setjmp返回非零值。</strong><br/>
+　　void longjmp(jmp_buf env, int value) 恢复env所指的缓冲区中的程序调用环境上下文，env所指缓冲区的内容是由setjmp子程序[1]调用所保存。value的值从longjmp传递给setjmp。longjmp完成后，程序从对应的setjmp调用处继续执行，如同setjmp调用刚刚完成。<strong>如果value传递给longjmp零值，setjmp的返回值为1；否则，setjmp的返回值为value。</strong><br/>
+　　setjmp保存当前的环境（即程序的状态）到平台相关的一个数据结构 (jmp_buf)，该数据结构在随后程序执行的某一点可被 longjmp用于恢复程序的状态到setjmp调用所保存到jmp_buf时的原样。这一过程可以认为是&quot;跳转&quot;回setjmp所保存的程序执行状态。setjmp的返回值指出控制是正常到达该点还是通过调用longjmp恢复到该点。因此有编程的惯用法: if( setjmp(x) ){/* handle longjmp(x) */}。 <br/>
+　　jmp_buf 数组类型，例如struct int[16]或struct __jmp_buf_tag[3]，用于保存恢复调用环境所需的信息。<br/>
+　　③alarm也称为闹钟函数，它可以再进程中设置一个定时器，当定时器指定的时间到时，它向进程发送SIGALARM信号。要注意的是，一个进程只能有一个闹钟时间，如果在调用alarm之前已设置过闹钟时间，则任何以前的闹钟时间都被新值所代替。当在调用alarm()前已经设置了一个闹钟，那么我们可以调用alarm(0)来取消此闹钟，并返回剩余时间。<br/>
+　　函数原型<br/>
+　　　　unsigned int alarm（unsigned int seconds)<br/>
+　　函数参数<br/>
+　　　　seconds:指定秒数<br/>
+　　函数返回值<br/>
+　　　　成功：如果调用此alarm（）前，进程已经设置了闹钟时间，则返回上一个闹钟时间的剩余时间，否则返回0。<br/>
+　　　　出错：-1</p>
+
+<p>main.c:</p>
 
 <blockquote>
-<pre><code class="language-text">mysql&gt; GRANT select,insert,update,delete,create,process,super,replication slave,lock tables ON *.* to &#39;checksum&#39;@&#39;脚本所在机器的ip&#39; IDENTIFIED by &#39;xxx&#39;; 
-mysql&gt; CREATE DATABASE `percona` ;
-mysql&gt; use percona;
-mysql&gt; CREATE TABLE `port_checksums` (    #这里的port要改成你的数据库的端口
-`db` char(64) NOT NULL,
-`tbl` char(64) NOT NULL,
-`chunk` int(11) NOT NULL,
-`chunk_time` float DEFAULT NULL,
-`chunk_index` varchar(200) DEFAULT NULL,
-`lower_boundary` text,
-`upper_boundary` text,
-`this_crc` char(40) NOT NULL,
-`this_cnt` int(11) NOT NULL,
-`master_crc` char(40) DEFAULT NULL,
-`master_cnt` int(11) DEFAULT NULL,
-`ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-PRIMARY KEY (`db`,`tbl`,`chunk`),
-KEY `ts_db_tbl` (`ts`,`db`,`tbl`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-mysql&gt; CREATE TABLE `port_dsns` (   #这里的port要改成你的数据库的端口
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
+<pre><code class="language-text">#include &quot;signal.h&quot;     //signal() 
+#include &quot;stdio.h&quot;      //perror
+#include &quot;unistd.h&quot;     //read(), write(), alarm()
+#include &quot;stdlib.h&quot;     //exit() 
+#include &quot;setjmp.h&quot;     // setjmp(), lonjmp() 
+#define MAXLINE 80
+struct sigaction act;
+jmp_buf myjmp;
+void sig_alrm(int sig){
+    longjmp(myjmp,1);    
+    exit(0);
+}
+int main(void){
+    int n;
+    char a[MAXLINE];
+    act.sa_handler=sig_alrm;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    if(sigaction(SIGALRM,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(1);
+    }
+    //setjmp一开始默认是0
+    if (setjmp(myjmp) != 0){
+        printf(&quot;read timeout\n&quot;);
+        exit(0);
+    }
+    alarm(5);//指定时间到时发送SIGSLARM信号,若5秒内执行到了alarm(0)则取消发送alarm信号，否则进入子函数的longjmp返回1到setjmp，退出整个程序
+    printf(&quot;please input something in 5 seconds\n&quot;);    
+    n=read(0,a,sizeof(a));
+    alarm(0);
+    printf(&quot;your input string is :\n&quot;);
+    write(1,a,n);
+    exit(0);
+}
 </code></pre>
 </blockquote>
 
-<p>　　select,process,super是pt-table-checksum需要的权限,insert,update,delete,create,super,replication slave,lock tables是pt-table-sync需要的权限.<br/>
-主库把这些操作完毕后就可以执行脚本了，有问题会发送邮件给自己，没问题会发送no problem给自己。<br/>
-在这里创建dsns是因为该方法比较灵活，下一部分会讲到。</p>
+<h4 id="toc_5">5.屏蔽SIGINT信号,当来SIGINT信号后,恢复所有信号的正常处理</h4>
 
-<h2 id="toc_6">7、特殊情况</h2>
+<p>任务描述:</p>
 
-<p>　　线上有个数据库是两小时备份一次的,一开始--recursion-method使用的processlist，表示主库自己找从库，当两小时备份库不运行的时候pt-table-checksum会等待这个两小时备份库,直到它开始备份为止,等如此长的时间显然是不行的.因此可以换--recursion-method=hosts或dsn方法<br/>
-　　对于hosts方法,在从库的配置文件中添加report_host和report_port，但不在两小时备份库的配置文件添加report_host和report_port，这样pt-table-checksum登录主库检查时show hosts slave就找不到两小时备份库，也就忽略对两小时备份库的检查了。该方法需要修改配置文件并重启从库，不推荐。<br/>
-　　对于dsn方法，在主库创建percona.port_dsns表,表中插入从库的信息,执行pt-table-checksum的时候指定dsn方法,就会去percona.port_dsns表找从库信息.可以看出这种方法灵活且不影响线上服务,是比较好的,脚本中也是使用的这个方法.<br/>
-以3306为例<br/>
-在192.168.1.1(主库)上创建dsns表，并插入以下语句（从库的信息插入进去）</p>
+<ul>
+<li>sigsuspend屏蔽SIGINT信号,并挂起进程,然后SIGQUIT信号来之后开始正常处理</li>
+</ul>
+
+<p>相关知识:<br/>
+sigsuspend()<br/>
+　　函数原型<br/>
+　　　　int sigsuspend(const sigset_t *mask);<br/>
+　　作用<br/>
+　　　　用于在接收到某个信号之前，临时用mask替换进程的信号掩码，并暂停进程执行，直到收到信号为止。也就是说，进程执行到sigsuspend时，sigsuspend并不会立刻返回，进程处于TASK_INTERRUPTIBLE状态并立刻放弃CPU，等待UNBLOCK（mask之外的）信号的唤醒。进程在接收到UNBLOCK（mask之外）信号后，调用处理函数，然后把现在的信号集还原为原来的，sigsuspend返回，进程恢复执行。<br/>
+　　返回值<br/>
+　　　　sigsuspend返回后将恢复调用之前的的信号掩码。信号处理函数完成后，进程将继续执行。该系统调用始终返回-1，并将errno设置为EINTR.</p>
+
+<p>main.c:</p>
 
 <blockquote>
-<pre><code class="language-text">CREATE DATABASE `percona` ;
-CREATE TABLE `3306_dsns` (
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.2,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.3,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.4,P=3306,u=checksum,p=123&#39;);
+<pre><code class="language-text">#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot; 
+struct sigaction act,act2;
+void sig_int(int sig){
+    act2.sa_handler=SIG_DFL;
+    sigaction(SIGINT,&amp;act2,NULL);
+}
+void sig_quit(int sig){
+    act.sa_handler=SIG_DFL;
+    sigaction(SIGQUIT,&amp;act,NULL);
+}
+int main(void){
+    sigset_t newmask;
+    sigemptyset(&amp;newmask);
+    act.sa_handler=sig_quit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    act2.sa_handler=sig_int;
+    sigemptyset(&amp;act2.sa_mask);
+    act2.sa_flags=0;
+    if(sigaction(SIGINT,&amp;act2,NULL)!=0){
+        perror(&quot;sigaction sigint error\n&quot;);
+        exit(0);
+    }
+    if(sigaction(SIGQUIT,&amp;act,NULL)!=0){
+        perror(&quot;sigaction sigquit error\n&quot;);
+        exit(0);
+    }
+    sigaddset(&amp;newmask, SIGINT);//SIGINT信号加入到new信号集中
+    printf(&quot;get signal\n&quot;);
+    sigsuspend(&amp;newmask);
+    printf(&quot;\n&quot;);
+    while(1){
+        printf(&quot;hello\n&quot;);
+        sleep(1);
+    }
+    return 0;
+}
 </code></pre>
 </blockquote>
 
-<p>　　在主库或10191上执行pt-table-checksum --user=checksum --password=123 --host=192.168.1.1 --port=3306 --databases=asd --tables=user1 --empty-replicate-table --replicate=percona.checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=3306_dsns即可</p>
+<h4 id="toc_6">6.将程序阻塞期间产生的信号推迟到阻塞之后处理</h4>
 
-<h2 id="toc_7">8、使用pt-table-checksum可能的报错：</h2>
+<p>任务描述:</p>
 
-<p>1、mysql table is marked as crashed<br/>
-表损坏，使用以下命令修复</p>
+<ul>
+<li>slee 5s期间产生SIGQUIT不立即处理,5s后再处理,处理要先自定义打印消息,然后恢复默认设置</li>
+<li>然后将屏蔽信号恢复,sleep 10s,这期间产生的SIGQUIT信号,将直接执行</li>
+</ul>
+
+<p>相关知识:<br/>
+　　①sigemptyset <br/>
+　　函数初始化信号集合set，将set 设置为空。<br/>
+　　②信号屏蔽字是指一个进程中当前阻塞而不能够递送给该进程的信号集。信号集则是一个能表示多个信号的集合的一种数据类型，为sigset_t。<br/>
+　　与信号集设置相关的函数有如下几个：<br/>
+　　 下列四个函数成功返回0，出错返回-1<br/>
+　　　int sigemptyset(sigset_t *set);<br/>
+　　　int sigfillset(sigset_t *set);<br/>
+　　　int sigaddset(sigset_t *set, int signo);<br/>
+　　　int sigdelset(sigset_t *set, int signo);<br/>
+　　 下面函数若真返回1，若假返回0，出错返回-1<br/>
+　　　int sigismember(const sigset_t *set, int signo);<br/>
+　　③int sigaddset(sigset_t *set,int signum);<br/>
+　　　　sigaddset()用来将参数signum 代表的信号加入至参数set 信号集里。<br/>
+　　④sigprocmask<br/>
+　　功能：<br/>
+　　　　检测或更改信号屏蔽字<br/>
+　　头文件：<br/>
+　　　　#include &quot;signal.h&quot;<br/>
+　　函数原型：<br/>
+　　　　int sigprocmask(int how,const sigsett_t *set,sigset_t *oldset);<br/>
+　　参数：<br/>
+　　　　how  操作方式<br/>
+　　　　set   信号集<br/>
+　　　　oldest<br/>
+　　返回值：<br/>
+　　　　若成功返回0，若出错返回-1。<br/>
+　　每个进程都有一个用来描述哪些信号递送到进程时将被阻塞的信号集，该信号集中的所有信号在递送到进程后都将被阻塞。sigprocmask是最为关键的一个函数。在使用之前要先设置好信号集合set。这个函数的作用是将指定的信号集合set加入到进程的信号阻塞集合之中去，如果提供了oldset那么当前的进程信号阻塞集合将会保存在oldset里面。参数how决定函数的操作方式。<br/>
+　　SIG_BLOCK：增加一个信号集合到当前进程的阻塞集合之中。<br/>
+　　SIG_UNBLOCK：从当前的阻塞集合之中删除一个信号集合。<br/>
+　　SIG_SETMASK：将当前的信号集合设置为信号阻塞集合。</p>
+
+<p>main.c:</p>
 
 <blockquote>
-<pre><code class="language-text">mysql&gt; myisamchk -r $TABLE_NAME
-mysql&gt; myisamchk -r -v -f $TABLE_NAME
+<pre><code class="language-text">#include &quot;signal.h&quot;
+#include &quot;stdio.h&quot;
+#include &quot;unistd.h&quot;
+#include &quot;stdlib.h&quot; 
+struct sigaction act;
+void doit(int sig){
+    printf(&quot;caught sigquit\n&quot;);
+    act.sa_handler=SIG_DFL;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    //接收SIGQUIT信号并执行doit函数
+    if(sigaction(SIGQUIT,&amp;act,0)&lt;0){
+        perror(&quot;recover sigquiut error\n&quot;); 
+        exit(1);
+    }    
+}
+int main(void){
+    sigset_t newmask,oldmask,pendmask;
+    act.sa_handler=doit;
+    sigemptyset(&amp;act.sa_mask);
+    act.sa_flags=0;
+    //接受到SIGQUIT信号则执行doit函数
+    if(sigaction(SIGQUIT,&amp;act,NULL)!=0){
+        perror(&quot;sigaction error\n&quot;);
+        exit(0);
+    }
+    sigemptyset(&amp;newmask);
+    sigaddset(&amp;newmask, SIGQUIT);//SIGINT信号加入到newmask信号集中
+    //将newmask信号集中的信号设为阻塞信号
+    if(sigprocmask(SIG_BLOCK,&amp;newmask,&amp;oldmask)&lt;0){
+        perror(&quot;sigprocmask error\n&quot;);
+        exit(1);
+    }
+    printf(&quot;block SIGQUIT 5s\n&quot;) ;
+    sleep(5);
+    //查看阻塞的信号
+    if(sigpending(&amp;pendmask)&lt;0){
+        perror(&quot;sigpending error\n&quot;);
+        exit(1);
+    }
+    //查看阻塞的信号中有没有SIGQUIT
+    if(sigismember(&amp;pendmask,SIGQUIT))
+        printf(&quot;SIGQUIT pending\n&quot;);
+    printf(&quot;sigquit unblocked\n&quot;);
+    //将阻塞的信号释放
+    if(sigprocmask(SIG_SETMASK,&amp;oldmask,NULL)&lt;0){
+        perror(&quot;set oldmask error\n&quot;);
+        exit(1);
+    } 
+    printf(&quot;program will sleep 10s,during these SIGQUIT won&#39;t be blocked\n&quot;); 
+    sleep(10);
+    printf(&quot;done\n&quot;); 
+    return 0;
+}
 </code></pre>
 </blockquote>
-
-<p>2、no slaves were found<br/>
-主库找不到从库，一般用dsn方法不会有这个情况，除非在主库的percona.portdsn插入从库信息有误<br/>
-3、03-23T15:16:40 Skipping chunk 1 of asd.user1 because it is oversized.  The current chunk size limit is 2000 rows (chunk size=1000 * chunk size limit=2.0), but MySQL estimates that there are 2008 rows in the chunk.<br/>
-这种情况是分的块太大了，设置--chunk-size-limit<br/>
-4、03-21T12:16:08 Error checksumming table asd.user1: Possible infinite loop detected!  The lower boundary for chunk 1 is <1> and the lower boundary for chunk 2 is also <1>.  This usually happens when using a non-unique single column index.  The current chunk index for table asd.user1 is idx_bid which is not unique and covers 1 column.<br/>
-没有唯一索引</p>
 
 
 </div>
@@ -674,15 +810,15 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
   <div class="large-6 columns">
 	<div class="text-left" style="padding:15px 0px;">
 		
-	        <a href="megacli%20%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.html"  title="Previous Post: megacli 常用命令">&laquo; megacli 常用命令</a>
+	        <a href="%E4%BD%BF%E7%94%A8%20virt-manager%20%E5%88%9B%E5%BB%BA%E5%92%8C%E7%AE%A1%E7%90%86%E8%99%9A%E6%8B%9F%E6%9C%BA.html"  title="Previous Post: 使用 virt-manager 创建和管理虚拟机">&laquo; 使用 virt-manager 创建和管理虚拟机</a>
 	    
 	</div>
   </div>
   <div class="large-6 columns">
 	<div class="text-right" style="padding:15px 0px;">
 		
-	        <a href="dns%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3.html" 
-	        title="Next Post: dns服务器报错解决">dns服务器报错解决 &raquo;</a>
+	        <a href="%E5%83%B5%E5%B0%B8%E8%BF%9B%E7%A8%8B%E5%92%8C%E5%AD%A4%E5%84%BF%E8%BF%9B%E7%A8%8B.html" 
+	        title="Next Post: 僵尸进程和孤儿进程">僵尸进程和孤儿进程 &raquo;</a>
 	    
 	</div>
   </div>
@@ -695,7 +831,7 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
 </div>
 <script type="text/javascript">
 	$(function(){
-		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1mysql%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
+		var currentURL = '%E4%BF%A1%E5%8F%B7.html';
 		$('#side-nav a').each(function(){
 			if($(this).attr('href') == currentURL){
 				$(this).parent().addClass('active');

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  记一次mysql主从一致校验走过的坑 - 小菜鸡儿
+  基于 TCP 的字符串传输程序 - 小菜鸡儿
   
   </title>
  <meta name="description" content="">
@@ -382,287 +382,473 @@
             <div class="large-9 medium-9 columns">
 
  <div class="markdown-body">
-<h1>记一次mysql主从一致校验走过的坑</h1>
+<h1>基于 TCP 的字符串传输程序</h1>
 
-<p>前言：<br/>
-　　最近一台db master宕机，立刻迁到了一台从库上。这次的宕机在恢复后我做了主从一致校验，发现有部分数据不一致，细细想想还是挺可怕的，万一数据不一致的很多，主库挂了，切从库，那后果简直不敢想象。。。<br/>
-　　因此主从一致校验是必要的，但是这个东西比较费时，因此一般来说没有出故障一周校验一次即可。本来准备自己写个校验脚本后来发现要考虑的问题太多，于是发现pt-table-checksum这个神器，踩坑之旅开始。<br/>
-　　先说一下生产环境，目前所有的端口都是一主多从的架构，因为对读的要求高，主从分离，多从库有利于读。</p>
+<p>Linux中的网络编程是通过SOCKET接口来进行的。<br/>
+Socket（套接字）<br/>
+　Socket相当于进行网络通信两端的插座，只要对方的Socket和自己的Socket有通信联接，双方就可以发送和接收数据了。Socket的定义类似于文件句柄的定义。下面的流程图大概描述了基于TCP协议的网络编程过程。同学们只需要对大概流程有一个初步认识即可，暂时不必深究每个函数的意义。因为在后面的实训子任务中，每一个函数的具体内容和使用方法都会讲到。<br/>
+　　　TCP协议socket流程图<br/>
+<img src="media/15033223148818/15033223274146.jpg" alt=""/><br/>
+基本套接字调用顺序如下：</p>
 
-<h2 id="toc_0">1、可能情况：</h2>
+<p><strong>创建套接字--socket()--&gt;绑定本机端口--bind();--&gt;建立连接--connect(),accept();--&gt;侦听端口--listen();--&gt;数据传输--send(),recv();--&gt;输入/输出多路复用--select();--&gt;关闭套接字--closesocket();</strong> <br/>
+其中，服务器端基于TCP的编程步骤大致如下：<br/>
+① 创建套接字；<br/>
+　　建立服务器端的socket套接字：int socket(int domain，int type，int protocol)<br/>
+②绑定套接字到一个IP地址和一个端口上<br/>
+ 　　int bind(int sockfd,struct sockaddr * myaddr,int addrlen)；<br/>
+③将套接字设置为监听模式，以等待连接请求<br/>
+　　int listen(int sockfd，int backlog)<br/>
+④请求到来后，接受连接请求，并返回一个与此次连接对应的套接字<br/>
+　　int accept(int sockfd，struct sockaddr * addr，int * addrlen)<br/>
+　　此时新建连接，并创建新的Socket套接字，此时addr为客户端的addr信息。<br/>
+⑤用返回的套接字和客户端进行通信<br/>
+　　使用recv()和send()<br/>
+⑥关闭服务器端的套接字描述符<br/>
+　　int close(int sockfd)；</p>
 
-<p>若发现主从数据不一致可能有以下原因导致：<br/>
-①原来的主库down机，将从库升为主库期间导致数据丢失，从而发生数据不一致<br/>
-②误在从库上操作了<br/>
-③负载过大导致复制线程资源不足<br/>
-对于主从不一致无非以下三种：<br/>
-主库数据多余从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据少于从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据量和从库一样，但是数据有差异(记录条数相同，但是记录内容有偏差)</p>
+<p>客户端调用顺序如下：<br/>
+①创建客户端套接字<br/>
+　　int socket(int domain，int type，int protocol)<br/>
+②向服务器发出连接请求<br/>
+　　int connect（int sockfd，struct sockaddr * servaddr，int addrlen）<br/>
+　　其中参数servaddr指定远程服务器的套接字地址，包括服务器的IP地址和端口号<br/>
+③和服务器端进行网络通信<br/>
+　　使用recv()和send()<br/>
+　　int read(int fd，char * buf，int len)<br/>
+　　int write(int fd，char * buf，int len)<br/>
+④关闭套接字<br/>
+　　int close(int sockfd)；</p>
 
-<h2 id="toc_1">2、工具选用：</h2>
+<h4 id="toc_0">1.网络字节序和本地字节序相互转换</h4>
 
-<p>　　一开始是想自己写个主从检查脚本的，大致用select count(1) from db.table，后来发现写出来的不严谨，只能检查数据量是否一致万一数据不一致就无法检测出来，而且太耗费系统资源不可取。后来发现有现成的工具pt-table-checksum。它的大体执行流程是:<br/>
-<strong><em>登录主库-&gt;根据唯一索引将表分块(没有唯一索引会报错)-&gt;对块校验-&gt;将校验结果默认写入percona.checksums表-&gt;比较percona.checksums中master db和slave db不一致的值，输出</em></strong>。<br/>
-　　pt-table-checksum默认主从的数据库和表结构一致，若从库的表结构与主库不一致，会导致主从复制中断。同时pt-table-checksum要求复制是基于STATEMENT格式的，它在运行时会在主库上设置binlog_format=STATEMENT(需要super权限)，但是由于MySQL的限制，这一设置并不会传递到从库，因此当从库的binlog格式是ROW格式时，无法直接对从库进行校验。</p>
+<p>任务要求：</p>
 
-<h2 id="toc_2">3、大致思路：</h2>
+<ul>
+<li>打印本地字节序</li>
+<li>用htonl函数把本地字节序转换成网络字节序，并打印</li>
+</ul>
 
-<p>　　上面说了pt-table-checksum默认主从的数据库和表结构一致，对于主从某些库、表、字段不一致(这里的不一致主要指的是多了或者少了)，它无法检测出来。<br/>
-下面是四种情况的输出:<br/>
-从库少asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907089990574.jpg" alt=""/><br/>
-从库多asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090229580.jpg" alt=""/><br/>
-从库少user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090362061.jpg" alt=""/><br/>
-从库多user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090454889.jpg" alt=""/><br/>
-　　可以看出在主库不存在某个库某个表的情况下，使用pt-table-checksum检测从库是不会有任何报错信息的，但其实从库是多了库/表的。<br/>
-　　因此在使用pt-table-checksum检测前需要先检测主从的库、表以及字段是否一致(是否多库多表少库少表多字段少字段)。有多/少的记录到一个文件report中，然后以主库为的数据库、表为依据，依次遍历，使用pt-table-checksum检查从库上相应的数据库和表，将结果追加到report中。最后对report做处理，发送给自己邮箱。</p>
+<p>相关知识：</p>
 
-<h2 id="toc_3">4、操作脚本</h2>
+<ul>
+<li>小端法(Little-Endian)就是低位字节排放在内存的低地址端即该值的起始地址，高位字节排放在内存的高地址端。</li>
+<li>大端法(Big-Endian)就是高位字节排放在内存的低地址端即该值的起始地址，低位字节排放在内存的高地址端。</li>
+</ul>
 
-<pre><code class="language-text">#!/bin/bash
-#set -x
+<p>　　举个简单的例子，对于整形0x12345678。它在大端法和小端法的系统内中，分别如图1所示的方式存放。<br/>
+<img src="media/15033223148818/15033223361762.jpg" alt=""/></p>
 
-PASSWORD=       #登录用户的密码
-SOCK=               #端口
-#SLAVE=()
-SLAVE=()            #从库ip(有几个写几个，注意是一个数组，用空格隔开)
-MASTER=         #主库ip
+<ul>
+<li>网络字节序　</li>
+</ul>
 
-#连接语句
-MYSQL_CONN=&quot;mysql -uchecksum -p$PASSWORD&quot;
+<p>　　我们知道网络上的数据流是字节流，对于一个多字节数值，在进行网络传输的时候，先传递哪个字节？也就是说，当接收端收到第一个字节的时候，它是将这个字节作为高位还是低位来处理呢？ <br/>
+　　<strong>网络字节序定义：收到的第一个字节被当作高位看待，这就要求发送端发送的第一个字节应当是高位。而在发送端发送数据时，发送的第一个字节是该数字在内存中起始地址对应的字节。可见多字节数值在发送前，在内存中数值应该以大端法存放。</strong> <br/>
+　　uint32_t htonl(uint32_t hostlong)：<strong>htonl 表示 host to network long ，用于将主机 　　unsigned int 型数据转换成网络字节顺序；</strong><br/><br/>
+　　uint16_t htons(uint16_t hostshort)：htons 表示 host to network short ，用于将主机 unsigned short 型数据转换成网络字节顺序；<br/>
+　　ntohl、ntohs 的功能分别与 htonl、htons 相反。</p>
 
-#存放产生临时文件的文件夹
-mysql_checksum=/tmp/mysql_checksum      
-#获取主库和从库的数据库、表
-get_db_table_field_name() {
-    if [ -d $mysql_checksum/$SOCK ];then
-        rm -r $mysql_checksum/$SOCK
-    fi
-    mkdir -p $mysql_checksum/$SOCK
-    echo &quot;#########start get port $SOCK master db #########&quot;
-    #获取主库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db
-    #获取上一步中的数据库中的表名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table
-    done
-    #获取上一步中得到的表中的字段名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table`;do
-        $MYSQL_CONN -P ${SOCK} -h $MASTER -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field
-        done
-    done
-    #获取从库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    echo &quot;#########start get port $SOCK slave db #########&quot;
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db
-        #获取上一步中的数据库中的表名     for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table
-        done
-        #获取上一步中得到的表中的字段名
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table`;do
-                $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-            done
-        done
-    done
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;arpa/inet.h&quot;
+//网络字节序和本地字节序相互转换
+int main(void){
+    int num=0x12345678,i;
+    printf(&quot;before convert :%x\n&quot;,num);
+    for(i=0;i&lt;4;i++)
+        printf(&quot;[%d]:0x%x\n&quot;,i,*((char *)&amp;num+i));//将num转化成char型指针，+i表示向后偏移8位,16进制是4个4位，那么8位对应了2个字符。
+    num=htonl(num);
+    printf(&quot;after convert :%x\n&quot;,num);
+    for(i=0;i&lt;4;i++)
+        printf(&quot;[%d]:0x%x\n&quot;,i,*((char *)&amp;num+i));
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#检查从库是否多库少库多表少表多字段少字段
-checksum_db_table() {
-    if [ -e $mysql_checksum/$SOCK/report ];then
-        rm $mysql_checksum/$SOCK/report
-    fi
-    #将主库的数据库名排序
-    cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort
+<h4 id="toc_1">2.利用socket函数创建一个网络套接字</h4>
 
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        #将从库的数据库名排序
-        cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort
-        #comm命令检测从库是多还是少库，注意comm后面跟的两个文件顺序不能错
-        slave_surplus_db=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        slave_lack_db=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        if [ ! -z &quot;$slave_surplus_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} surplus database $slave_surplus_db&quot; | tee -a $mysql_checksum/$SOCK/report 
-        fi
-        if [ ! -z &quot;$slave_lack_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} lack database $slave_lack_db&quot; &gt;&gt; $mysql_checksum/$SOCK/report
-        fi
-        #库检查完了，就以主库包含的库为基准，comm命令检测从库是多还是少表，同样comm后面跟的两个文件顺序不能错
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-            cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table| sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort
-            cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table |sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort
-            slave_surplus_table=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            slave_lack_table=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            if [ ! -z &quot;$slave_surplus_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} surplus table $slave_surplus_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-            if [ ! -z &quot;$slave_lack_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} lack table ${DB}.$slave_lack_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-        #表检查完了，就以主库包含的表为基准，diff命令检测从库是多还是少字段，diff后面的文件顺序无所谓
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-                diff $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-                if [ $? -ne 0 ];then
-                    echo &quot;port $SOCK slave ${SLAVE[$j]} have different field in ${DB}.${TABLE}&quot; |tee -a $mysql_checksum/$SOCK/report
-                fi
-            done
-        done
-    done
+<p>任务描述：</p>
+
+<ul>
+<li>c语言编写服务端程序，利用socket函数创建一个套接字（TCP协议）</li>
+<li>返回函数套接字状态，若成功，打印创建成功信息，失败，返回失败原因</li>
+</ul>
+
+<p>相关知识：</p>
+
+<ul>
+<li>socket相当于进行网络通信两端的插座，只要对方的Socket和自己的Socket有通信联接，双方就可以发送和接收数据了。Socket的定义类似于文件句柄的定义。</li>
+</ul>
+
+<p>　　int socket(int family, int type, int protocol );<br/>
+　　<strong>为了在网络上进行I/O通信，第一件事就是要调用socket函数，创建套接字，并指定相应的通信协议类型。第一个参数family一般设置为AF_INET，对于IPv6网络，则需设置成AF_INET6。对于Unix域协议套接字，该参数的值是AF_LOCAL，对于路由套接字，该参数的值是AF_ROUTE，对于秘钥套接字，该参数的值是AF_KEY。第二个参数type制定了套接字接口的类型，其值分别为SOCK_STREAM或SOCK_DGRAM。这两个参数分别表示该套接字是TCP协议类型或者是UDP协议类型。该参数还有两个选项,分别为SOCK_SEQPACKET和SOCK_RAW，前一个表示有序分组的套接字，后一个表示原始套接字。第三个参数一般设置为0。</strong><br/>
+　　socket函数在成功时返回一个小的非负整数值，它与文件描述符类似，我们把它们称之为套接字描述符，简称sockfd。为了得到这个套接字描述符，我们只是制定了协议族(IPv4、IPv6或Unix)和套接字类型(字节流、数据报或原始套接字)。我们并没有指定本地协议地址或者远程协议地址。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+int  main(void){
+    int sockfd;
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;create socket fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;create success\n&quot;);       
+    close(sockfd);
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#以主库有的库和表为基准，检测从库的记录是否与主库一致
-check_table_field() {
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-            echo &quot;#########port ${SOCK} database ${DB} table ${TABLE}&quot;
-            PTDEBUG=1 pt-table-checksum --user=checksum --password=$PASSWORD --host=$MASTER --port=${SOCK} --databases=$DB --tables=$TABLE --empty-replicate-table --replicate=percona.${SOCK}_checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=${SOCK}_dsns &gt;&gt; $mysql_checksum/$SOCK/report 2&gt;&amp;1
-        done
-    done
+<h4 id="toc_2">3.利用bind函数将创建好的套接字绑定到本地计算机的某一端口上</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>调用bind函数，并将创建好的套接字绑定到指定端口上，如2500端口 </li>
+</ul>
+
+<p>相关知识：<br/>
+　　对于服务器端来说，一旦通过socket函数创建了套接字以后，下一步就需要把该套接字绑定到本地计算机的某一个端口上。bind函数的作用就是完成该功能。<br/>
+　　int bind(int sockfd, const struct sockaddr* myaddr, socklen_t addrlen);<br/>
+　　第一个参数sockfd是由socket()调用返回的套接口文件描述符。第二个参数myaddr是指向数据结构sockaddr的指针。<strong>数据结构sockaddr中包括了关于服务器的地址、端口和IP地址的信息。</strong>第三个参数addrlen表示sockaddr结构体的长度，可以设置成sizeof(struct sockaddr)。bind函数可以指定一个端口号，或者指定一个IP地址，也可以两者都指定或者都不指定。如果指定端口号为0，那么内核就在bind被调用的时候选择一个临时接口。如果让内核来为套接字选择一个临时端口号，那么必须注意，函数bind并不返回选择的端口号值。因为bind函数的第二个参数是const类型的，它无法返回内核所分配的端口号。为了得到内核默认分配的端口号，必须调用函数getsockname函数来获取。值得一提的是，当不指定本地IP地址时，系统会为该socket分配一个默认IP地址。分配方式：myaddr.sin_addr.s_addr = htonl(INADDR_ANY)；其中INADDR_ANY表示IPv4的通配地址。这个值一般为0，在这种选择下，内核将等到套接字已经连接（TCP）或者在套接字上发出数据报（UDP）时，才会选择一个本地IP地址。当server有多个网卡时，可以指定绑定到特定的网卡IP上，分配方式：myaddr.sin_addr.s_addr=inet_addr(&quot;192.168.0.123&quot;)；绑定到服务器特定端口的指定方式为：myaddr.sin_port=htons(12345);</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+//利用bind函数将创建好的套接字绑定到本地计算机的某一端口上
+int main(void){
+    int sockfd,bind_fd;
+    struct sockaddr_in servaddr;
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;create socket fail\n&quot;);
+        exit(1);
+    }else    
+        printf(&quot;create success\n&quot;);
+    //初始化
+    bzero(&amp;servaddr,sizeof(servaddr));//结构体初始化
+    servaddr.sin_family=AF_INET;//确定ip协议
+    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);//接收任意ip
+    servaddr.sin_port=htons(2500);//设定端口号2500
+    //绑定端口
+    bind_fd=bind(sockfd,(struct sockaddr*)&amp;servaddr,sizeof(servaddr));
+    if(bind_fd==-1){
+        perror(&quot;bind fail\n&quot;);
+        exit(1);
+    }else       
+        printf(&quot;bind success\n&quot;);       
+    close(sockfd);
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#将生成的report进行处理
-process_report() {
-    sed -i -ne &#39;/^port/p&#39; -ne &#39;/checksum diffs/p&#39; -ne &#39;/^[0-1][1-9]-[0-3][1-9]/p&#39; $mysql_checksum/$SOCK/report
-    grep &quot;^port&quot; $mysql_checksum/$SOCK/report &gt; $mysql_checksum/$SOCK/mail
-    awk &#39;$3!=0&#39; $mysql_checksum/$SOCK/report |egrep -B ${#SLAVE[@]} &#39;^[0-1][1-9]-[0-3][1-9]&#39; &gt;&gt; $mysql_checksum/$SOCK/mail
-    if [ ! -s $mysql_checksum/$SOCK/mail ];then
-        echo &quot;$SOCK no problem&quot;|mail -s &quot;port $SOCK checksum report&quot; weijing3@book.sina.com
-    else
-        cat $mysql_checksum/$SOCK/mail|mail -s &quot;port $SOCK mysql checksum report&quot; weijing3@book.sina.com
-    fi
+<h4 id="toc_3">4.利用listen函数将已经绑定的套接字设置为被动连接监听状态</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>在task3中创建好并绑定到本地特定端口的套接字上，增加listen函数，使得套接字处于监听状态</li>
+<li>打印监听函数调用成功与否</li>
+</ul>
+
+<p>相关知识：</p>
+
+<p>　　listen函数使用主动连接套接口变为被连接套接口，使得一个进程可以接受其它进程的请求，从而成为一个服务器进程。在TCP服务器编程中listen函数把进程变为一个服务器，并指定相应的套接字变为被动连接。<br/>
+　　int listen(int sockfd, int backlog)<br/>
+　　参数sockfd被listen函数作用的套接字，sockfd之前由socket函数返回。在被socket函数返回的套接字fd之时，它是一个主动连接的套接字，也就是此时系统假设用户会对这个套接字调用connect函数，期待它主动与其它进程连接，然后在服务器编程中，用户希望这个套接字可以接受外来的连接请求，也就是被动等待用户来连接。由于系统默认时认为一个套接字是主动连接的，所以需要通过某种方式来告诉系统，用户进程通过系统调用listen来完成这件事。<br/>
+　　参数backlog这个参数涉及到一些网络的细节。在进程正理一个一个连接请求的时候，可能还存在其它的连接请求。因为TCP连接是一个过程，所以可能存在一种半连接的状态，有时由于同时尝试连接的用户过多，使得服务器进程无法快速地完成连接请求。如果这个情况出现了，服务器进程希望内核如何处理呢？内核会在自己的进程空间里维护一个队列以跟踪这些完成的连接但服务器进程还没有接手处理或正在进行的连接，这样的一个队列内核不可能让其任意大，所以必须有一个大小的上限。这个backlog告诉内核使用这个数值作为上限。毫无疑问，服务器进程不能随便指定一个数值，内核有一个许可的范围。这个范围是实现相关的。很难有某种统一，<strong>一般这个值会小30以内。</strong><br/>
+　　当调用listen之后，服务器进程就可以调用accept来接受一个外来的请求。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+//利用listen函数将已经绑定的套接字设置为被动连接监听状态
+int main(void){
+    int sockfd,bind_fd,listen_fd;
+    struct sockaddr_in servaddr;
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;create socket fail\n&quot;);
+        exit(1);
+    }else       
+        printf(&quot;create success\n&quot;);       
+</code></pre>
+</blockquote>
+
+<pre><code class="language-text">    //初始化
+    bzero(&amp;servaddr,sizeof(servaddr));//结构体初始化
+    servaddr.sin_family=AF_INET;//确定ip协议
+    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);//接收任意ip
+    servaddr.sin_port=htons(2500);//设定端口号2500
+    //绑定端口
+    bind_fd=bind(sockfd,(struct sockaddr*)&amp;servaddr,sizeof(servaddr));
+    if(bind_fd==-1){
+        perror(&quot;bind fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;bind success\n&quot;);
+    //将已绑定的套接口设为被动连接监听
+    listen_fd=listen(sockfd,10);
+    if(listen_fd==-1){
+        perror(&quot;listen fail\n&quot;);
+        exit(1);
+    }else       
+        printf(&quot;listen success\n&quot;);
+    close(sockfd);
+    return 0;
 }
-
-get_db_table_field_name
-checksum_db_table
-check_table_field
-process_report
 </code></pre>
 
-<h2 id="toc_4">5、脚本解读</h2>
+<h4 id="toc_4">5.利用accept函数来处理客户端请求的连接</h4>
 
-<p>　　每个函数基本都注释的很清楚了，process_report函数需要讲一下，脚本中把所有的信息都重定向到了report中，report的大致样子是这样的</p>
+<p>任务描述：</p>
+
+<ul>
+<li>在task4的程序中，添加对客户端连接的处理，调用accept函数，为客户端连接分配一个新的socket，并打印客户端IP地址和端口号</li>
+</ul>
+
+<p>相关知识：</p>
+
+<ul>
+<li>对于服务器编程中最重要的一步等待并接受客户的连接，那么这一步在编程中如何完成，accept函数就是完成这一步的。它从内核中取出已经建立的客户连接，然后把这个已经建立的连接返回给用户程序，此时用户程序就可以与自己的客户进行点到点的通信了。</li>
+<li>int accept(int sockfd, struct sockaddr* addr, socklen_t* len)</li>
+</ul>
+
+<p>　　accept默认会阻塞进程，直到有一个客户连接建立后返回，它返回的是一个新可用的套接字，这个套接字是连接套接字。此时我们需要区分两种套接字，一种套接字正如accept的参数sockfd，它是监听套接字，在调用listen函数之后，一个套接字会从主动连接的套接字变身为一个监听套接字；而accept返回是一个连接套接字，它代表着一个网络已经存在的点点连接。自然要问的是：为什么要有两种套接字？原因很简单，如果使用一个描述字的话，那么它的功能太多，使得使用很不直观，同时在内核确实产生了一个这样的新的描述字。<br/>
+　　参数sockfd就是上面解释中的监听套接字，这个套接字用来监听一个端口，当有一个客户与服务器连接时，它使用这个一个端口号，而此时这个端口号正与这个套接字关联。当然客户不知道套接字这些细节，它只知道一个地址和一个端口号。<br/>
+　　参数addr是一个结果参数，它用来接受一个返回值，这返回值指定客户端的地址，当然这个地址是通过某个地址结构来描述的，用户应该知道这一个什么样的地址结构。如果对客户的地址不感兴趣，那么可以把这个值设置为NULL。<br/>
+　　参数len也是结果的参数，用来接受上述addr的结构的大小的，它指明addr结构所占有的字节个数。同样的，它也可以被设置为NULL。</p>
+
+<p>main.c:</p>
 
 <blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers 
-# /usr/bin/perl 5.010001
-# Linux HP11012317.rb.simulation 2.6.32-431.11.2.el6.toa.2.x86_64 #1 SMP Wed Apr 9 15:55:33 CST 2014 x86_64 x86_64 x86_64 GNU/Linux 
-...此处省略n多PTDEBUG的调试信息
-OALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt;this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 1 checksum diffs on D11059841.rb.weibo.cn
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11060340.rb.db
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11059852.rb.weibo.cn
-...此处省略n多PTDEBUG的调试信息
-        TS ERRORS  DIFFS     ROWS  CHUNKS SKIPPED    TIME TABLE
-03-23T14:23:14      0      1    83350       5       0   3.983   books.bag_collection_1
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+#include &quot;arpa/inet.h&quot;
+#define MYPORT 3490
+//利用accept函数来处理客户端请求的连接
+int main(void){
+    int sockfd,newfd,i,n;
+    char buf[100];
+    socklen_t len;
+    struct sockaddr_in servaddr;
+    struct sockaddr_in clientaddr;
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;socket error\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;create socket successful\n&quot;);       
+    servaddr.sin_family=AF_INET;
+    servaddr.sin_port=htons(MYPORT);
+    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);
+    bzero(&amp;(servaddr.sin_zero),8);
+    n=bind(sockfd,(struct sockaddr*)&amp;servaddr,sizeof(servaddr));
+    if(n==-1){
+        perror(&quot;bind error\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;bind successful\n&quot;);
+    i=listen(sockfd,10);
+    if(i==-1){
+        perror(&quot;listen error\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;listen successful\n&quot;);
+    while(1){
+        len=sizeof(clientaddr); 
+        newfd=accept(sockfd,(struct sockaddr*)&amp;clientaddr,&amp;len);
+        if(newfd==-1){
+            perror(&quot;accept error\n&quot;);
+            exit(1);
+        }else
+            printf(&quot;accept successful\n&quot;);       
+        if(inet_ntop(AF_INET,&amp;clientaddr.sin_addr,buf,sizeof(buf))==NULL){//转化为本地可识别ip
+            perror(&quot;inet_ntop error\n&quot;);
+            exit(1);
+        }
+        printf(&quot;conneting from %s ,&quot;,buf);
+        printf(&quot;port is %d\n&quot;,ntohs(clientaddr.sin_port));
+        close(newfd);    
+    }
+    close(sockfd);
+    return 0;
+}
 </code></pre>
 </blockquote>
 
-<p>　　首部分是从库多库少库多表少表多字段少字段的情况，然后就是pt-table-checksum的调试信息了，包含了输出信息。sed过滤所有的无用信息，保留从库多库少库多表少表多字段少字段的情况，和从库信息，以及pt-table-checksum的标准输出，如下：</p>
+<h4 id="toc_5">6.利用connect函数创建客户端程序，连接前文编好的服务器程序</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>创建一个客户端，利用命令行模式输入IP地址，客户端程序调用connect函数与服务端取得连接。</li>
+<li>argv[1]参数为目的IP地址，要求必须对连接不可达的各种状态进行解析，并打印提示信息</li>
+<li>调用格式：./client IP地址。</li>
+</ul>
+
+<p>　　eg:./client 10.42.0.250（不可达IP）。提示：can not connect to 10.42.0.250,exit!<br/>
+　　No route to host<br/>
+　　./client 10.42.0.123（一个没开启server端服务的IP地址）。提示：can not connect to ×××,exit!<br/>
+　　Connection refused<br/>
+　　调用成功：./client 10.42.0.1.提示：connect to 10.42.0.1 successfully</p>
+
+<p>相关知识：<br/>
+　　与Server端程序不同的是，在Client端，创建了一个新的套接字之后，不需要调用bind函数进行与本地的绑定，只需要预先初始化好服务器端连接信息，也就是sockaddr_in server_addr即可。该结构体中必须包含网络协议的网络类型（对于IPv4，就是AF_INET），目的服务器的IP地址，目的服务器的端口号。<br/>
+　　int connect(int sockfd, struct sockaddr *serv_addr, int addrlen)：参数sockfd 的套接字连至参数serv_addr 指定的网络地址<br/>
+　　sockfd 是系统调用 socket() 返回的套接口文件描述符 ;serv_addr 是保存着目的地端口和 IP 地址的数据结构 struct sockaddr ;addrlen 设置为 sizeof(struct sockaddr) ;connect 激发 TCP的三路握手过程 </p>
+
+<ul>
+<li>这通过调用socket,bind和1isten函数来完成，称为被动打开(Passive open) </li>
+<li>三次握手</li>
+</ul>
+
+<p>　　客户通过调用connect进行主动打开(active opn)。 这引起客户TCP发送一个SYN分节(表示同步)，它告诉服务器客户将在(待建立的)连接中发送的数据的初始序列号。服务器必须确认客户的SYN，同时自己也得发送一个SYN分节，它含有服务器将在同一连接中发送的数据的韧始序列号。服务器以单个分节向客户发送SYN和对客户 SYN的ACK。客户必须确认服务器的SYN。 </p>
+
+<p>main.c:</p>
 
 <blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers
-# pt_table_checksum:10150 15046 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 15046 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 15046 0 checksum diffs on D11060339.rb.db
-03-21T09:24:54      0      0  1042909      17       0  23.607 asd.test1
-# pt_table_checksum:10150 16227 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 16227 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 16227 0 checksum diffs on D11060339.rb.db
-03-21T09:25:23      0      1  1278316      19       0  28.421 asd.test2
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+#include &quot;arpa/inet.h&quot;
+#include &quot;errno.h&quot;
+#define SERVER_PORT 3490
+//利用connect函数创建客户端程序，连接前文编好的服务器程序
+int main(int argc,char *argv[]){
+    int sockfd,i,n;
+    socklen_t len;
+    struct sockaddr_in servaddr; 
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;socket error\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;create successful\n&quot;);
+    len=sizeof(servaddr);
+    bzero(&amp;servaddr,sizeof(servaddr));
+    servaddr.sin_family=AF_INET;
+    servaddr.sin_port=htons(SERVER_PORT);
+    n=inet_pton(AF_INET,argv[1],&amp;servaddr.sin_addr);//转化为网络可识别的ip
+    if(n==-1){
+        printf(&quot;%s\n&quot;,strerror(errno));
+        exit(1);
+    }
+    if(n==0){
+        printf(&quot;ip error\n&quot;);
+        exit(1);
+    }
+    i=connect(sockfd,(struct sockaddr*)&amp;servaddr,len);
+    if(i&lt;0){
+        printf(&quot;can&#39;t connect to %s,exit\n&quot;,argv[1]);
+        printf(&quot;%s\n&quot;,strerror(errno));
+        exit(1);
+    }
+    close(sockfd);
+    return 0;
+}
 </code></pre>
 </blockquote>
 
-<p>　　此时的信息已经可读了，使用awk截取第三个字段列非0的行，并截取该行上面n行(n是slave的数量)，得到的结果就是所有有问题的库,表,字段和记录了.</p>
+<h4 id="toc_6">7.获取套接字的地址族</h4>
 
-<h2 id="toc_5">6、操作步骤：</h2>
+<p>任务描述：</p>
 
-<p>　　随便找一台机器，本地机器也行，将脚本部署上去，然后登陆主库执行以下命令</p>
+<ul>
+<li>c语言创建一个套接字，调用bind函数，其中端口设置为0，将被套接字绑定到本地某个端口上。</li>
+<li>调用getsockname，显示内核为该bind函数分配的端口号</li>
+</ul>
 
-<blockquote>
-<pre><code class="language-text">mysql&gt; GRANT select,insert,update,delete,create,process,super,replication slave,lock tables ON *.* to &#39;checksum&#39;@&#39;脚本所在机器的ip&#39; IDENTIFIED by &#39;xxx&#39;; 
-mysql&gt; CREATE DATABASE `percona` ;
-mysql&gt; use percona;
-mysql&gt; CREATE TABLE `port_checksums` (    #这里的port要改成你的数据库的端口
-`db` char(64) NOT NULL,
-`tbl` char(64) NOT NULL,
-`chunk` int(11) NOT NULL,
-`chunk_time` float DEFAULT NULL,
-`chunk_index` varchar(200) DEFAULT NULL,
-`lower_boundary` text,
-`upper_boundary` text,
-`this_crc` char(40) NOT NULL,
-`this_cnt` int(11) NOT NULL,
-`master_crc` char(40) DEFAULT NULL,
-`master_cnt` int(11) DEFAULT NULL,
-`ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-PRIMARY KEY (`db`,`tbl`,`chunk`),
-KEY `ts_db_tbl` (`ts`,`db`,`tbl`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-mysql&gt; CREATE TABLE `port_dsns` (   #这里的port要改成你的数据库的端口
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-</code></pre>
-</blockquote>
+<p>相关知识：</p>
 
-<p>　　select,process,super是pt-table-checksum需要的权限,insert,update,delete,create,super,replication slave,lock tables是pt-table-sync需要的权限.<br/>
-主库把这些操作完毕后就可以执行脚本了，有问题会发送邮件给自己，没问题会发送no problem给自己。<br/>
-在这里创建dsns是因为该方法比较灵活，下一部分会讲到。</p>
+<ul>
+<li>int getsockname(int sockfd, struct sockaddr *localaddr, socklen_t *addrlen)</li>
+<li>int getpeername(int sockfd, struct sockaddr * peeraddr, socken_t * addrlen);　　　　　</li>
+</ul>
 
-<h2 id="toc_6">7、特殊情况</h2>
+<p>　　<strong>getsockname函数返回与套接口关联的本地协议地址。</strong>使用场合：在不调用bind的TCP客户，当connect成功返回后，getsockname返回分配给此连接的本地IP地址和本地端口号；<br/>
+　　在以端口号为0调用bind后，使用getsockname返回内核分配的本地端口号；getsockname可用来获取某套接口的地址族；在捆绑了通配IP地址的TCP服务器上，当连接建立后，可以使用getsockname获得分配给此连接的本地IP地址；<br/>
+　　getpeername返回远程协议地址描述结构。当一个服务器是由调用过accept的，并且fork出一个子进程进行业务逻辑处理时，必须调用getpeername来获取对端地址和端口号。</p>
 
-<p>　　线上有个数据库是两小时备份一次的,一开始--recursion-method使用的processlist，表示主库自己找从库，当两小时备份库不运行的时候pt-table-checksum会等待这个两小时备份库,直到它开始备份为止,等如此长的时间显然是不行的.因此可以换--recursion-method=hosts或dsn方法<br/>
-　　对于hosts方法,在从库的配置文件中添加report_host和report_port，但不在两小时备份库的配置文件添加report_host和report_port，这样pt-table-checksum登录主库检查时show hosts slave就找不到两小时备份库，也就忽略对两小时备份库的检查了。该方法需要修改配置文件并重启从库，不推荐。<br/>
-　　对于dsn方法，在主库创建percona.port_dsns表,表中插入从库的信息,执行pt-table-checksum的时候指定dsn方法,就会去percona.port_dsns表找从库信息.可以看出这种方法灵活且不影响线上服务,是比较好的,脚本中也是使用的这个方法.<br/>
-以3306为例<br/>
-在192.168.1.1(主库)上创建dsns表，并插入以下语句（从库的信息插入进去）</p>
+<p>main.c:</p>
 
 <blockquote>
-<pre><code class="language-text">CREATE DATABASE `percona` ;
-CREATE TABLE `3306_dsns` (
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.2,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.3,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.4,P=3306,u=checksum,p=123&#39;);
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;sys/types.h&quot;
+#include &quot;sys/socket.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;netinet/in.h&quot;
+#include &quot;string.h&quot;
+int main(void){
+    int sockfd,bind_fd,listen_fd,newfd,n;
+    char buf[100];
+    struct sockaddr_in servaddr;
+    socklen_t len=sizeof(servaddr);
+    sockfd=socket(AF_INET,SOCK_STREAM,0);
+    if(sockfd==-1){
+        perror(&quot;create socket fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;create success\n&quot;);
+    //初始化
+    bzero(&amp;servaddr,sizeof(servaddr));//结构体初始化
+    servaddr.sin_family=AF_INET;//确定ip协议
+    servaddr.sin_addr.s_addr=htonl(INADDR_ANY);//接收任意ip
+    servaddr.sin_port=htons(0);//设定端口号2500
+    //绑定端口
+    bind_fd=bind(sockfd,(struct sockaddr*)&amp;servaddr,sizeof(servaddr));
+    if(bind_fd==-1){
+        perror(&quot;bind fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;bind success\n&quot;);
+    listen_fd=listen(sockfd,10);
+    if(listen_fd==-1){
+        perror(&quot;listen fail\n&quot;);
+        exit(1);
+    }else
+        printf(&quot;listen success\n&quot;);
+    if(getsockname(sockfd,(struct sockaddr*)&amp;servaddr,&amp;len)==-1){
+        perror(&quot;getsockname error\n&quot;);
+        exit(1);
+    }
+    n=inet_ntop(AF_INET,&amp;servaddr,buf,sizeof(buf));
+    printf(&quot;port :%d\n&quot;,ntohs(servaddr.sin_port));
+    close(sockfd);
+    return 0;
+}
 </code></pre>
 </blockquote>
-
-<p>　　在主库或10191上执行pt-table-checksum --user=checksum --password=123 --host=192.168.1.1 --port=3306 --databases=asd --tables=user1 --empty-replicate-table --replicate=percona.checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=3306_dsns即可</p>
-
-<h2 id="toc_7">8、使用pt-table-checksum可能的报错：</h2>
-
-<p>1、mysql table is marked as crashed<br/>
-表损坏，使用以下命令修复</p>
-
-<blockquote>
-<pre><code class="language-text">mysql&gt; myisamchk -r $TABLE_NAME
-mysql&gt; myisamchk -r -v -f $TABLE_NAME
-</code></pre>
-</blockquote>
-
-<p>2、no slaves were found<br/>
-主库找不到从库，一般用dsn方法不会有这个情况，除非在主库的percona.portdsn插入从库信息有误<br/>
-3、03-23T15:16:40 Skipping chunk 1 of asd.user1 because it is oversized.  The current chunk size limit is 2000 rows (chunk size=1000 * chunk size limit=2.0), but MySQL estimates that there are 2008 rows in the chunk.<br/>
-这种情况是分的块太大了，设置--chunk-size-limit<br/>
-4、03-21T12:16:08 Error checksumming table asd.user1: Possible infinite loop detected!  The lower boundary for chunk 1 is <1> and the lower boundary for chunk 2 is also <1>.  This usually happens when using a non-unique single column index.  The current chunk index for table asd.user1 is idx_bid which is not unique and covers 1 column.<br/>
-没有唯一索引</p>
 
 
 </div>
@@ -674,15 +860,15 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
   <div class="large-6 columns">
 	<div class="text-left" style="padding:15px 0px;">
 		
-	        <a href="megacli%20%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.html"  title="Previous Post: megacli 常用命令">&laquo; megacli 常用命令</a>
+	        <a href="%E5%9B%BE%E8%A7%A3%E6%AD%A3%E5%90%91%E4%BB%A3%E7%90%86%E3%80%81%E5%8F%8D%E5%90%91%E4%BB%A3%E7%90%86%E3%80%81%E9%80%8F%E6%98%8E%E4%BB%A3%E7%90%86.html"  title="Previous Post: 图解正向代理、反向代理、透明代理">&laquo; 图解正向代理、反向代理、透明代理</a>
 	    
 	</div>
   </div>
   <div class="large-6 columns">
 	<div class="text-right" style="padding:15px 0px;">
 		
-	        <a href="dns%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3.html" 
-	        title="Next Post: dns服务器报错解决">dns服务器报错解决 &raquo;</a>
+	        <a href="%E5%AE%89%E8%A3%85%20linux%20%E5%90%84%E7%A7%8D%E6%A1%8C%E9%9D%A2%E7%8E%AF%E5%A2%83.html" 
+	        title="Next Post: 安装 linux 各种桌面环境">安装 linux 各种桌面环境 &raquo;</a>
 	    
 	</div>
   </div>
@@ -695,7 +881,7 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
 </div>
 <script type="text/javascript">
 	$(function(){
-		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1mysql%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
+		var currentURL = '%E5%9F%BA%E4%BA%8E%20TCP%20%E7%9A%84%E5%AD%97%E7%AC%A6%E4%B8%B2%E4%BC%A0%E8%BE%93%E7%A8%8B%E5%BA%8F.html';
 		$('#side-nav a').each(function(){
 			if($(this).attr('href') == currentURL){
 				$(this).parent().addClass('active');

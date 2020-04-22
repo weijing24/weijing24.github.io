@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  记一次mysql主从一致校验走过的坑 - 小菜鸡儿
+  卓越班学习 - 小菜鸡儿
   
   </title>
  <meta name="description" content="">
@@ -381,328 +381,324 @@
             </div>
             <div class="large-9 medium-9 columns">
 
- <div class="markdown-body">
-<h1>记一次mysql主从一致校验走过的坑</h1>
+ 
 
-<p>前言：<br/>
-　　最近一台db master宕机，立刻迁到了一台从库上。这次的宕机在恢复后我做了主从一致校验，发现有部分数据不一致，细细想想还是挺可怕的，万一数据不一致的很多，主库挂了，切从库，那后果简直不敢想象。。。<br/>
-　　因此主从一致校验是必要的，但是这个东西比较费时，因此一般来说没有出故障一周校验一次即可。本来准备自己写个校验脚本后来发现要考虑的问题太多，于是发现pt-table-checksum这个神器，踩坑之旅开始。<br/>
-　　先说一下生产环境，目前所有的端口都是一主多从的架构，因为对读的要求高，主从分离，多从库有利于读。</p>
 
-<h2 id="toc_0">1、可能情况：</h2>
+	
+		<div class="markdown-body">
+		<h1>系统文件操作开发</h1>
 
-<p>若发现主从数据不一致可能有以下原因导致：<br/>
-①原来的主库down机，将从库升为主库期间导致数据丢失，从而发生数据不一致<br/>
-②误在从库上操作了<br/>
-③负载过大导致复制线程资源不足<br/>
-对于主从不一致无非以下三种：<br/>
-主库数据多余从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据少于从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据量和从库一样，但是数据有差异(记录条数相同，但是记录内容有偏差)</p>
+		<h4 id="toc_0">1.系统文件读写</h4>
 
-<h2 id="toc_1">2、工具选用：</h2>
+<p>任务描述:</p>
 
-<p>　　一开始是想自己写个主从检查脚本的，大致用select count(1) from db.table，后来发现写出来的不严谨，只能检查数据量是否一致万一数据不一致就无法检测出来，而且太耗费系统资源不可取。后来发现有现成的工具pt-table-checksum。它的大体执行流程是:<br/>
-<strong><em>登录主库-&gt;根据唯一索引将表分块(没有唯一索引会报错)-&gt;对块校验-&gt;将校验结果默认写入percona.checksums表-&gt;比较percona.checksums中master db和slave db不一致的值，输出</em></strong>。<br/>
-　　pt-table-checksum默认主从的数据库和表结构一致，若从库的表结构与主库不一致，会导致主从复制中断。同时pt-table-checksum要求复制是基于STATEMENT格式的，它在运行时会在主库上设置binlog_format=STATEMENT(需要super权限)，但是由于MySQL的限制，这一设置并不会传递到从库，因此当从库的binlog格式是ROW格式时，无法直接对从库进行校验。</p>
+<ul>
+<li>编写程序,读取linux系统文件&quot;/etc/passwd&quot;内容,并输出到屏幕上.同时在程序目录新建文件passwd,将&quot;/etc/passwd&quot;系统文件内容复制到新建的passwd中</li>
+</ul>
 
-<h2 id="toc_2">3、大致思路：</h2>
+<p>main.c:</p>
 
-<p>　　上面说了pt-table-checksum默认主从的数据库和表结构一致，对于主从某些库、表、字段不一致(这里的不一致主要指的是多了或者少了)，它无法检测出来。<br/>
-下面是四种情况的输出:<br/>
-从库少asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907089990574.jpg" alt=""/><br/>
-从库多asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090229580.jpg" alt=""/><br/>
-从库少user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090362061.jpg" alt=""/><br/>
-从库多user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090454889.jpg" alt=""/><br/>
-　　可以看出在主库不存在某个库某个表的情况下，使用pt-table-checksum检测从库是不会有任何报错信息的，但其实从库是多了库/表的。<br/>
-　　因此在使用pt-table-checksum检测前需要先检测主从的库、表以及字段是否一致(是否多库多表少库少表多字段少字段)。有多/少的记录到一个文件report中，然后以主库为的数据库、表为依据，依次遍历，使用pt-table-checksum检查从库上相应的数据库和表，将结果追加到report中。最后对report做处理，发送给自己邮箱。</p>
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;unistd.h&gt;
+#include&lt;stdlib.h&gt;
+#include&lt;sys/types.h&gt;
+#include&lt;sys/stat.h&gt;
+#include&lt;fcntl.h&gt;
+#define N 1000
+int main(void){
+    int fp1,fp2,num;
+    char *file1,*file2;
+    char buf[N];
+    file1=&quot;/etc/passwd&quot;;
+    file2=&quot;passwd&quot;;
+    if(( fp1=open(file1,O_RDONLY))==-1){            
+        printf(&quot;can&#39;t open %s\n&quot;,file1);
+        return 1;
+    }
+    if((fp2=open(file2,O_CREAT|O_WRONLY))==-1){
+        printf(&quot;can&#39;t create %s\n&quot;,file2);
+        return -1;
+    }
+    while((num = read(fp1,buf,N))&gt;0){
+        printf(&quot;%s\n&quot;,buf);
+        if(write(fp2,buf,num) == -1 ){
+            printf(&quot;can&#39;t write to %s\n&quot;,file2);
+            return -1;
+        }
+    }   
+    close(fp1);close(fp2);
+    return 0; 
+}
+</code></pre>
+</blockquote>
 
-<h2 id="toc_3">4、操作脚本</h2>
+<h4 id="toc_1">2.文件内容统计操作</h4>
 
+<p>任务描述:</p>
+
+<ul>
+<li>给定系统文件filesystem.manifest(dpkg-query -W --showformat=&#39;${Package} ${Version}\n&#39;&gt;filesystem.manifest)</li>
+<li>目前文件每一行格式为&quot;软件包名 版本号&quot;,要求输出每一行的格式为&quot;软件包名&quot;(去除版本号相关信息)到文件filesystem.manifest.name</li>
+<li>在第一步基础上,进一步去除换行符号,使整个文件的输出为一行(不同包名用空格分割),格式为&quot;软件包1 软件包2 软件包3...&quot;,输出到文件filesystem.manifest.name.oneline</li>
+<li>目前每一行格式为&quot;软件包名 版本号&quot;,找到文件中软件包名有&quot;ubuntu&quot;字样的软件包,并直接输出其个数(不能人工查找,需直接输出其个数)</li>
+</ul>
+
+<p>相关知识：<br/>
+①cut <br/>
+　　从一个文本文件或者文本流中提取文本列<br/>
+命令用法:<br/>
+　　cut -b list [-n] [file ...]<br/>
+　　cut -c list [file ...]<br/>
+　　cut -f list [-d delim][-s][file ...]<br/>
+　　上面的-b、-c、-f 分别表示字节、字符、字段(即 byte、character、field);<br/>
+　　list 表示-b、-c、-f 操作范围,-n 常常表示具体数字;<br/>
+　　file 表示的自然是要操作的文本文件的名称;<br/>
+　　delim(英文全写:delimiter)表示分隔符,默认情况下为 TAB;<br/>
+　　-s 表示不包括那些不含分隔符的行(这样有利于去掉注释和标题)<br/>
+　　上面三种方式中,表示从指定的范围中提取字节(-b)、或字符(-c)、或字段(-f)。<br/>
+②xargs <br/>
+　　将参数列表转换成小块分段传递给其他命令,以避免参数列表过长的问题<br/>
+　　例如,下面的命令:<br/>
+　　rm `find /path -type f`如果 path 目录下文件过多就会因为“参数列表过长”而报错无法执行。但改用 xargs 以后,问题即获解决。<br/>
+　　find /path -type f -print0 | xargs -0 rm<br/>
+　　本例中 xargs 将 find 产生的长串文件列表拆散成多个子串,然后对每个子串调用 rm。这样要比如下使用 find 命令效率高的多。<br/>
+　　find /path -type f -exec rm &#39;{}&#39; \;<br/>
+　　上面这条命令会对每个文件调用&quot;rm&quot;命令。当然使用新版的&quot;find&quot;也可以得到和&quot;xargs&quot;命令同样的效果:find /path -type f -exec rm &#39;{}&#39; +<br/>
+　　xargs 的作用一般等同于大多数 Unix shell 中的反引号,但更加灵活易用,并可以正确处理输入中有空格等特殊字符的情况。对于经常产生大量输出的命令如 find、locate 和 grep 来说非常有用。</p>
+
+<blockquote>
 <pre><code class="language-text">#!/bin/bash
-#set -x
+dpkg-query -W --showformat=&#39;${Package} ${Version}\n&#39;&gt;filesystem.manifest
+cat filesystem.manifest|cut -d &#39; &#39; -f 1 &gt;filesystem.manifest.name
+cat filesystem.manifest.name|xargs &gt;filesystem.manifest.name.oneline
+cat filesystem.manifest|grep &quot;ubuntu&quot;|wc -l
+#-d &#39; &#39;表示以空格为字符 -f 1表示输出第一列
+#xargs表示将参数列表转换成小块分段传递给其他命令,以避免参数列表过长的问题
+</code></pre>
+</blockquote>
 
-PASSWORD=       #登录用户的密码
-SOCK=               #端口
-#SLAVE=()
-SLAVE=()            #从库ip(有几个写几个，注意是一个数组，用空格隔开)
-MASTER=         #主库ip
+<h4 id="toc_2">3.文件描述符获取</h4>
 
-#连接语句
-MYSQL_CONN=&quot;mysql -uchecksum -p$PASSWORD&quot;
+<p>任务描述：</p>
 
-#存放产生临时文件的文件夹
-mysql_checksum=/tmp/mysql_checksum      
-#获取主库和从库的数据库、表
-get_db_table_field_name() {
-    if [ -d $mysql_checksum/$SOCK ];then
-        rm -r $mysql_checksum/$SOCK
-    fi
-    mkdir -p $mysql_checksum/$SOCK
-    echo &quot;#########start get port $SOCK master db #########&quot;
-    #获取主库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db
-    #获取上一步中的数据库中的表名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table
-    done
-    #获取上一步中得到的表中的字段名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table`;do
-        $MYSQL_CONN -P ${SOCK} -h $MASTER -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field
-        done
-    done
-    #获取从库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    echo &quot;#########start get port $SOCK slave db #########&quot;
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db
-        #获取上一步中的数据库中的表名     for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table
-        done
-        #获取上一步中得到的表中的字段名
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table`;do
-                $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-            done
-        done
-    done
+<ul>
+<li>打印输入设备，输出设备，标准错误输出设备的文件描述符</li>
+<li>任意打开一个存在文件a，打印其文件描述符</li>
+<li>不关闭文件a,定义新的文件描述符重新打开a,打印其文件描述符</li>
+<li>关闭文件a,定义新的文件描述符重新打开a,打印文件描述符</li>
+</ul>
+
+<p>相关知识:<br/>
+　　任何打开的文件都将被分配一个唯一标识该打开文件的文件描述符,为一个大于等于 0的整数。系统启动后,默认打开的文件流有标准输入设备(STDIN)、标准输出设备(STDOUT)和标准错误输出设备(STDERR),其文件描述符分别为 0、1、2。以后打开的文件的文件描述符分配依次增加。使用 fileno()函数可以返回一个流对应的文件描述符。<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &lt;stdio.h&gt;
+int main(){
+    FILE *fp1,*fp2,*fp3,*fp4;
+    int fd;
+    fd=fileno(stdin);
+    printf(&quot;stdin is :%d\n&quot;,fd);
+    fd=fileno(stdout);
+    printf(&quot;stdout is :%d\n&quot;,fd);
+    fd=fileno(stderr);
+    printf(&quot;stderr is :%d\n&quot;,fd);
+    printf(&quot;open file and open again before it closed\n&quot;);
+    fp1=fopen(&quot;test.c&quot;, &quot;r&quot;);
+    fd=fileno(fp1);
+    printf(&quot;main.c is %d\n&quot;, fd);
+    fp2=fopen(&quot;test.c&quot;,&quot;r&quot;);
+    fd=fileno(fp2);
+    printf(&quot;main.c is %d\n&quot;,fd);
+    fclose(fp1);fclose(fp2);
+    printf(&quot;open file and open again after it closed\n&quot;);
+    fp3=fopen(&quot;test.c&quot;,&quot;r&quot;);
+    fd=fileno(fp3);
+    printf(&quot;main.c is %d\n&quot;,fd);
+    fclose(fp3);
+    fp4=fopen(&quot;test.c&quot;,&quot;r&quot;);
+    fd=fileno(fp4);
+    printf(&quot;main.c is %d\n&quot;,fd);
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#检查从库是否多库少库多表少表多字段少字段
-checksum_db_table() {
-    if [ -e $mysql_checksum/$SOCK/report ];then
-        rm $mysql_checksum/$SOCK/report
-    fi
-    #将主库的数据库名排序
-    cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort
+<h4 id="toc_3">4.检测文件读写权限</h4>
 
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        #将从库的数据库名排序
-        cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort
-        #comm命令检测从库是多还是少库，注意comm后面跟的两个文件顺序不能错
-        slave_surplus_db=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        slave_lack_db=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        if [ ! -z &quot;$slave_surplus_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} surplus database $slave_surplus_db&quot; | tee -a $mysql_checksum/$SOCK/report 
-        fi
-        if [ ! -z &quot;$slave_lack_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} lack database $slave_lack_db&quot; &gt;&gt; $mysql_checksum/$SOCK/report
-        fi
-        #库检查完了，就以主库包含的库为基准，comm命令检测从库是多还是少表，同样comm后面跟的两个文件顺序不能错
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-            cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table| sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort
-            cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table |sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort
-            slave_surplus_table=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            slave_lack_table=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            if [ ! -z &quot;$slave_surplus_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} surplus table $slave_surplus_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-            if [ ! -z &quot;$slave_lack_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} lack table ${DB}.$slave_lack_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-        #表检查完了，就以主库包含的表为基准，diff命令检测从库是多还是少字段，diff后面的文件顺序无所谓
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-                diff $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-                if [ $? -ne 0 ];then
-                    echo &quot;port $SOCK slave ${SLAVE[$j]} have different field in ${DB}.${TABLE}&quot; |tee -a $mysql_checksum/$SOCK/report
-                fi
-            done
-        done
-    done
+<p>任务描述:</p>
+
+<ul>
+<li>检测文件当前读写权限,如果文件具有读权限,则打印可读信息,如果有写权限,则打印可写信息,否则返回错误信息</li>
+<li>用fcntl函数实现</li>
+</ul>
+
+<p>相关知识:<br/>
+fcntl <br/>
+功能描述:根据文件描述词来操作文件的特性。<br/>
+文件控制函数:fcntl -- file control<br/>
+函数原型:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &lt;fcntl.h&gt;;
+int fcntl(int fd, int cmd);
+int fcntl(int fd, int cmd, long arg);
+int fcntl(int fd, int cmd, struct flock *lock);
+</code></pre>
+</blockquote>
+
+<p>描述: fcntl()针对(文件)描述符提供控制.参数 fd 是被参数 cmd 操作(如下面的描述)的描述符。针对 cmd 的值,fcntl 能够接受第三个参数 int arg。<br/>
+fcntl 函数有 5 种功能:<br/>
+1.复制一个现有的描述符(cmd=F_DUPFD).<br/>
+2.获得/设置文件描述符标记(cmd=F_GETFD 或 F_SETFD).<br/>
+3.获得/设置文件状态标记(cmd=F_GETFL 或 F_SETFL).<br/>
+4.获得/设置异步 I/O 所有权(cmd=F_GETOWN 或 F_SETOWN).5.获得/设置记录锁(cmd=F_GETLK,F_SETLK 或 F_SETLKW).</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;fcntl.h&gt;
+int main(void){ 
+    FILE *fp;  
+    int val,acc,a;
+    if(( fp=fopen(&quot;test.c&quot;,&quot;r+&quot;)) == NULL){  
+        printf(&quot;can&#39;t open the file\n&quot;);
+        return 1;
+    }
+    a=fileno(fp);
+    val=fcntl(a,F_GETFL,0);//获得文件状态标记
+    acc=val&amp;O_ACCMODE;//把不是关于r、w、x的文件状态标记屏蔽掉
+    if (acc==O_RDONLY)
+        printf(&quot;read only\n&quot;);
+    if (acc==O_WRONLY)
+        printf(&quot;write only\n&quot;);
+    if (acc==O_RDWR)
+        printf(&quot;read write\n&quot;);
+    fclose(fp);
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#以主库有的库和表为基准，检测从库的记录是否与主库一致
-check_table_field() {
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-            echo &quot;#########port ${SOCK} database ${DB} table ${TABLE}&quot;
-            PTDEBUG=1 pt-table-checksum --user=checksum --password=$PASSWORD --host=$MASTER --port=${SOCK} --databases=$DB --tables=$TABLE --empty-replicate-table --replicate=percona.${SOCK}_checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=${SOCK}_dsns &gt;&gt; $mysql_checksum/$SOCK/report 2&gt;&amp;1
-        done
-    done
+<h4 id="toc_4">5.锁定/解锁文件</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>用fcntl函数实现锁定文件test_lock的两个区域,锁定类型均为以文件开头为锁定的起始位置,区域1锁定为供读取用,起始偏移量为10,长度为20;区域2锁定为供写入用,起始偏移量为40,长度为10.</li>
+<li>当进程锁定文件指定区域时,输出&quot;process locking file&quot;,停顿10秒钟,关闭文件描述符,输出&quot;process closing file&quot;</li>
+<li>使用flock数据结构,使用fcntl函数</li>
+</ul>
+
+<p>相关知识:<br/>
+　　Linux 支持的文件锁技术主要包括劝告锁(advisory lock)和强制锁(mandatory lock)这两种。此外,Linux 中还引入了两种强制锁的变种形式:共享模式强制锁(share-mode mandatory lock)和租借锁(lease)。<br/>
+　　在 Linux 中,不论进程是在使用劝告锁还是强制锁,它都可以同时使用共享锁和排他锁(又称为读锁和写锁)。多个共享锁之间不会相互干扰,多个进程在同一时刻可以对同一个文件加共享锁。但是,如果一个进程对该文件加了排他锁,那么其他进程则无权再对该文件加共享锁或者排他锁,直到该排他锁被释放。所以,对于同一个文件来说,它可以同时拥有很多读者,但是在某一特定时刻,它只能拥有一个写者<br/>
+　　flock 函数用于实现对文件的锁定和解锁操作。此函数只能锁定整个文件,不能锁定某个区域。要锁定某个区域,则需要使用 fcntl()函数。</p>
+
+<blockquote>
+<pre><code class="language-text">int fcntl(int fd, int cmd, struct flock *lock);参数lock指针为flock 结构指针，定义如下:
+struct flock{
+    short int l_type;
+    short int l_whence;
+    off_t l_start;
+    off_t l_len;
+    pid_t l_pid;
+};
+</code></pre>
+
+<p>　　l_type 有三种状态:<br/>
+　　　　F_RDLCK 建立一个供读取用的锁定<br/>
+　　　　F_WRLCK 建立一个供写入用的锁定<br/>
+　　　　F_UNLCK 删除之前建立的锁定<br/>
+　　l_whence 也有三种方式:<br/>
+　　　　SEEK_SET 以文件开头为锁定的起始位置。<br/>
+　　　　SEEK_CUR 以目前文件读写位置为锁定的起始位置<br/>
+　　　　SEEK_END 以文件结尾为锁定的起始位置。<br/>
+　　l_start 表示相对l_whence位置的偏移量，两者一起确定锁定区域的开始位置。<br/>
+　　l_len表示锁定区域的长度，若果为0表示从起点(由l_whence和 l_start决定的开始位置)开始直到最大可能偏移量为止。即不管在后面增加多少数据都在锁的范围内。</p>
+</blockquote>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;fcntl.h&gt;
+int main(void){
+    int re,fd;
+    fd=open(&quot;test_lock&quot;,O_RDWR|O_CREAT,0644);
+    struct flock z1;
+    z1.l_type=F_RDLCK;//建立一个供读取用的锁定
+    z1.l_whence=SEEK_SET;//以文件开头为锁定的起始位置
+    z1.l_start=10;
+    z1.l_len=20;
+    printf(&quot;Process %d locking file\n&quot;,getpid());
+    if((re=fcntl(fd,F_SETLK,&amp;z1))==-1){
+        printf(&quot;failed to lock z1&quot;);
+    }
+    struct flock z2;
+    z2.l_type=F_WRLCK;//建立一个供写入用的锁定
+    z2.l_whence=SEEK_SET;//以文件开头为锁定的起始位置
+    z2.l_start=40;
+    z2.l_len=10;
+    if((re=fcntl(fd,F_SETLK,&amp;z2))==-1){
+        printf(&quot;failed to lock z2&quot;);
+    }
+    sleep( 10);
+    printf(&quot;Process %d closing file\n&quot;,getpid());
+    close(fd);
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#将生成的report进行处理
-process_report() {
-    sed -i -ne &#39;/^port/p&#39; -ne &#39;/checksum diffs/p&#39; -ne &#39;/^[0-1][1-9]-[0-3][1-9]/p&#39; $mysql_checksum/$SOCK/report
-    grep &quot;^port&quot; $mysql_checksum/$SOCK/report &gt; $mysql_checksum/$SOCK/mail
-    awk &#39;$3!=0&#39; $mysql_checksum/$SOCK/report |egrep -B ${#SLAVE[@]} &#39;^[0-1][1-9]-[0-3][1-9]&#39; &gt;&gt; $mysql_checksum/$SOCK/mail
-    if [ ! -s $mysql_checksum/$SOCK/mail ];then
-        echo &quot;$SOCK no problem&quot;|mail -s &quot;port $SOCK checksum report&quot; weijing3@book.sina.com
-    else
-        cat $mysql_checksum/$SOCK/mail|mail -s &quot;port $SOCK mysql checksum report&quot; weijing3@book.sina.com
-    fi
+<h4 id="toc_5">6.使用 chmod()函数修改文件权限</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>首先使用touch命令新建3个临时文件:test1,test2,test3</li>
+<li>查看最原始文件权限情况(是否为拥有者可读写,所有其他人可读)</li>
+<li>设置test1为拥有者可读写,同组用户可读写,其他人可读;test2为拥有者可读写,同组用户可读写可执行,其他人可读;test3为拥有者可读写,同组用户可写不可读、其他用户可写不可读</li>
+<li>采用stat数据结,chmod函数</li>
+<li>输出修改权限前和修改权限后的文件属性</li>
+</ul>
+
+<p>相关知识:<br/>
+文件权限知识:<br/>
+　　Linux 系统中的每个文件和目录都有访问许可权限,用它来确定谁可以通过何种方式对文件和目录进行访问和操作。<br/>
+　　文件或目录的访问权限分为只读,只写和可执行三种。以文件为例,只读权限表示只允许读其内容,而禁止对其做任何的更改操作。可执行权限表示允许将该文件作为一个程序执行。文件被创建时,文件所有者自动拥有对该文件的读、写和可执行权限,以便于对文件的阅读和修改。用户也可根据需要把访问权限设置为需要的任何组合。有三种不同类型的用户可对文件或目录进行访问:文件所有者,同组用户、其他用户。<br/>
+　　所有者一般是文件的创建者。所有者可以允许同组用户有权访问文件,还可以将文件的访问权限赋予系统中的其他用户。在这种情况下,系统中每一位用户都能访问该用户拥有的文件或目录。<br/>
+　　每一文件或目录的访问权限都有三组,每组用三位表示,分别为文件属主的读、写和执行权限;与属主同组的用户的读、写和执行权限;系统中其他用户的读、写和执行权限。当用 ls -l 命令显示文件或目录的详细信息时,最左边的一列为文件的访问权限。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;sys/stat.h&gt;
+#include&lt;unistd.h&gt;
+int main(void){
+    chmod(&quot;test01&quot;,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+    chmod(&quot;test02&quot;,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IXGRP|S_IROTH);
+    chmod(&quot;test03&quot;,S_IRUSR|S_IWUSR|S_IWGRP|S_IWOTH);
+    return 0;
 }
-
-get_db_table_field_name
-checksum_db_table
-check_table_field
-process_report
-</code></pre>
-
-<h2 id="toc_4">5、脚本解读</h2>
-
-<p>　　每个函数基本都注释的很清楚了，process_report函数需要讲一下，脚本中把所有的信息都重定向到了report中，report的大致样子是这样的</p>
-
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers 
-# /usr/bin/perl 5.010001
-# Linux HP11012317.rb.simulation 2.6.32-431.11.2.el6.toa.2.x86_64 #1 SMP Wed Apr 9 15:55:33 CST 2014 x86_64 x86_64 x86_64 GNU/Linux 
-...此处省略n多PTDEBUG的调试信息
-OALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt;this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 1 checksum diffs on D11059841.rb.weibo.cn
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11060340.rb.db
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11059852.rb.weibo.cn
-...此处省略n多PTDEBUG的调试信息
-        TS ERRORS  DIFFS     ROWS  CHUNKS SKIPPED    TIME TABLE
-03-23T14:23:14      0      1    83350       5       0   3.983   books.bag_collection_1
 </code></pre>
 </blockquote>
 
-<p>　　首部分是从库多库少库多表少表多字段少字段的情况，然后就是pt-table-checksum的调试信息了，包含了输出信息。sed过滤所有的无用信息，保留从库多库少库多表少表多字段少字段的情况，和从库信息，以及pt-table-checksum的标准输出，如下：</p>
 
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers
-# pt_table_checksum:10150 15046 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 15046 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 15046 0 checksum diffs on D11060339.rb.db
-03-21T09:24:54      0      0  1042909      17       0  23.607 asd.test1
-# pt_table_checksum:10150 16227 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 16227 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 16227 0 checksum diffs on D11060339.rb.db
-03-21T09:25:23      0      1  1278316      19       0  28.421 asd.test2
-</code></pre>
-</blockquote>
+		</div>
+	
 
-<p>　　此时的信息已经可读了，使用awk截取第三个字段列非0的行，并截取该行上面n行(n是slave的数量)，得到的结果就是所有有问题的库,表,字段和记录了.</p>
+ 
+	
 
-<h2 id="toc_5">6、操作步骤：</h2>
+ 
+	
 
-<p>　　随便找一台机器，本地机器也行，将脚本部署上去，然后登陆主库执行以下命令</p>
-
-<blockquote>
-<pre><code class="language-text">mysql&gt; GRANT select,insert,update,delete,create,process,super,replication slave,lock tables ON *.* to &#39;checksum&#39;@&#39;脚本所在机器的ip&#39; IDENTIFIED by &#39;xxx&#39;; 
-mysql&gt; CREATE DATABASE `percona` ;
-mysql&gt; use percona;
-mysql&gt; CREATE TABLE `port_checksums` (    #这里的port要改成你的数据库的端口
-`db` char(64) NOT NULL,
-`tbl` char(64) NOT NULL,
-`chunk` int(11) NOT NULL,
-`chunk_time` float DEFAULT NULL,
-`chunk_index` varchar(200) DEFAULT NULL,
-`lower_boundary` text,
-`upper_boundary` text,
-`this_crc` char(40) NOT NULL,
-`this_cnt` int(11) NOT NULL,
-`master_crc` char(40) DEFAULT NULL,
-`master_cnt` int(11) DEFAULT NULL,
-`ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-PRIMARY KEY (`db`,`tbl`,`chunk`),
-KEY `ts_db_tbl` (`ts`,`db`,`tbl`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-mysql&gt; CREATE TABLE `port_dsns` (   #这里的port要改成你的数据库的端口
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-</code></pre>
-</blockquote>
-
-<p>　　select,process,super是pt-table-checksum需要的权限,insert,update,delete,create,super,replication slave,lock tables是pt-table-sync需要的权限.<br/>
-主库把这些操作完毕后就可以执行脚本了，有问题会发送邮件给自己，没问题会发送no problem给自己。<br/>
-在这里创建dsns是因为该方法比较灵活，下一部分会讲到。</p>
-
-<h2 id="toc_6">7、特殊情况</h2>
-
-<p>　　线上有个数据库是两小时备份一次的,一开始--recursion-method使用的processlist，表示主库自己找从库，当两小时备份库不运行的时候pt-table-checksum会等待这个两小时备份库,直到它开始备份为止,等如此长的时间显然是不行的.因此可以换--recursion-method=hosts或dsn方法<br/>
-　　对于hosts方法,在从库的配置文件中添加report_host和report_port，但不在两小时备份库的配置文件添加report_host和report_port，这样pt-table-checksum登录主库检查时show hosts slave就找不到两小时备份库，也就忽略对两小时备份库的检查了。该方法需要修改配置文件并重启从库，不推荐。<br/>
-　　对于dsn方法，在主库创建percona.port_dsns表,表中插入从库的信息,执行pt-table-checksum的时候指定dsn方法,就会去percona.port_dsns表找从库信息.可以看出这种方法灵活且不影响线上服务,是比较好的,脚本中也是使用的这个方法.<br/>
-以3306为例<br/>
-在192.168.1.1(主库)上创建dsns表，并插入以下语句（从库的信息插入进去）</p>
-
-<blockquote>
-<pre><code class="language-text">CREATE DATABASE `percona` ;
-CREATE TABLE `3306_dsns` (
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.2,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.3,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.4,P=3306,u=checksum,p=123&#39;);
-</code></pre>
-</blockquote>
-
-<p>　　在主库或10191上执行pt-table-checksum --user=checksum --password=123 --host=192.168.1.1 --port=3306 --databases=asd --tables=user1 --empty-replicate-table --replicate=percona.checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=3306_dsns即可</p>
-
-<h2 id="toc_7">8、使用pt-table-checksum可能的报错：</h2>
-
-<p>1、mysql table is marked as crashed<br/>
-表损坏，使用以下命令修复</p>
-
-<blockquote>
-<pre><code class="language-text">mysql&gt; myisamchk -r $TABLE_NAME
-mysql&gt; myisamchk -r -v -f $TABLE_NAME
-</code></pre>
-</blockquote>
-
-<p>2、no slaves were found<br/>
-主库找不到从库，一般用dsn方法不会有这个情况，除非在主库的percona.portdsn插入从库信息有误<br/>
-3、03-23T15:16:40 Skipping chunk 1 of asd.user1 because it is oversized.  The current chunk size limit is 2000 rows (chunk size=1000 * chunk size limit=2.0), but MySQL estimates that there are 2008 rows in the chunk.<br/>
-这种情况是分的块太大了，设置--chunk-size-limit<br/>
-4、03-21T12:16:08 Error checksumming table asd.user1: Possible infinite loop detected!  The lower boundary for chunk 1 is <1> and the lower boundary for chunk 2 is also <1>.  This usually happens when using a non-unique single column index.  The current chunk index for table asd.user1 is idx_bid which is not unique and covers 1 column.<br/>
-没有唯一索引</p>
-
-
-</div>
-
-<br /><br />
-<hr />
-
-<div class="row clearfix">
-  <div class="large-6 columns">
-	<div class="text-left" style="padding:15px 0px;">
-		
-	        <a href="megacli%20%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.html"  title="Previous Post: megacli 常用命令">&laquo; megacli 常用命令</a>
-	    
-	</div>
-  </div>
-  <div class="large-6 columns">
-	<div class="text-right" style="padding:15px 0px;">
-		
-	        <a href="dns%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3.html" 
-	        title="Next Post: dns服务器报错解决">dns服务器报错解决 &raquo;</a>
-	    
-	</div>
-  </div>
-</div>
-
-<div class="row">
-<div style="padding:0px 0.93em;" class="share-comments">
-
-</div>
-</div>
-<script type="text/javascript">
-	$(function(){
-		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1mysql%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
-		$('#side-nav a').each(function(){
-			if($(this).attr('href') == currentURL){
-				$(this).parent().addClass('active');
-			}
-		});
-	});
-</script>  
+  
+  
 </div></div>
 
 

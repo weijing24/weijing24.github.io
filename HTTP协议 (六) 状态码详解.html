@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  记一次mysql主从一致校验走过的坑 - 小菜鸡儿
+  HTTP协议 (六) 状态码详解 - 小菜鸡儿
   
   </title>
  <meta name="description" content="">
@@ -382,287 +382,423 @@
             <div class="large-9 medium-9 columns">
 
  <div class="markdown-body">
-<h1>记一次mysql主从一致校验走过的坑</h1>
+<h1>HTTP协议 (六) 状态码详解</h1>
 
-<p>前言：<br/>
-　　最近一台db master宕机，立刻迁到了一台从库上。这次的宕机在恢复后我做了主从一致校验，发现有部分数据不一致，细细想想还是挺可怕的，万一数据不一致的很多，主库挂了，切从库，那后果简直不敢想象。。。<br/>
-　　因此主从一致校验是必要的，但是这个东西比较费时，因此一般来说没有出故障一周校验一次即可。本来准备自己写个校验脚本后来发现要考虑的问题太多，于是发现pt-table-checksum这个神器，踩坑之旅开始。<br/>
-　　先说一下生产环境，目前所有的端口都是一主多从的架构，因为对读的要求高，主从分离，多从库有利于读。</p>
+<p>HTTP状态码，我都是现查现用。 我以前记得几个常用的状态码，比如200，302，304，404， 503。 一般来说我也只需要了解这些常用的状态码就可以了。  如果是做AJAX，REST,网络爬虫，机器人等程序。还是需要了解其他状态码。  本文我花了一个多月的时间把所有的状态码都总结了下，内容太多，看的时候麻烦耐心点了。<br/>
+HTTP状态码的学习资料到处都有，但是都是理论上讲解。  本文介绍HTTP协议中的HTTP状态码（HTTP Status Code）， 会对大部分的状态码都进行了详细的实例讲解。<br/>
+要了解状态码，应该在实例中去理解状态码的意义，否则看了也会忘记的。</p>
 
-<h2 id="toc_0">1、可能情况：</h2>
+<h3 id="toc_0">什么是HTTP状态码</h3>
 
-<p>若发现主从数据不一致可能有以下原因导致：<br/>
-①原来的主库down机，将从库升为主库期间导致数据丢失，从而发生数据不一致<br/>
-②误在从库上操作了<br/>
-③负载过大导致复制线程资源不足<br/>
-对于主从不一致无非以下三种：<br/>
-主库数据多余从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据少于从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据量和从库一样，但是数据有差异(记录条数相同，但是记录内容有偏差)</p>
+<p>HTTP状态码的作用是：Web服务器用来告诉客户端，发生了什么事。<br/>
+状态码位于HTTP Response 的第一行中，会返回一个”三位数字的状态码“和一个“状态消息”。 ”三位数字的状态码“便于程序进行处理， “状态消息”更便于人理解。 <br/>
+如下图，  当客户端请求一个不存在的URL的时候， Web服务器会返回 “HTTP/1.1 404 Not Found” 告诉浏览器客户端。 服务器无法找到所请求的URL。</p>
 
-<h2 id="toc_1">2、工具选用：</h2>
+<h3 id="toc_1">状态码分类</h3>
 
-<p>　　一开始是想自己写个主从检查脚本的，大致用select count(1) from db.table，后来发现写出来的不严谨，只能检查数据量是否一致万一数据不一致就无法检测出来，而且太耗费系统资源不可取。后来发现有现成的工具pt-table-checksum。它的大体执行流程是:<br/>
-<strong><em>登录主库-&gt;根据唯一索引将表分块(没有唯一索引会报错)-&gt;对块校验-&gt;将校验结果默认写入percona.checksums表-&gt;比较percona.checksums中master db和slave db不一致的值，输出</em></strong>。<br/>
-　　pt-table-checksum默认主从的数据库和表结构一致，若从库的表结构与主库不一致，会导致主从复制中断。同时pt-table-checksum要求复制是基于STATEMENT格式的，它在运行时会在主库上设置binlog_format=STATEMENT(需要super权限)，但是由于MySQL的限制，这一设置并不会传递到从库，因此当从库的binlog格式是ROW格式时，无法直接对从库进行校验。</p>
+<p>HTTP状态码被分为五大类， 目前我们使用的HTTP协议版本是1.1， 支持以下的状态码。随着协议的发展，HTTP规范中会定义更多的状态码。 <br/>
+小技巧：  假如你看到一个状态码518， 你并不知道具体518是什么意思。 这时候你只要知道518是属于（5XX，服务器错误就可以了）</p>
 
-<h2 id="toc_2">3、大致思路：</h2>
+<p>常见的状态码<br/>
+一般人只需要了解以下常见的状态码就够了， 如果你想了解更多， 请继续往下看。<br/>
+200 OK 服务器成功处理了请求（这个是我们见到最多的）<br/>
+301/302 Moved Permanently（重定向）请求的URL已移走。Response中应该包含一个Location URL, 说明资源现在所处的位置<br/>
+304 Not Modified（未修改）客户的缓存资源是最新的， 要客户端使用缓存<br/>
+404 Not Found 未找到资源<br/>
+501 Internal Server Error服务器遇到一个错误，使其无法对请求提供服务</p>
 
-<p>　　上面说了pt-table-checksum默认主从的数据库和表结构一致，对于主从某些库、表、字段不一致(这里的不一致主要指的是多了或者少了)，它无法检测出来。<br/>
-下面是四种情况的输出:<br/>
-从库少asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907089990574.jpg" alt=""/><br/>
-从库多asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090229580.jpg" alt=""/><br/>
-从库少user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090362061.jpg" alt=""/><br/>
-从库多user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090454889.jpg" alt=""/><br/>
-　　可以看出在主库不存在某个库某个表的情况下，使用pt-table-checksum检测从库是不会有任何报错信息的，但其实从库是多了库/表的。<br/>
-　　因此在使用pt-table-checksum检测前需要先检测主从的库、表以及字段是否一致(是否多库多表少库少表多字段少字段)。有多/少的记录到一个文件report中，然后以主库为的数据库、表为依据，依次遍历，使用pt-table-checksum检查从库上相应的数据库和表，将结果追加到report中。最后对report做处理，发送给自己邮箱。</p>
+<h3 id="toc_2">1XX 信息性状态码</h3>
 
-<h2 id="toc_3">4、操作脚本</h2>
+<p>这些状态码是HTTP 1.1引入的。 对于这些状态码的价值还存在争论 （我个人从来没见过这些状态码， 也没有理解这些状态码。）</p>
 
-<pre><code class="language-text">#!/bin/bash
-#set -x
+<table>
+<thead>
+<tr>
+<th>状态码</th>
+<th> 状态消息</th>
+<th> 含义</th>
+</tr>
+</thead>
 
-PASSWORD=       #登录用户的密码
-SOCK=               #端口
-#SLAVE=()
-SLAVE=()            #从库ip(有几个写几个，注意是一个数组，用空格隔开)
-MASTER=         #主库ip
+<tbody>
+<tr>
+<td>100</td>
+<td>Continue(继续)</td>
+<td>收到了请求的起始部分，客户端应该继续请求</td>
+</tr>
+<tr>
+<td>101</td>
+<td>Switching Protocols（切换协议</td>
+<td>服务器正根据客户端的指示将协议切换成Update Header列出的协议</td>
+</tr>
+</tbody>
+</table>
 
-#连接语句
-MYSQL_CONN=&quot;mysql -uchecksum -p$PASSWORD&quot;
+<h3 id="toc_3">2XX 成功状态码</h3>
 
-#存放产生临时文件的文件夹
-mysql_checksum=/tmp/mysql_checksum      
-#获取主库和从库的数据库、表
-get_db_table_field_name() {
-    if [ -d $mysql_checksum/$SOCK ];then
-        rm -r $mysql_checksum/$SOCK
-    fi
-    mkdir -p $mysql_checksum/$SOCK
-    echo &quot;#########start get port $SOCK master db #########&quot;
-    #获取主库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db
-    #获取上一步中的数据库中的表名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table
-    done
-    #获取上一步中得到的表中的字段名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table`;do
-        $MYSQL_CONN -P ${SOCK} -h $MASTER -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field
-        done
-    done
-    #获取从库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    echo &quot;#########start get port $SOCK slave db #########&quot;
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db
-        #获取上一步中的数据库中的表名     for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table
-        done
-        #获取上一步中得到的表中的字段名
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table`;do
-                $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-            done
-        done
-    done
-}
+<p>客户端发起请求时， 这些请求通常都是成功的。服务器有一组用来表示成功的状态码，分别对应于不同类型的请求。</p>
 
-#检查从库是否多库少库多表少表多字段少字段
-checksum_db_table() {
-    if [ -e $mysql_checksum/$SOCK/report ];then
-        rm $mysql_checksum/$SOCK/report
-    fi
-    #将主库的数据库名排序
-    cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort
+<table>
+<thead>
+<tr>
+<th>状态码</th>
+<th>状态消息</th>
+<th>含义</th>
+</tr>
+</thead>
 
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        #将从库的数据库名排序
-        cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort
-        #comm命令检测从库是多还是少库，注意comm后面跟的两个文件顺序不能错
-        slave_surplus_db=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        slave_lack_db=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        if [ ! -z &quot;$slave_surplus_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} surplus database $slave_surplus_db&quot; | tee -a $mysql_checksum/$SOCK/report 
-        fi
-        if [ ! -z &quot;$slave_lack_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} lack database $slave_lack_db&quot; &gt;&gt; $mysql_checksum/$SOCK/report
-        fi
-        #库检查完了，就以主库包含的库为基准，comm命令检测从库是多还是少表，同样comm后面跟的两个文件顺序不能错
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-            cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table| sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort
-            cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table |sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort
-            slave_surplus_table=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            slave_lack_table=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            if [ ! -z &quot;$slave_surplus_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} surplus table $slave_surplus_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-            if [ ! -z &quot;$slave_lack_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} lack table ${DB}.$slave_lack_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-        #表检查完了，就以主库包含的表为基准，diff命令检测从库是多还是少字段，diff后面的文件顺序无所谓
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-                diff $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-                if [ $? -ne 0 ];then
-                    echo &quot;port $SOCK slave ${SLAVE[$j]} have different field in ${DB}.${TABLE}&quot; |tee -a $mysql_checksum/$SOCK/report
-                fi
-            done
-        done
-    done
-}
+<tbody>
+<tr>
+<td>200</td>
+<td>ok</td>
+<td>服务器成功处理了请求</td>
+</tr>
+<tr>
+<td>201</td>
+<td>created(已创建)</td>
+<td>对于那些要服务器创建对象的请求来说，资源已创建完毕。</td>
+</tr>
+<tr>
+<td>202</td>
+<td>Accepted(已接受)</td>
+<td>请求已接受，但服务器尚未处理</td>
+</tr>
+<tr>
+<td>203</td>
+<td>Non-Authoritative Information（非权威信息)</td>
+<td>服务器已将事务成功处理，只是实体Header包含的信息不是来自原始服务器，而是来自资源的副本</td>
+</tr>
+<tr>
+<td>204</td>
+<td>No Content(没有内容)</td>
+<td>Response中包含一些Header和一个状态行， 但不包括实体的主题内容（没有response body）</td>
+</tr>
+<tr>
+<td>205</td>
+<td>Reset Content(重置内容)</td>
+<td>另一个主要用于浏览器的代码。意思是浏览器应该重置当前页面上所有的HTML表单</td>
+</tr>
+<tr>
+<td>206</td>
+<td>Partial Content（部分内容)</td>
+<td>部分请求成功</td>
+</tr>
+</tbody>
+</table>
 
-#以主库有的库和表为基准，检测从库的记录是否与主库一致
-check_table_field() {
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-            echo &quot;#########port ${SOCK} database ${DB} table ${TABLE}&quot;
-            PTDEBUG=1 pt-table-checksum --user=checksum --password=$PASSWORD --host=$MASTER --port=${SOCK} --databases=$DB --tables=$TABLE --empty-replicate-table --replicate=percona.${SOCK}_checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=${SOCK}_dsns &gt;&gt; $mysql_checksum/$SOCK/report 2&gt;&amp;1
-        done
-    done
-}
+<h3 id="toc_4">3XX 重定向状态码</h3>
 
-#将生成的report进行处理
-process_report() {
-    sed -i -ne &#39;/^port/p&#39; -ne &#39;/checksum diffs/p&#39; -ne &#39;/^[0-1][1-9]-[0-3][1-9]/p&#39; $mysql_checksum/$SOCK/report
-    grep &quot;^port&quot; $mysql_checksum/$SOCK/report &gt; $mysql_checksum/$SOCK/mail
-    awk &#39;$3!=0&#39; $mysql_checksum/$SOCK/report |egrep -B ${#SLAVE[@]} &#39;^[0-1][1-9]-[0-3][1-9]&#39; &gt;&gt; $mysql_checksum/$SOCK/mail
-    if [ ! -s $mysql_checksum/$SOCK/mail ];then
-        echo &quot;$SOCK no problem&quot;|mail -s &quot;port $SOCK checksum report&quot; weijing3@book.sina.com
-    else
-        cat $mysql_checksum/$SOCK/mail|mail -s &quot;port $SOCK mysql checksum report&quot; weijing3@book.sina.com
-    fi
-}
+<p>重定向状态码用来告诉浏览器客户端，它们访问的资源已被移动， Web服务器发送一个重定向状态码和一个可选的Location Header, 告诉客户端新的资源地址在哪。<br/>
+浏览器客户端会自动用Location中提供的地址，重新发送新的Request。 这个过程对用户来说是透明的。<br/>
+301和302 非常相似，  一个是永久转移，一个是临时转移。<br/><br/>
+（SEO中，搜索引擎如果碰到301， 比如网页A用301重定向到网页B，搜索引擎可以肯定网页A永久性改变地址，就会把网页B当做唯一有效目标）<br/>
+302，303，307 是一样。  这是因为302是HTTP 1.0定义的， HTTP1.1中使用303,307. 同时又保留了302.  （但在现实中，我们还是用302，我是没见过303和307）<br/>
+所以这一节， 我们只需要掌握302， 304 就可以了。</p>
 
-get_db_table_field_name
-checksum_db_table
-check_table_field
-process_report
-</code></pre>
+<table>
+<thead>
+<tr>
+<th>状态码</th>
+<th>状态消息</th>
+<th>含义</th>
+</tr>
+</thead>
 
-<h2 id="toc_4">5、脚本解读</h2>
+<tbody>
+<tr>
+<td>300</td>
+<td>Multiple Choices（多项选择）</td>
+<td>客户端请求了实际指向多个资源的URL。这个代码是和一个选项列表一起返回的，然后用户就可以选择他希望的选项了</td>
+</tr>
+<tr>
+<td>301</td>
+<td>Moved Permanently（永久移除)</td>
+<td>请求的URL已移走。Response中应该包含一个Location URL, 说明资源现在所处的位置</td>
+</tr>
+<tr>
+<td>302</td>
+<td>Found（已找到）</td>
+<td>与状态码301类似。但这里的移除是临时的。 客户端会使用Location中给出的URL，重新发送新的HTTP request</td>
+</tr>
+<tr>
+<td>303</td>
+<td>See Other（参见其他）</td>
+<td>类似302</td>
+</tr>
+<tr>
+<td>304</td>
+<td>Not Modified（未修改）</td>
+<td>客户的缓存资源是最新的， 要客户端使用缓存</td>
+</tr>
+<tr>
+<td>305</td>
+<td>Use Proxy（使用代理）</td>
+<td>必须通过代理访问资源， 代理的地址在Response 的Location中</td>
+</tr>
+<tr>
+<td>306</td>
+<td>未使用</td>
+<td>这个状态码当前没使用</td>
+</tr>
+<tr>
+<td>307</td>
+<td>Temporary Redirect（临时重定向）</td>
+<td>类似302</td>
+</tr>
+</tbody>
+</table>
 
-<p>　　每个函数基本都注释的很清楚了，process_report函数需要讲一下，脚本中把所有的信息都重定向到了report中，report的大致样子是这样的</p>
+<h3 id="toc_5">4XX客户端错误状态码</h3>
 
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers 
-# /usr/bin/perl 5.010001
-# Linux HP11012317.rb.simulation 2.6.32-431.11.2.el6.toa.2.x86_64 #1 SMP Wed Apr 9 15:55:33 CST 2014 x86_64 x86_64 x86_64 GNU/Linux 
-...此处省略n多PTDEBUG的调试信息
-OALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt;this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 1 checksum diffs on D11059841.rb.weibo.cn
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11060340.rb.db
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11059852.rb.weibo.cn
-...此处省略n多PTDEBUG的调试信息
-        TS ERRORS  DIFFS     ROWS  CHUNKS SKIPPED    TIME TABLE
-03-23T14:23:14      0      1    83350       5       0   3.983   books.bag_collection_1
-</code></pre>
-</blockquote>
+<p>有时客户端会发送一些服务器无法处理的东西，比如格式错误的Request, 或者最常见的是， 请求一个不存在的URL。</p>
 
-<p>　　首部分是从库多库少库多表少表多字段少字段的情况，然后就是pt-table-checksum的调试信息了，包含了输出信息。sed过滤所有的无用信息，保留从库多库少库多表少表多字段少字段的情况，和从库信息，以及pt-table-checksum的标准输出，如下：</p>
+<table>
+<thead>
+<tr>
+<th>状态码</th>
+<th>状态消息</th>
+<th>含义</th>
+</tr>
+</thead>
 
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers
-# pt_table_checksum:10150 15046 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 15046 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 15046 0 checksum diffs on D11060339.rb.db
-03-21T09:24:54      0      0  1042909      17       0  23.607 asd.test1
-# pt_table_checksum:10150 16227 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 16227 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 16227 0 checksum diffs on D11060339.rb.db
-03-21T09:25:23      0      1  1278316      19       0  28.421 asd.test2
-</code></pre>
-</blockquote>
+<tbody>
+<tr>
+<td>400</td>
+<td>Bad Request（坏请求）</td>
+<td>告诉客户端，它发送了一个错误的请求。</td>
+</tr>
+<tr>
+<td>401</td>
+<td>Unauthorized（未授权）</td>
+<td>需要客户端对自己认证</td>
+</tr>
+<tr>
+<td>402</td>
+<td>Payment Required（要求付款）</td>
+<td>这个状态还没被使用， 保留给将来用</td>
+</tr>
+<tr>
+<td>403</td>
+<td>Forbidden（禁止）</td>
+<td>请求被服务器拒绝了</td>
+</tr>
+<tr>
+<td>404</td>
+<td>Not Found（未找到）</td>
+<td>未找到资源</td>
+</tr>
+<tr>
+<td>405</td>
+<td>Method Not Allowed（不允许使用的方法）</td>
+<td>不支持该Request的方法。</td>
+</tr>
+<tr>
+<td>406</td>
+<td>Not Acceptable（无法接受）</td>
+<td></td>
+</tr>
+<tr>
+<td>407</td>
+<td>Proxy Authentication Required(要求进行代理认证)</td>
+<td>与状态码401类似， 用于需要进行认证的代理服务器</td>
+</tr>
+<tr>
+<td>408</td>
+<td>Request Timeout（请求超时）</td>
+<td>如果客户端完成请求时花费的时间太长， 服务器可以回送这个状态码并关闭连接</td>
+</tr>
+<tr>
+<td>409</td>
+<td>Conflict（冲突）</td>
+<td>发出的请求在资源上造成了一些冲突</td>
+</tr>
+<tr>
+<td>410</td>
+<td>Gone（消失了）</td>
+<td>服务器曾经有这个资源，现在没有了，与状态码404类似</td>
+</tr>
+<tr>
+<td>411</td>
+<td>Length Required（要求长度指示）</td>
+<td>服务器要求在Request中包含Content-Length。</td>
+</tr>
+<tr>
+<td>412</td>
+<td>Precondition Failed（先决条件失败）</td>
+<td></td>
+</tr>
+<tr>
+<td>413</td>
+<td>Request Entity Too Large（请求实体太大）</td>
+<td>客户端发送的实体主体部分比服务器能够或者希望处理的要大</td>
+</tr>
+<tr>
+<td>414</td>
+<td>Request URI Too Long（请求URI太长）</td>
+<td>客户端发送的请求所携带的URL超过了服务器能够或者希望处理的长度</td>
+</tr>
+<tr>
+<td>415</td>
+<td>Unsupported Media Type（不支持的媒体类型）</td>
+<td>服务器无法理解或不支持客户端所发送的实体的内容类型</td>
+</tr>
+<tr>
+<td>416</td>
+<td>Requested Range Not Satisfiable（所请求的范围未得到满足）</td>
+<td></td>
+</tr>
+<tr>
+<td>417</td>
+<td>Expectation Failed（无法满足期望）</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 
-<p>　　此时的信息已经可读了，使用awk截取第三个字段列非0的行，并截取该行上面n行(n是slave的数量)，得到的结果就是所有有问题的库,表,字段和记录了.</p>
+<h3 id="toc_6">5XX服务器错误状态码</h3>
 
-<h2 id="toc_5">6、操作步骤：</h2>
+<p>有时候客户端发送了一条有效Request, Web服务器自身却出错了。 可能是Web服务器运行出错了， 或者网站都挂了。  5XX就是用来描述服务器错误的。</p>
 
-<p>　　随便找一台机器，本地机器也行，将脚本部署上去，然后登陆主库执行以下命令</p>
+<table>
+<thead>
+<tr>
+<th>状态码</th>
+<th>状态消息</th>
+<th>含义</th>
+</tr>
+</thead>
 
-<blockquote>
-<pre><code class="language-text">mysql&gt; GRANT select,insert,update,delete,create,process,super,replication slave,lock tables ON *.* to &#39;checksum&#39;@&#39;脚本所在机器的ip&#39; IDENTIFIED by &#39;xxx&#39;; 
-mysql&gt; CREATE DATABASE `percona` ;
-mysql&gt; use percona;
-mysql&gt; CREATE TABLE `port_checksums` (    #这里的port要改成你的数据库的端口
-`db` char(64) NOT NULL,
-`tbl` char(64) NOT NULL,
-`chunk` int(11) NOT NULL,
-`chunk_time` float DEFAULT NULL,
-`chunk_index` varchar(200) DEFAULT NULL,
-`lower_boundary` text,
-`upper_boundary` text,
-`this_crc` char(40) NOT NULL,
-`this_cnt` int(11) NOT NULL,
-`master_crc` char(40) DEFAULT NULL,
-`master_cnt` int(11) DEFAULT NULL,
-`ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-PRIMARY KEY (`db`,`tbl`,`chunk`),
-KEY `ts_db_tbl` (`ts`,`db`,`tbl`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-mysql&gt; CREATE TABLE `port_dsns` (   #这里的port要改成你的数据库的端口
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-</code></pre>
-</blockquote>
+<tbody>
+<tr>
+<td>500</td>
+<td>Internal Server Error(内部服务器错误)</td>
+<td>服务器遇到一个错误，使其无法为请求提供服务</td>
+</tr>
+<tr>
+<td>501   Not Implemented（未实现）</td>
+<td>客户端发起的请求超出服务器的能力范围(比如，使用了服务器不支持的请求方法)时，使用此状态码。</td>
+<td></td>
+</tr>
+<tr>
+<td>502</td>
+<td>Bad Gateway（网关故障）</td>
+<td>代理使用的服务器遇到了上游的无效响应</td>
+</tr>
+<tr>
+<td>503</td>
+<td>Service Unavailable（未提供此服务）</td>
+<td>服务器目前无法为请求提供服务，但过一段时间就可以恢复服务</td>
+</tr>
+<tr>
+<td>504</td>
+<td>Gateway Timeout（网关超时）</td>
+<td>与状态吗408类似， 但是响应来自网关或代理，此网关或代理在等待另一台服务器的响应时出现了超时</td>
+</tr>
+<tr>
+<td>505   HTTP Version Not Supported（不支持的HTTP版本）</td>
+<td>服务器收到的请求使用了它不支持的HTTP协议版本。 有些服务器不支持HTTP早期的HTTP协议版本，也不支持太高的协议版本</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 
-<p>　　select,process,super是pt-table-checksum需要的权限,insert,update,delete,create,super,replication slave,lock tables是pt-table-sync需要的权限.<br/>
-主库把这些操作完毕后就可以执行脚本了，有问题会发送邮件给自己，没问题会发送no problem给自己。<br/>
-在这里创建dsns是因为该方法比较灵活，下一部分会讲到。</p>
+<h3 id="toc_7">204 No Content(没有内容)</h3>
 
-<h2 id="toc_6">7、特殊情况</h2>
+<p>返回的Response中只有一些Header和一个状态行， 没有实体的主题内容（没有response body）<br/>
+204状态码的作用在于： </p>
 
-<p>　　线上有个数据库是两小时备份一次的,一开始--recursion-method使用的processlist，表示主库自己找从库，当两小时备份库不运行的时候pt-table-checksum会等待这个两小时备份库,直到它开始备份为止,等如此长的时间显然是不行的.因此可以换--recursion-method=hosts或dsn方法<br/>
-　　对于hosts方法,在从库的配置文件中添加report_host和report_port，但不在两小时备份库的配置文件添加report_host和report_port，这样pt-table-checksum登录主库检查时show hosts slave就找不到两小时备份库，也就忽略对两小时备份库的检查了。该方法需要修改配置文件并重启从库，不推荐。<br/>
-　　对于dsn方法，在主库创建percona.port_dsns表,表中插入从库的信息,执行pt-table-checksum的时候指定dsn方法,就会去percona.port_dsns表找从库信息.可以看出这种方法灵活且不影响线上服务,是比较好的,脚本中也是使用的这个方法.<br/>
-以3306为例<br/>
-在192.168.1.1(主库)上创建dsns表，并插入以下语句（从库的信息插入进去）</p>
+<ol>
+<li>在不获取资源的情况下了解资源的情况（比如判断其类型）</li>
+<li>通过查看Response中的状态码， 看看某个对象是否存在</li>
+<li>通过查看Header, 测试资源是否被修改了。</li>
+</ol>
 
-<blockquote>
-<pre><code class="language-text">CREATE DATABASE `percona` ;
-CREATE TABLE `3306_dsns` (
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.2,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.3,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.4,P=3306,u=checksum,p=123&#39;);
-</code></pre>
-</blockquote>
+<p>实例：先打开Fiddler, 然后启动浏览器访问ditu.google.cn,  你会捕获到很多204</p>
 
-<p>　　在主库或10191上执行pt-table-checksum --user=checksum --password=123 --host=192.168.1.1 --port=3306 --databases=asd --tables=user1 --empty-replicate-table --replicate=percona.checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=3306_dsns即可</p>
+<h3 id="toc_8">206 Partial Content(部分内容)</h3>
 
-<h2 id="toc_7">8、使用pt-table-checksum可能的报错：</h2>
+<p>206状态码代表服务器已经成功处理了部分GET请求（只有发送GET 方法的request, web服务器才可能返回206），<br/>
+应用场景：</p>
 
-<p>1、mysql table is marked as crashed<br/>
-表损坏，使用以下命令修复</p>
+<ol>
+<li>FlashGet, 迅雷或者HTTP下载工具都是使用206状态码来实现断点续传</li>
+<li>将以个大文档分解为多个下载段同时下载 比如，在线看视频</li>
+</ol>
 
-<blockquote>
-<pre><code class="language-text">mysql&gt; myisamchk -r $TABLE_NAME
-mysql&gt; myisamchk -r -v -f $TABLE_NAME
-</code></pre>
-</blockquote>
+<p>实例：　一些流媒体技术比如在线视频，可以边看边下载。　就是使用206来实现的。<br/>
+打开Fiddler， 然后用浏览器打开“搜狐视频中的绿箭侠” <a href="http://tv.sohu.com/20121011/n354681393.shtml">http://tv.sohu.com/20121011/n354681393.shtml</a> 然后你在Fiddler中就能看到一堆的206</p>
 
-<p>2、no slaves were found<br/>
-主库找不到从库，一般用dsn方法不会有这个情况，除非在主库的percona.portdsn插入从库信息有误<br/>
-3、03-23T15:16:40 Skipping chunk 1 of asd.user1 because it is oversized.  The current chunk size limit is 2000 rows (chunk size=1000 * chunk size limit=2.0), but MySQL estimates that there are 2008 rows in the chunk.<br/>
-这种情况是分的块太大了，设置--chunk-size-limit<br/>
-4、03-21T12:16:08 Error checksumming table asd.user1: Possible infinite loop detected!  The lower boundary for chunk 1 is <1> and the lower boundary for chunk 2 is also <1>.  This usually happens when using a non-unique single column index.  The current chunk index for table asd.user1 is idx_bid which is not unique and covers 1 column.<br/>
-没有唯一索引</p>
+<ol>
+<li>浏览器发送一个Get 方法的request.  header中包含 Range: bytes=5303296-5336063. (意思就是请求得到5303296-5336063这个范围的数据)。</li>
+<li>Web服务器返回一个206 的Response. header中包含Content-Range: bytes 5303296-5336063/12129376(表明这次返回的内容范围)</li>
+</ol>
+
+<h3 id="toc_9">301 Moved Permanently（永久移除)</h3>
+
+<p>请求的URL已移走。Response中应该包含一个Location URL, 说明资源现在所处的位置例如：  </p>
+
+<ol>
+<li>浏览器客户端访问 <a href="http://map.google.cn">http://map.google.cn</a></li>
+<li>Web服务器返回Response 301，Location=<a href="http://titu.google.cn">http://titu.google.cn</a>  （告诉客户端我们的资源位于这里， ）</li>
+<li>浏览器客户端会自动再发送一个Request 去访问<a href="http://titu.google.cn">http://titu.google.cn</a></li>
+</ol>
+
+<h3 id="toc_10">400 Bad Request（坏请求)</h3>
+
+<p>发送的Request中的数据有错误(比如：表单有错误，Cookie有错误)，  这个我们也经常见到。 <br/>
+实例： 还没想到， 想到了再贴个实例上来。</p>
+
+<h3 id="toc_11">403 Forbidden(禁止)</h3>
+
+<p>Web客户端发送的请求被Web服务器拒绝了， 如果服务器想说明为什么拒绝请求，可以包含实体的主体部分来对原因进行描述。但这个状态码通常是服务器不想说明拒绝原因。<br/>
+访问下面的URL， 会被服务器拒绝. 并且返回403状态码<br/>
+<a href="http://t2.baidu.com/it/u=1791561788,200960144&amp;fm=0&amp;gp=0.jpg">http://t2.baidu.com/it/u=1791561788,200960144&amp;fm=0&amp;gp=0.jpg</a></p>
+
+<h3 id="toc_12">404 Page not Found (请求的资源不存在)</h3>
+
+<p>这个大家都懂的， 值得一提的是腾讯把404页面做成了“寻找被拐儿童”</p>
+
+<h3 id="toc_13">405 Method Not Allowed(不允许使用的方法)</h3>
+
+<p>405是指Web服务器不支持Request中的方法。<br/>
+我个人认为状态码405Method Not Allowed和501 Not Implemented 是一样的意思。都是不支持Request的方法。 （目前我还不知道这两个的区别）<br/>
+实例:  发送一个是trace方法的Request 给www.google.com</p>
+
+<h3 id="toc_14">411 Length Required（要求长度指示）</h3>
+
+<p>服务器要求在Request中包含Content-Length。<br/>
+当浏览器使用Post方法，发送数据给Web服务器时， 必须要有Content-Length。这样Web服务器才知道你要发送多少数据，否则Web服务器会返回411状态码<br/>
+实例： 发送一个Post方法的Request 给www.google.com.   Request中没有Content-Length</p>
+
+<h3 id="toc_15">413 Request Entity Too Large（请求实体太大）</h3>
+
+<p>作用：客户端发送的实体主体部分比服务器能够或者希望处理的要大。  一般情况下我们看不到这个状态码。 因为浏览器不会发送太大的数据给网站，但是机器人可能会。<br/>
+实例: 用post方法发送一个大文件(100MB以上)给www.google.com</p>
+
+<h3 id="toc_16">414 Request URI Too Long(请求URI太长)</h3>
+
+<p>就是说Request URI太长， 一般浏览器本身对URI的长度就会有限制，所以不会发送URI很长的Request. 我们平常是根本看不到414错误的。 但是机器人可以发送很长URI。<br/>
+例如：我们用Fiddler Composer发送一个很长的URI给Google, 比如 &quot;<a href="http://www.google.com?q=asdfasdasf..">www.google.com?q=asdfasdasf..</a>&quot;  q=后面的参数很长。 就可以看到414了</p>
+
+<h3 id="toc_17">500 Internal Server Error(内部服务器错误)</h3>
+
+<p>这个太常见了， 我们开发网站的时候，当我们的程序出错了时，就会返回500错误。<br/>
+实例：ASP.NET 程序出错</p>
+
+<h3 id="toc_18">501 Not Implemented(未实现)</h3>
+
+<p>客户端发起的请求超出服务器的能力范围(比如，使用了服务器不支持的请求方法)时，使用此状态码）。  一般的Web服务器只支持GET和POST方法。<br/>
+实例： 使用Fiddler Composer 给www.qq.com,  发送一个OPTIONS 方法的Request.   服务器就能返回501了。</p>
+
+<h3 id="toc_19">502 Bad Gateway（网关故障）</h3>
+
+<p>代理使用的服务器遇到了上游的无效响应。<br/><br/>
+Fiddler本身就是代理服务器。  当我们访问www.facebook.com，这网站被我们天朝屏蔽了。 所以我们可以得到502</p>
+
+<h3 id="toc_20">505 HTTP Version Not Supported(不支持的HTTP版本)</h3>
+
+<p>表示Web服务器不支持此HTTP协议的版本。<br/><br/>
+众所周知我们现在使用的HTTP协议版本是HTTP/1.1， 如果我们发送一个HTTP/2.0 的request 给博客园， 博客园肯定不能支持HTTP/2.0，所以会返回505 </p>
 
 
 </div>
@@ -674,15 +810,15 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
   <div class="large-6 columns">
 	<div class="text-left" style="padding:15px 0px;">
 		
-	        <a href="megacli%20%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.html"  title="Previous Post: megacli 常用命令">&laquo; megacli 常用命令</a>
+	        <a href="HTTP%E5%8D%8F%E8%AE%AE%20(%E4%B8%83)%20Cookie.html"  title="Previous Post: HTTP协议 (七) Cookie">&laquo; HTTP协议 (七) Cookie</a>
 	    
 	</div>
   </div>
   <div class="large-6 columns">
 	<div class="text-right" style="padding:15px 0px;">
 		
-	        <a href="dns%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3.html" 
-	        title="Next Post: dns服务器报错解决">dns服务器报错解决 &raquo;</a>
+	        <a href="HTTP%E5%8D%8F%E8%AE%AE%20(%E4%BA%94)%20%E4%BB%A3%E7%90%86.html" 
+	        title="Next Post: HTTP协议 (五) 代理">HTTP协议 (五) 代理 &raquo;</a>
 	    
 	</div>
   </div>
@@ -695,7 +831,7 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
 </div>
 <script type="text/javascript">
 	$(function(){
-		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1mysql%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
+		var currentURL = 'HTTP%E5%8D%8F%E8%AE%AE%20(%E5%85%AD)%20%E7%8A%B6%E6%80%81%E7%A0%81%E8%AF%A6%E8%A7%A3.html';
 		$('#side-nav a').each(function(){
 			if($(this).attr('href') == currentURL){
 				$(this).parent().addClass('active');

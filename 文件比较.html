@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  记一次mysql主从一致校验走过的坑 - 小菜鸡儿
+  文件比较 - 小菜鸡儿
   
   </title>
  <meta name="description" content="">
@@ -382,287 +382,634 @@
             <div class="large-9 medium-9 columns">
 
  <div class="markdown-body">
-<h1>记一次mysql主从一致校验走过的坑</h1>
+<h1>文件比较</h1>
 
-<p>前言：<br/>
-　　最近一台db master宕机，立刻迁到了一台从库上。这次的宕机在恢复后我做了主从一致校验，发现有部分数据不一致，细细想想还是挺可怕的，万一数据不一致的很多，主库挂了，切从库，那后果简直不敢想象。。。<br/>
-　　因此主从一致校验是必要的，但是这个东西比较费时，因此一般来说没有出故障一周校验一次即可。本来准备自己写个校验脚本后来发现要考虑的问题太多，于是发现pt-table-checksum这个神器，踩坑之旅开始。<br/>
-　　先说一下生产环境，目前所有的端口都是一主多从的架构，因为对读的要求高，主从分离，多从库有利于读。</p>
+<h4 id="toc_0">1.按行将文本文件内容打印到屏幕</h4>
 
-<h2 id="toc_0">1、可能情况：</h2>
+<p>任务描述：</p>
 
-<p>若发现主从数据不一致可能有以下原因导致：<br/>
-①原来的主库down机，将从库升为主库期间导致数据丢失，从而发生数据不一致<br/>
-②误在从库上操作了<br/>
-③负载过大导致复制线程资源不足<br/>
-对于主从不一致无非以下三种：<br/>
-主库数据多余从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据少于从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据量和从库一样，但是数据有差异(记录条数相同，但是记录内容有偏差)</p>
+<ul>
+<li>按行读取文本文件内容并输出到新的文件中</li>
+<li>命令行中以文件名做输入参数</li>
+</ul>
 
-<h2 id="toc_1">2、工具选用：</h2>
+<p>相关知识：</p>
 
-<p>　　一开始是想自己写个主从检查脚本的，大致用select count(1) from db.table，后来发现写出来的不严谨，只能检查数据量是否一致万一数据不一致就无法检测出来，而且太耗费系统资源不可取。后来发现有现成的工具pt-table-checksum。它的大体执行流程是:<br/>
-<strong><em>登录主库-&gt;根据唯一索引将表分块(没有唯一索引会报错)-&gt;对块校验-&gt;将校验结果默认写入percona.checksums表-&gt;比较percona.checksums中master db和slave db不一致的值，输出</em></strong>。<br/>
-　　pt-table-checksum默认主从的数据库和表结构一致，若从库的表结构与主库不一致，会导致主从复制中断。同时pt-table-checksum要求复制是基于STATEMENT格式的，它在运行时会在主库上设置binlog_format=STATEMENT(需要super权限)，但是由于MySQL的限制，这一设置并不会传递到从库，因此当从库的binlog格式是ROW格式时，无法直接对从库进行校验。</p>
+<ul>
+<li>FILE *fopen(const char *path, const char *mode)：打开一个文件，返回指向FILE结构体的指针</li>
+<li>ssize_t getline(char **lineptr, size_t *n, FILE *stream)：从文件流中读取一行字符串，并将字符串的地址存储到lineptr指向的指针中。返回的字符串以空字符&#39;\0&#39;结尾，同时包含换行符。参数n表示一次最多能读的字符数。</li>
+</ul>
 
-<h2 id="toc_2">3、大致思路：</h2>
+<p>　　　如果在调用getline之前，设置了*lineptr为NULL，*n被设置为0，那么getline将会分配一个缓冲区来存储读取的一行字符串。则会个缓冲区应当由用户程序进行释放。释放时通过调用free函数进行。</p>
 
-<p>　　上面说了pt-table-checksum默认主从的数据库和表结构一致，对于主从某些库、表、字段不一致(这里的不一致主要指的是多了或者少了)，它无法检测出来。<br/>
-下面是四种情况的输出:<br/>
-从库少asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907089990574.jpg" alt=""/><br/>
-从库多asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090229580.jpg" alt=""/><br/>
-从库少user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090362061.jpg" alt=""/><br/>
-从库多user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090454889.jpg" alt=""/><br/>
-　　可以看出在主库不存在某个库某个表的情况下，使用pt-table-checksum检测从库是不会有任何报错信息的，但其实从库是多了库/表的。<br/>
-　　因此在使用pt-table-checksum检测前需要先检测主从的库、表以及字段是否一致(是否多库多表少库少表多字段少字段)。有多/少的记录到一个文件report中，然后以主库为的数据库、表为依据，依次遍历，使用pt-table-checksum检查从库上相应的数据库和表，将结果追加到report中。最后对report做处理，发送给自己邮箱。</p>
+<p>main.c:</p>
 
-<h2 id="toc_3">4、操作脚本</h2>
-
-<pre><code class="language-text">#!/bin/bash
-#set -x
-
-PASSWORD=       #登录用户的密码
-SOCK=               #端口
-#SLAVE=()
-SLAVE=()            #从库ip(有几个写几个，注意是一个数组，用空格隔开)
-MASTER=         #主库ip
-
-#连接语句
-MYSQL_CONN=&quot;mysql -uchecksum -p$PASSWORD&quot;
-
-#存放产生临时文件的文件夹
-mysql_checksum=/tmp/mysql_checksum      
-#获取主库和从库的数据库、表
-get_db_table_field_name() {
-    if [ -d $mysql_checksum/$SOCK ];then
-        rm -r $mysql_checksum/$SOCK
-    fi
-    mkdir -p $mysql_checksum/$SOCK
-    echo &quot;#########start get port $SOCK master db #########&quot;
-    #获取主库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db
-    #获取上一步中的数据库中的表名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table
-    done
-    #获取上一步中得到的表中的字段名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table`;do
-        $MYSQL_CONN -P ${SOCK} -h $MASTER -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field
-        done
-    done
-    #获取从库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    echo &quot;#########start get port $SOCK slave db #########&quot;
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db
-        #获取上一步中的数据库中的表名     for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table
-        done
-        #获取上一步中得到的表中的字段名
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table`;do
-                $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-            done
-        done
-    done
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+int main(int argc,char *argv[]){
+    FILE *fp;
+    char *line=NULL;
+    size_t len=0;
+    ssize_t read;
+    if(argc!=2){
+        perror(&quot;argc error\n&quot;);
+        exit(1);
+      }
+    fp=fopen(argv[1],&quot;r&quot;);
+    if(fp==NULL){
+        perror(&quot;fopen error\n&quot;);
+        exit(EXIT_FAILURE);
+    }
+    while((read=getline(&amp;line,&amp;len,fp))!=-1)
+        printf(&quot;%s&quot;,line);
+    free(line);
+    fclose(fp);
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#检查从库是否多库少库多表少表多字段少字段
-checksum_db_table() {
-    if [ -e $mysql_checksum/$SOCK/report ];then
-        rm $mysql_checksum/$SOCK/report
-    fi
-    #将主库的数据库名排序
-    cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort
+<h4 id="toc_1">2.字符串数组练习</h4>
 
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        #将从库的数据库名排序
-        cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort
-        #comm命令检测从库是多还是少库，注意comm后面跟的两个文件顺序不能错
-        slave_surplus_db=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        slave_lack_db=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        if [ ! -z &quot;$slave_surplus_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} surplus database $slave_surplus_db&quot; | tee -a $mysql_checksum/$SOCK/report 
-        fi
-        if [ ! -z &quot;$slave_lack_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} lack database $slave_lack_db&quot; &gt;&gt; $mysql_checksum/$SOCK/report
-        fi
-        #库检查完了，就以主库包含的库为基准，comm命令检测从库是多还是少表，同样comm后面跟的两个文件顺序不能错
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-            cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table| sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort
-            cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table |sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort
-            slave_surplus_table=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            slave_lack_table=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            if [ ! -z &quot;$slave_surplus_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} surplus table $slave_surplus_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-            if [ ! -z &quot;$slave_lack_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} lack table ${DB}.$slave_lack_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-        #表检查完了，就以主库包含的表为基准，diff命令检测从库是多还是少字段，diff后面的文件顺序无所谓
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-                diff $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-                if [ $? -ne 0 ];then
-                    echo &quot;port $SOCK slave ${SLAVE[$j]} have different field in ${DB}.${TABLE}&quot; |tee -a $mysql_checksum/$SOCK/report
-                fi
-            done
-        done
-    done
+<p>任务描述：</p>
+
+<ul>
+<li>使用二维数组创建字符串数组，把输入的多个字符串存储到字符串数组中，最后打印输出字符串数组</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#define N 20
+int main(void){
+    char str[N][N];int a,i;
+    printf(&quot;please input your string number\n&quot;);
+    scanf(&quot;%d\n&quot;,&amp;a);
+    for(i=0;i&lt;a;i++)
+        scanf(&quot;%s&quot;,str[i]);
+    printf(&quot;your input string is \n&quot;);
+    for(i=0;i&lt;a;i++)
+        printf(&quot;%s\n&quot;,str[i]);
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#以主库有的库和表为基准，检测从库的记录是否与主库一致
-check_table_field() {
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-            echo &quot;#########port ${SOCK} database ${DB} table ${TABLE}&quot;
-            PTDEBUG=1 pt-table-checksum --user=checksum --password=$PASSWORD --host=$MASTER --port=${SOCK} --databases=$DB --tables=$TABLE --empty-replicate-table --replicate=percona.${SOCK}_checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=${SOCK}_dsns &gt;&gt; $mysql_checksum/$SOCK/report 2&gt;&amp;1
-        done
-    done
+<h4 id="toc_2">3.字符串数组</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>从键盘输入多个字符串，使用malloc函数创建字符串数组，把输入的多个字符串存储到字符串数组中，最后打印输出字符串数组</li>
+</ul>
+
+<p>相关知识：</p>
+
+<ul>
+<li><p>void *malloc(size_t size)：分配了size个字节，并返回了指向这块内存的指针</p></li>
+<li><p>指向指针的指针</p></li>
+</ul>
+
+<p>　　　如果一个指针变量的类型是“指向指针的指针”，那么这个指针变量对应的内存中存储的是一个指针值，这个指针值指向的内存中存储的也是一个指针。<br/>
+　　　比如：char ** lines = (char *<em>)malloc(3</em>sizeof(char*)).那么在内存里面lines的表示为：<br/>
+<img src="media/15033218983068/15033219273944.jpg" alt=""/><br/>
+　　　用malloc分配一个内存空间，包含3个指向字符的指针，返回一个指向内存空间首地址的指针lines，该指针类型就是指向指针的指针</p>
+
+<ul>
+<li>void free(void *ptr)：释放ptr指向的存储空间</li>
+</ul>
+
+<p>　　　被释放的空间通常被送入可用存储区池，以后可在调用malloc、realloc以及calloc函数来再分配。使用malloc分配的内存，需要自己调用free函数进行内存释放，否则，会造成内存泄漏的情况。</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#define SIZE 20
+int main(void){
+    char **strArray=NULL;
+    char buf[SIZE];
+    int i,strNum;
+    printf(&quot;please input number\n&quot;);
+    scanf(&quot;%d&quot;,&amp;strNum);
+    strArray=(char **)malloc(strNum*sizeof(char *));
+    for(i=0;i&lt;strNum;i++){
+        strArray[i]=(char *)malloc(SIZE*sizeof(char));
+        memset(buf,&#39;\0&#39;,sizeof(buf));
+        scanf(&quot;%s&quot;,buf);
+        strcpy(strArray[i],buf);
+    }
+    printf(&quot;your input string is\n&quot;);
+    for(i=0;i&lt;strNum;i++){
+        printf(&quot;%s\n&quot;,strArray[i]);
+        free(strArray[i]);
+    }
+    free(strArray);
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#将生成的report进行处理
-process_report() {
-    sed -i -ne &#39;/^port/p&#39; -ne &#39;/checksum diffs/p&#39; -ne &#39;/^[0-1][1-9]-[0-3][1-9]/p&#39; $mysql_checksum/$SOCK/report
-    grep &quot;^port&quot; $mysql_checksum/$SOCK/report &gt; $mysql_checksum/$SOCK/mail
-    awk &#39;$3!=0&#39; $mysql_checksum/$SOCK/report |egrep -B ${#SLAVE[@]} &#39;^[0-1][1-9]-[0-3][1-9]&#39; &gt;&gt; $mysql_checksum/$SOCK/mail
-    if [ ! -s $mysql_checksum/$SOCK/mail ];then
-        echo &quot;$SOCK no problem&quot;|mail -s &quot;port $SOCK checksum report&quot; weijing3@book.sina.com
+<h4 id="toc_3">4.使用qsort库函数对整数数组由小到大进行排序</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>由终端输入n行，每行包含一个整数。对这n个整数进行由小到大的排序，然后输出排序后的整数</li>
+</ul>
+
+<p>相关知识：</p>
+
+<ul>
+<li>void qsort(void <em>base,int nelem,int width,int (</em>fcmp)(const void *,const void *))：</li>
+</ul>
+
+<p>　　　　参数：<br/>
+　　　　base: 待排序数组首地址<br/>
+　　　　nelem：数组中待排序元素数量<br/>
+　　　　width：数组元素的大小<br/>
+　　　　fcmp: 函数指针，用于比较数组中两个元素的大小，确定两个元素的先后顺序。这个函数需要自己定义,qsort在执行的过程中，会调用这个函数，来比较两个元素的大小，据此，确定两个元素的先后顺序</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#define N 50
+int sort_function( const void *a, const void *b);
+int main(void){
+    int a,i,n;int num[N];
+    printf(&quot;please input number\n&quot;);
+    scanf(&quot;%d&quot;,&amp;a);
+    printf(&quot;before sorting the number is:\n&quot;);
+    for(i=0;i&lt;a;i++)
+        scanf(&quot;%d&quot;,&amp;num[i]);
+    //n=strlen(num);
+    for(i+0;i&lt;a;i++)
+        printf(&quot;%d\n&quot;,num[i]);
+    qsort((void *)num,a,sizeof(int),sort_function);
+    printf(&quot;after sorting the number is:\n&quot;);
+    for(i=0;i&lt;a;i++)
+        printf(&quot;%d\n&quot;,num[i]);
+    return 0;
+}
+int sort_function( const void *a, const void *b){
+    return(*(int*)a-*(int*)b);
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_4">5.对文本文件各行字符串排序并打印</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>对一个文本文件的各行字符串按照字母表顺序进行排序，并打印输出排序后的各行字符串</li>
+<li>命令行中以文本文件名做输入参数，打印各行排序后的结果</li>
+<li>字母表顺序</li>
+</ul>
+
+<p>按照字母ASCII码的大小进行的排序。从左到右依次比较每个位置上字母的ASCII码大小。如果有不同的字母，则可以确定两个字符串的顺序。如果一个字符串是另一个字符串的子集，则长度较短的字符串排在长度较长的字符串的前面。26个英文字母的ASCII码从小到大依次增长。<br/>
+比如：“a” &lt; “b”, “abca” &lt; “abdd”, “abc” &lt; “abcd”</p>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#define N 50
+int sort_function(const void *a, const void *b);
+int main(int argc,char *argv[]){
+    FILE *fp;
+    char *line=NULL;
+    size_t len=0;
+    ssize_t read;
+    char buf[N][N];
+    int i=0,a=0,b=0;
+    if(argc!=2){
+        perror(&quot;argc error\n&quot;);
+        exit(1);
+    }
+    fp=fopen(argv[1],&quot;r&quot;);
+    if(fp==NULL){
+        perror(&quot;argv error\n&quot;);
+        exit(1);
+    }
+    printf(&quot;before sorting the string is:\n&quot;);
+    while((read=getline(&amp;line,&amp;len,fp))!=-1){
+        strcpy(buf[i],line);
+        printf(&quot;%s&quot;,line);
+        i++;
+    } 
+    qsort(buf,i,sizeof(buf[0]),sort_function);
+    printf(&quot;after sorting the string is:\n&quot;);
+    for(a=0;a&lt;i;a++)
+        printf(&quot;%s&quot;,buf[a]);
+    free(line);
+    return 0;
+}
+int sort_function(const void *a, const void *b){
+    char *str1 = (char *)a;
+    char *str2 = (char *)b;
+    return strcmp(str1,str2);
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_5">6.删除文本文件重复的行，并将结果保存到新的文件中</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>对重复的行只保留，新文件中的文本行按照字母表顺序排列，保持原文件内容不变</li>
+<li>命令行以原文件名和文件名做参数，结果保存在新文件中。</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#define N 50
+int sort_function(const void *a, const void *b);
+int main(int argc,char *argv[]){
+    FILE *fp1,*fp2;
+    char *line=NULL;
+    size_t len=0;  
+    ssize_t read;
+    char buf[N][N];
+    int i=0,a=0,b=0;
+    if(argc!=3){
+        perror(&quot;argc error\n&quot;);
+        exit(1);
+    }
+    fp1=fopen(argv[1],&quot;r&quot;);
+    if(fp1==NULL){
+        perror(&quot;argv1 error\n&quot;);
+        exit(1);
+    }
+    fp2=fopen(argv[2],&quot;w&quot;);
+    if(fp2==NULL){
+        perror(&quot;argv2 error\n&quot;);
+        exit(1);
+    }
+    while((read=getline(&amp;line,&amp;len,fp1))!=-1){
+        strcpy(buf[i],line);
+        i++;
+    }
+    fwrite(buf[0],1,strlen(buf[0]),fp2);
+    //a=i;
+    for(a=1;a&lt;i;a++){
+        if(strcmp(buf[a],buf[a-1])==0)
+            continue;
+        else
+            fwrite(buf[a],1,strlen(buf[a]),fp2);
+    }
+    free(line);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_6">7.求两个已按字母表顺序排好序且没有重复行的文本文件的并集</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>求两个已按字母表顺序排好序且没有重复行的文本文件的并集，并将结果写入到新文件中</li>
+<li>新文件也要求是按字母表顺序排好序的，且没有重复行的</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#define N 50
+int sort_function( const void *a, const void *b);
+int main(int argc,char *argv[]){
+    FILE *fp1,*fp2,*fp3;
+    char *line1=NULL,*line2=NULL;
+    size_t len1=0,len2=0;   ssize_t read;
+    int i=0,cmprel,num1,num2;
+    if(argc!=3){
+        perror(&quot;argc error\n&quot;);
+        exit(1);
+    }
+    fp1=fopen(argv[1],&quot;r&quot;);
+    if(fp1==NULL){
+        perror(&quot;argv1 error\n&quot;);
+        exit(1);
+    }
+    fp2=fopen(argv[2],&quot;r&quot;);
+    if(fp2==NULL){
+        perror(&quot;argv2 error\n&quot;);
+        exit(1);
+    }
+    fp3=fopen(&quot;bingji&quot;,&quot;w&quot;);
+    if(fp3==NULL){
+        perror(&quot;argv3 error\n&quot;);
+        exit(1);
+    }
+    num1=getline(&amp;line1,&amp;len1,fp1);
+    num2=getline(&amp;line2,&amp;len2,fp2);
+    while(num1!=-1&amp;&amp;num2!=-1){
+        cmprel=strcmp(line1,line2);
+        if(cmprel&lt;0){
+            fwrite(line1,1,strlen(line1),fp3);
+            num1=getline(&amp;line1,&amp;len1,fp1);
+        }else if(cmprel&gt;0){
+            fwrite(line2,1,strlen(line2),fp3);
+            num2=getline(&amp;line2,&amp;len2,fp2);
+        }else{
+            fwrite(line1,1,strlen(line1),fp3);
+            num1=getline(&amp;line1,&amp;len1,fp1);
+            num2=getline(&amp;line2,&amp;len2,fp2);
+        }
+    }
+    while(num1!=-1){
+        fwrite(line1,1,strlen(line1),fp3);
+        num1=getline(&amp;line1,&amp;len1,fp1);
+    }   
+    while(num2!=-1){
+        fwrite(line2,1,strlen(line2),fp3);
+        num2=getline(&amp;line2,&amp;len2,fp2);
+    }
+    free(line1);free(line2);
+    fclose(fp1);fclose(fp2);fclose(fp3);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>8、求两个已按字母表顺序排好序且没有重复行的文本文件的交集<br/>
+任务描述：</p>
+
+<ul>
+<li>求两个已按字母表顺序排好序且没有重复行的文本文件的交集，并将结果写入到新文件中</li>
+<li>新文件也要求是按字母表顺序排好序的，且没有重复行的</li>
+</ul>
+
+<p>相关知识：</p>
+
+<ul>
+<li>使用getline函数读取文本文件中的文本行</li>
+<li>使用malloc函数分配内存空间存储文本文件中的内容</li>
+<li>先利用最长公共子序列算法来求出两个文本文件的最长公共子序列。其中最长公共子序列中的每个元素都是文本文件中的一行文本</li>
+<li>这个最长公共子序列就是两个文件的交集</li>
+</ul>
+
+<p>main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#define N 50
+int sort_function( const void *a, const void *b);
+int main(int argc,char *argv[]){
+    FILE *fp1,*fp2,*fp3;
+    char *line1=NULL,*line2=NULL;
+    size_t len1=0,len2=0;   ssize_t read;
+    int i=0,cmprel,num1,num2;
+    if(argc!=3){
+        perror(&quot;argc error\n&quot;);
+        exit(1);
+    }
+    fp1=fopen(argv[1],&quot;r&quot;);
+    if(fp1==NULL){
+        perror(&quot;argv1 error\n&quot;);
+        exit(1);
+    }
+    fp2=fopen(argv[2],&quot;r&quot;);
+    if(fp2==NULL){
+        perror(&quot;argv2 error\n&quot;);
+        exit(1);
+    }
+    fp3=fopen(&quot;jiaoji&quot;,&quot;w&quot;);
+    if(fp3==NULL){
+        perror(&quot;argv3 error\n&quot;);
+        exit(1);
+    }
+    num1=getline(&amp;line1,&amp;len1,fp1);
+    num2=getline(&amp;line2,&amp;len2,fp2);
+    while(num1!=-1&amp;&amp;num2!=-1){
+        cmprel=strcmp(line1,line2);
+        if(cmprel&lt;0)
+            num1=getline(&amp;line1,&amp;len1,fp1);
+        else if(cmprel&gt;0)
+            num2=getline(&amp;line2,&amp;len2,fp2);
+        else{
+            fwrite(line1,1,strlen(line1),fp3);
+            num1=getline(&amp;line1,&amp;len1,fp1);
+            num2=getline(&amp;line2,&amp;len2,fp2);
+        }
+    }
+    while(num1!=-1)
+        num1=getline(&amp;line1,&amp;len1,fp1); 
+    while(num2!=-1)
+        num2=getline(&amp;line2,&amp;len2,fp2);
+    free(line1);free(line2);
+    fclose(fp1);fclose(fp2);fclose(fp3); 
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<h4 id="toc_7">9.求两个已按字母表顺序排好序且没有重复行的文本文件的差集</h4>
+
+<p>相关知识：</p>
+
+<ul>
+<li>使用getline函数读取文本文件中的文本行</li>
+<li>使用malloc函数分配内存空间存储文本文件中的内容</li>
+<li>先利用最长公共子序列算法来求出两个文本文件的最长公共子序列。其中最长公共子序列中的每个元素都是文本文件中的一行文本。</li>
+<li>这个最长公共子序列就是两个文件的交集。</li>
+<li>根据这个交集，从第二个文件中输出和交集中元素不同的文本行，从而就可以求出第二个文件与第一个文件的差集。</li>
+<li>公共最长子序列</li>
+</ul>
+
+<p>　　什么是最长公共子序列呢?好比一个数列 S，如果分别是两个或多个已知数列的子序列，且是所有符合此条件序列中最长的，则S 称为已知序列的最长公共子序列。举个例子，如：有两条随机序列，如 1 3 4 5 5 ，and 2 4 5 5 7 6，则它们的最长公共子序列便是：4 5 5。<br/>
+　　注意最长公共子串（Longest CommonSubstring）和最长公共子序列（LongestCommon Subsequence, LCS）的区别：子串（Substring）是串的一个连续的部分，子序列（Subsequence）则是从不改变序列的顺序，而从序列中去掉任意的元素而获得的新序列；更简略地说，前者（子串）的字符的位置必须连续，后者（子序列LCS）则不必。比如字符串acdfg同akdfc的最长公共子串为df，而他们的最长公共子序列是adf。LCS可以使用动态规划法解决。下文具体描述。事实上，最长公共子序列问题也有最优子结构性质，可以考虑用动态规划算法来计算。用c[i,j]记录序列Xi和Yj的最长公共子序列的长度。其中Xi= &lt; x1, x2, …, xi&gt;，Yj=&lt; y1, y2, …, yj &gt;。当i=0或j=0时，空序列是Xi和Yj的最长公共子序列，故c[i,j]=0。其他情况下，由定理可建立递归关系如下：<br/>
+<img src="media/15033218983068/15033219651248.jpg" alt=""/><br/>
+　　计算最长公共子序列长度的动态规划算法LCS_LENGTH(X,Y)以序列X=&lt; x1, x2, …, xm &gt;和Y=&lt; y1, y2, …, yn &gt;作为输入。输出两个数组c[0..m ,0..n]和b[1..m ,1..n]。其中c[i,j]存储Xi与Yj的最长公共子序列的长度，b[i,j]记录指示c[i,j]的值是由哪一个子问题的解达到的，这在构造最长公共子序列时要用到。最后，X和Y的最长公共子序列的长度记录于c[m,n]中。<br/>
+main.c:</p>
+
+<blockquote>
+<pre><code class="language-text">Procedure LCS_LENGTH(X,Y);  
+begin  
+  m:=length[X];  
+  n:=length[Y];  
+  for i:=1 to m do c[i,0]:=0;  
+  for j:=1 to n do c[0,j]:=0;  
+  for i:=1 to m do  
+    for j:=1 to n do  
+      if x[i]=y[j] then  
+        begin  
+            c[i,j]:=c[i-1,j-1]+1;  
+            b[i,j]:=&quot;↖&quot;;  
+        end  
+    else if c[i-1,j]≥c[i,j-1] then  
+        begin  
+            c[i,j]:=c[i-1,j];  
+            b[i,j]:=&quot;↑&quot;;  
+        end  
+    else  
+        begin  
+            c[i,j]:=c[i,j-1];  
+            b[i,j]:=&quot;←&quot;  
+        end;  
+    return(c,b);  
+end;    
+</code></pre>
+
+<p>　<br/>
+　　由算法LCS_LENGTH计算得到的数组b可用于快速构造序列X=&lt; x1, x2, …, xm &gt;和Y=&lt; y1, y2, …, yn &gt;的最长公共子序列。首先从b[m,n]开始，沿着其中的箭头所指的方向在数组b中搜索。<br/>
+　　当b[i,j]中遇到&quot;↖&quot;时（意味着xi=yi是LCS的一个元素），表示Xi与Yj的最长公共子序列是由Xi-1与Yj-1的最长公共子序列在尾部加上xi得到的子序列；<br/>
+　　当b[i,j]中遇到&quot;↑&quot;时，表示Xi与Yj的最长公共子序列和Xi-1与Yj的最长公共子序列相同；<br/>
+　　当b[i,j]中遇到&quot;←&quot;时，表示Xi与Yj的最长公共子序列和Xi与Yj-1的最长公共子序列相同。<br/>
+　　下面的算法LCS(b,X,i,j)实现根据b的内容打印出Xi与Yj的最长公共子序列。通过算法的调用LCS(b,X,length[X],length[Y])，便可打印出序列X和Y的最长公共子序列。</p>
+
+<pre><code class="language-text">Procedure LCS(b,X,i,j);  
+begin  
+    if i=0 or j=0 then return;  
+    if b[i,j]=&quot;↖&quot; then  
+        begin  
+            LCS(b,X,i-1,j-1);  
+            print(x[i]); {打印x[i]}  
+        end  
+    else if b[i,j]=&quot;↑&quot; then LCS(b,X,i-1,j)   
+                  else LCS(b,X,i,j-1);  
+end;
+</code></pre>
+</blockquote>
+
+<p>　　在算法LCS中，每一次的递归调用使i或j减1，因此算法的计算时间为O(m+n)。例如，设所给的两个序列为X=&lt; A，B，C，B，D，A，B &gt;和Y=&lt; B，D，C，A，B，A &gt;。由算法LCS_LENGTH和LCS计算出的结果如下图所示：<br/>
+<img src="media/15033218983068/15033219740002.jpg" alt=""/></p>
+
+<p>示例代码:</p>
+
+<blockquote>
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#define MAXLEN 100
+void LCSLength(char *x, char *y, int m, int n, int c[][MAXLEN], int b[][MAXLEN]){
+    int i, j;
+    for(i = 0; i &lt;= m; i++)
+        c[i][0] = 0;
+    for(j = 1; j &lt;= n; j++)
+        c[0][j] = 0;
+    for(i = 1; i&lt;= m; i++){
+        for(j = 1; j &lt;= n; j++){
+            if(x[i-1] == y[j-1]){
+                c[i][j] = c[i-1][j-1] + 1;
+                b[i][j] = 0;
+            }
+            else if(c[i-1][j] &gt;= c[i][j-1]){
+                c[i][j] = c[i-1][j];
+                b[i][j] = 1;
+            }else{
+                c[i][j] = c[i][j-1];
+                b[i][j] = -1;
+            }
+        }
+    }   
+}
+void PrintLCS(int b[][MAXLEN], char *x, int i, int j){
+    if(i == 0 || j == 0)
+        return;
+    if(b[i][j] == 0){
+        PrintLCS(b, x, i-1, j-1);
+        printf(&quot;%c &quot;, x[i-1]);
+    }else if(b[i][j] == 1)
+        PrintLCS(b, x, i-1, j);
     else
-        cat $mysql_checksum/$SOCK/mail|mail -s &quot;port $SOCK mysql checksum report&quot; weijing3@book.sina.com
-    fi
+        PrintLCS(b, x, i, j-1);
 }
-
-get_db_table_field_name
-checksum_db_table
-check_table_field
-process_report
-</code></pre>
-
-<h2 id="toc_4">5、脚本解读</h2>
-
-<p>　　每个函数基本都注释的很清楚了，process_report函数需要讲一下，脚本中把所有的信息都重定向到了report中，report的大致样子是这样的</p>
-
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers 
-# /usr/bin/perl 5.010001
-# Linux HP11012317.rb.simulation 2.6.32-431.11.2.el6.toa.2.x86_64 #1 SMP Wed Apr 9 15:55:33 CST 2014 x86_64 x86_64 x86_64 GNU/Linux 
-...此处省略n多PTDEBUG的调试信息
-OALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt;this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 1 checksum diffs on D11059841.rb.weibo.cn
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11060340.rb.db
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11059852.rb.weibo.cn
-...此处省略n多PTDEBUG的调试信息
-        TS ERRORS  DIFFS     ROWS  CHUNKS SKIPPED    TIME TABLE
-03-23T14:23:14      0      1    83350       5       0   3.983   books.bag_collection_1
+int main(int argc, char **argv){
+    char x[MAXLEN] = {&quot;ABCBDAB&quot;};
+    char y[MAXLEN] = {&quot;BDCABA&quot;};
+    int b[MAXLEN][MAXLEN];
+    int c[MAXLEN][MAXLEN];
+    int m, n;
+    m = strlen(x);
+    n = strlen(y);
+    LCSLength(x, y, m, n, c, b);
+    PrintLCS(b, x, m, n);
+    return 0;
+}
 </code></pre>
 </blockquote>
 
-<p>　　首部分是从库多库少库多表少表多字段少字段的情况，然后就是pt-table-checksum的调试信息了，包含了输出信息。sed过滤所有的无用信息，保留从库多库少库多表少表多字段少字段的情况，和从库信息，以及pt-table-checksum的标准输出，如下：</p>
+<p>main.c：</p>
 
 <blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers
-# pt_table_checksum:10150 15046 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 15046 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 15046 0 checksum diffs on D11060339.rb.db
-03-21T09:24:54      0      0  1042909      17       0  23.607 asd.test1
-# pt_table_checksum:10150 16227 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 16227 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 16227 0 checksum diffs on D11060339.rb.db
-03-21T09:25:23      0      1  1278316      19       0  28.421 asd.test2
+<pre><code class="language-text">#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+#include &quot;string.h&quot;
+#define N 50
+int sort_function( const void *a, const void *b);
+int main(int argc,char *argv[]){
+    FILE *fp1,*fp2,*fp3;
+    char *line1=NULL,*line2=NULL;
+    size_t len1=0,len2=0;   ssize_t read;
+    int i=0,cmprel,num1,num2;
+    if(argc!=3){
+        perror(&quot;argc error\n&quot;);
+        exit(1);
+    }
+    fp1=fopen(argv[1],&quot;r&quot;);
+    if(fp1==NULL){
+        perror(&quot;argv1 error\n&quot;);
+        exit(1);
+    }
+    fp2=fopen(argv[2],&quot;r&quot;);
+    if(fp2==NULL){
+        perror(&quot;argv2 error\n&quot;);
+        exit(1);
+    }
+    fp3=fopen(&quot;chaji&quot;,&quot;w&quot;);
+    if(fp3==NULL){
+        perror(&quot;argv3 error\n&quot;);
+        exit(1);
+    }
+    num1=getline(&amp;line1,&amp;len1,fp1);
+    num2=getline(&amp;line2,&amp;len2,fp2);
+    while(num1!=-1&amp;&amp;num2!=-1){
+        cmprel=strcmp(line1,line2);
+        if(cmprel&lt;0){
+            fwrite(line1,1,strlen(line1),fp3);
+            num1=getline(&amp;line1,&amp;len1,fp1);
+        }else if(cmprel&gt;0)
+            num2=getline(&amp;line2,&amp;len2,fp2);
+        else{
+            num1=getline(&amp;line1,&amp;len1,fp1);
+            num2=getline(&amp;line2,&amp;len2,fp2);
+        }
+    }
+    while(num1!=-1){
+        fwrite(line1,1,strlen(line1),fp3);
+        num1=getline(&amp;line1,&amp;len1,fp1);
+    }    
+    while(num2!=-1)
+        num2=getline(&amp;line2,&amp;len2,fp2);
+    free(line1);free(line2);
+    fclose(fp1);fclose(fp2);fclose(fp3);
+    return 0;
+}
 </code></pre>
 </blockquote>
-
-<p>　　此时的信息已经可读了，使用awk截取第三个字段列非0的行，并截取该行上面n行(n是slave的数量)，得到的结果就是所有有问题的库,表,字段和记录了.</p>
-
-<h2 id="toc_5">6、操作步骤：</h2>
-
-<p>　　随便找一台机器，本地机器也行，将脚本部署上去，然后登陆主库执行以下命令</p>
-
-<blockquote>
-<pre><code class="language-text">mysql&gt; GRANT select,insert,update,delete,create,process,super,replication slave,lock tables ON *.* to &#39;checksum&#39;@&#39;脚本所在机器的ip&#39; IDENTIFIED by &#39;xxx&#39;; 
-mysql&gt; CREATE DATABASE `percona` ;
-mysql&gt; use percona;
-mysql&gt; CREATE TABLE `port_checksums` (    #这里的port要改成你的数据库的端口
-`db` char(64) NOT NULL,
-`tbl` char(64) NOT NULL,
-`chunk` int(11) NOT NULL,
-`chunk_time` float DEFAULT NULL,
-`chunk_index` varchar(200) DEFAULT NULL,
-`lower_boundary` text,
-`upper_boundary` text,
-`this_crc` char(40) NOT NULL,
-`this_cnt` int(11) NOT NULL,
-`master_crc` char(40) DEFAULT NULL,
-`master_cnt` int(11) DEFAULT NULL,
-`ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-PRIMARY KEY (`db`,`tbl`,`chunk`),
-KEY `ts_db_tbl` (`ts`,`db`,`tbl`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-mysql&gt; CREATE TABLE `port_dsns` (   #这里的port要改成你的数据库的端口
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-</code></pre>
-</blockquote>
-
-<p>　　select,process,super是pt-table-checksum需要的权限,insert,update,delete,create,super,replication slave,lock tables是pt-table-sync需要的权限.<br/>
-主库把这些操作完毕后就可以执行脚本了，有问题会发送邮件给自己，没问题会发送no problem给自己。<br/>
-在这里创建dsns是因为该方法比较灵活，下一部分会讲到。</p>
-
-<h2 id="toc_6">7、特殊情况</h2>
-
-<p>　　线上有个数据库是两小时备份一次的,一开始--recursion-method使用的processlist，表示主库自己找从库，当两小时备份库不运行的时候pt-table-checksum会等待这个两小时备份库,直到它开始备份为止,等如此长的时间显然是不行的.因此可以换--recursion-method=hosts或dsn方法<br/>
-　　对于hosts方法,在从库的配置文件中添加report_host和report_port，但不在两小时备份库的配置文件添加report_host和report_port，这样pt-table-checksum登录主库检查时show hosts slave就找不到两小时备份库，也就忽略对两小时备份库的检查了。该方法需要修改配置文件并重启从库，不推荐。<br/>
-　　对于dsn方法，在主库创建percona.port_dsns表,表中插入从库的信息,执行pt-table-checksum的时候指定dsn方法,就会去percona.port_dsns表找从库信息.可以看出这种方法灵活且不影响线上服务,是比较好的,脚本中也是使用的这个方法.<br/>
-以3306为例<br/>
-在192.168.1.1(主库)上创建dsns表，并插入以下语句（从库的信息插入进去）</p>
-
-<blockquote>
-<pre><code class="language-text">CREATE DATABASE `percona` ;
-CREATE TABLE `3306_dsns` (
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.2,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.3,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.4,P=3306,u=checksum,p=123&#39;);
-</code></pre>
-</blockquote>
-
-<p>　　在主库或10191上执行pt-table-checksum --user=checksum --password=123 --host=192.168.1.1 --port=3306 --databases=asd --tables=user1 --empty-replicate-table --replicate=percona.checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=3306_dsns即可</p>
-
-<h2 id="toc_7">8、使用pt-table-checksum可能的报错：</h2>
-
-<p>1、mysql table is marked as crashed<br/>
-表损坏，使用以下命令修复</p>
-
-<blockquote>
-<pre><code class="language-text">mysql&gt; myisamchk -r $TABLE_NAME
-mysql&gt; myisamchk -r -v -f $TABLE_NAME
-</code></pre>
-</blockquote>
-
-<p>2、no slaves were found<br/>
-主库找不到从库，一般用dsn方法不会有这个情况，除非在主库的percona.portdsn插入从库信息有误<br/>
-3、03-23T15:16:40 Skipping chunk 1 of asd.user1 because it is oversized.  The current chunk size limit is 2000 rows (chunk size=1000 * chunk size limit=2.0), but MySQL estimates that there are 2008 rows in the chunk.<br/>
-这种情况是分的块太大了，设置--chunk-size-limit<br/>
-4、03-21T12:16:08 Error checksumming table asd.user1: Possible infinite loop detected!  The lower boundary for chunk 1 is <1> and the lower boundary for chunk 2 is also <1>.  This usually happens when using a non-unique single column index.  The current chunk index for table asd.user1 is idx_bid which is not unique and covers 1 column.<br/>
-没有唯一索引</p>
 
 
 </div>
@@ -674,15 +1021,15 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
   <div class="large-6 columns">
 	<div class="text-left" style="padding:15px 0px;">
 		
-	        <a href="megacli%20%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.html"  title="Previous Post: megacli 常用命令">&laquo; megacli 常用命令</a>
+	        <a href="%E6%96%87%E4%BB%B6%E6%90%9C%E7%B4%A2.html"  title="Previous Post: 文件搜索">&laquo; 文件搜索</a>
 	    
 	</div>
   </div>
   <div class="large-6 columns">
 	<div class="text-right" style="padding:15px 0px;">
 		
-	        <a href="dns%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3.html" 
-	        title="Next Post: dns服务器报错解决">dns服务器报错解决 &raquo;</a>
+	        <a href="%E6%96%87%E4%BB%B6%E7%BC%96%E8%BE%91.html" 
+	        title="Next Post: 文件编辑">文件编辑 &raquo;</a>
 	    
 	</div>
   </div>
@@ -695,7 +1042,7 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
 </div>
 <script type="text/javascript">
 	$(function(){
-		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1mysql%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
+		var currentURL = '%E6%96%87%E4%BB%B6%E6%AF%94%E8%BE%83.html';
 		$('#side-nav a').each(function(){
 			if($(this).attr('href') == currentURL){
 				$(this).parent().addClass('active');

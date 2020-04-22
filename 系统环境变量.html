@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  记一次mysql主从一致校验走过的坑 - 小菜鸡儿
+  系统环境变量 - 小菜鸡儿
   
   </title>
  <meta name="description" content="">
@@ -382,287 +382,378 @@
             <div class="large-9 medium-9 columns">
 
  <div class="markdown-body">
-<h1>记一次mysql主从一致校验走过的坑</h1>
+<h1>系统环境变量</h1>
 
-<p>前言：<br/>
-　　最近一台db master宕机，立刻迁到了一台从库上。这次的宕机在恢复后我做了主从一致校验，发现有部分数据不一致，细细想想还是挺可怕的，万一数据不一致的很多，主库挂了，切从库，那后果简直不敢想象。。。<br/>
-　　因此主从一致校验是必要的，但是这个东西比较费时，因此一般来说没有出故障一周校验一次即可。本来准备自己写个校验脚本后来发现要考虑的问题太多，于是发现pt-table-checksum这个神器，踩坑之旅开始。<br/>
-　　先说一下生产环境，目前所有的端口都是一主多从的架构，因为对读的要求高，主从分离，多从库有利于读。</p>
+<h4 id="toc_0">1.编写打印时间的程序</h4>
 
-<h2 id="toc_0">1、可能情况：</h2>
+<p>任务描述：</p>
 
-<p>若发现主从数据不一致可能有以下原因导致：<br/>
-①原来的主库down机，将从库升为主库期间导致数据丢失，从而发生数据不一致<br/>
-②误在从库上操作了<br/>
-③负载过大导致复制线程资源不足<br/>
-对于主从不一致无非以下三种：<br/>
-主库数据多余从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据少于从库(这里的数据包括数据库、表、字段，不仅仅是一条记录)<br/>
-主库数据量和从库一样，但是数据有差异(记录条数相同，但是记录内容有偏差)</p>
+<ul>
+<li>编写c程序，该程序从0开始，每隔两秒输出一个整数，该整数为上一个整数+1，并且输出当前系统时间</li>
+<li>该程序无限次运行，直到外界终止该程序<br/>
+对上述程序改进，实现以命令参数执行打印时间的程序</li>
+</ul>
 
-<h2 id="toc_1">2、工具选用：</h2>
+<p>main.c：</p>
 
-<p>　　一开始是想自己写个主从检查脚本的，大致用select count(1) from db.table，后来发现写出来的不严谨，只能检查数据量是否一致万一数据不一致就无法检测出来，而且太耗费系统资源不可取。后来发现有现成的工具pt-table-checksum。它的大体执行流程是:<br/>
-<strong><em>登录主库-&gt;根据唯一索引将表分块(没有唯一索引会报错)-&gt;对块校验-&gt;将校验结果默认写入percona.checksums表-&gt;比较percona.checksums中master db和slave db不一致的值，输出</em></strong>。<br/>
-　　pt-table-checksum默认主从的数据库和表结构一致，若从库的表结构与主库不一致，会导致主从复制中断。同时pt-table-checksum要求复制是基于STATEMENT格式的，它在运行时会在主库上设置binlog_format=STATEMENT(需要super权限)，但是由于MySQL的限制，这一设置并不会传递到从库，因此当从库的binlog格式是ROW格式时，无法直接对从库进行校验。</p>
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+int main(void){
+    int i; 
+    for(i=0;;i++){ 
+        printf(&quot;%d\n&quot;,i);
+        sleep(2);
+        system(&quot;date&quot;);
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
 
-<h2 id="toc_2">3、大致思路：</h2>
+<p>改进main1.c：</p>
 
-<p>　　上面说了pt-table-checksum默认主从的数据库和表结构一致，对于主从某些库、表、字段不一致(这里的不一致主要指的是多了或者少了)，它无法检测出来。<br/>
-下面是四种情况的输出:<br/>
-从库少asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907089990574.jpg" alt=""/><br/>
-从库多asd库：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090229580.jpg" alt=""/><br/>
-从库少user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090362061.jpg" alt=""/><br/>
-从库多user3表：<br/>
-<img src="http://onj3b3nf9.bkt.clouddn.com/14907090454889.jpg" alt=""/><br/>
-　　可以看出在主库不存在某个库某个表的情况下，使用pt-table-checksum检测从库是不会有任何报错信息的，但其实从库是多了库/表的。<br/>
-　　因此在使用pt-table-checksum检测前需要先检测主从的库、表以及字段是否一致(是否多库多表少库少表多字段少字段)。有多/少的记录到一个文件report中，然后以主库为的数据库、表为依据，依次遍历，使用pt-table-checksum检查从库上相应的数据库和表，将结果追加到report中。最后对report做处理，发送给自己邮箱。</p>
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+#include&lt;time.h&gt;
+int main(int argc,char *argv[]){
+    int i; 
+    if(argc!=2){
+        return 0;
+        printf(&quot;error&quot;);
+    }
+    for(i=0;;i++){
+    printf(&quot;%d\n&quot;,i);
+    sleep(2);
+    system(argv[1]);
+    }   
+    return 0;
+}
+</code></pre>
+</blockquote>
 
-<h2 id="toc_3">4、操作脚本</h2>
+<h4 id="toc_1">2、编写计算加法的程序</h4>
 
+<p>任务描述：</p>
+
+<ul>
+<li>编写c程序，该程序每次读取两个整数x、y，整数大小为1-99999，计算x+y的值，并输出到屏幕上</li>
+<li>分别使用scanf(&quot;%s&quot;,&amp;str),gets(str),fgets(str,n,fp)来实现从标准输入流中获取参数值</li>
+<li>使用fgets实现从文件读取两个整数并相加(不要使用feof判断，会导致最后一行读两次，用fgets(s,5,fp)==NULL)</li>
+<li>该程序要求计算无数次，直到外界终止</li>
+</ul>
+
+<p>main1.c(使用scanf):</p>
+
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+int main(void){
+    int i,x,y,z;
+    while(1){ 
+        printf(&quot;please input x:&quot;);
+        scanf(&quot;%d&quot;,&amp;x);
+        printf(&quot;please input y:&quot;);
+        scanf(&quot;%d&quot;,&amp;y);
+        z=x+y;
+        printf(&quot;%d+%d=%d\n&quot;,x,y,z);
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>main2.c(使用gets):</p>
+
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+int main(void){
+    while(1){
+        int a,b,c;
+        char x[10],y[10];
+        printf(&quot;please input x:&quot;);
+        gets(x);
+        printf(&quot;please input y:&quot;);
+        gets(y);
+        a=atoi(x);  b=atoi(y);
+        c=a+b;
+        printf(&quot;%d+%d=%d\n&quot;,a,b,c);
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>main3.c(使用fgets):<br/>
+fgets函数用来从文件中读入字符串。fgets函数的调用形式如下：fgets（str，n，fp）；此处，fp是文件指针；str是存放在字符串的起始地址；n是一个int类型变量。函数的功能是从fp所指文件中读入n-1个字符放入str为起始地址的空间内；如果在未读满n-1个字符之时，已读到一个换行符或一个EOF（文件结束标志），则结束本次读操作，读入的字符串中最后包含读到的换行符。因此，确切地说，调用fgets函数时，最多只能读入n-1个字符。读入结束后，系统将自动在最后加&#39;\0&#39;，并以str作为函数值返回</p>
+
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+int main(void){
+    int a,b,c;char x[10],y[10];
+    while(1){
+        printf(&quot;please input x:&quot;);
+        fgets(x,11,stdin);
+        printf(&quot;please inpue y:&quot;);
+        fgets(y,11,stdin);
+        a=atoi(x);
+        b=atoi(y);
+        c=a+b;
+        printf(&quot;%d+%d=%d\n&quot;,a,b,c);
+    }
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>main4.c:</p>
+
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+int main(void){
+    int a,b,c;
+    char str1[20],str2[20];
+    FILE *fp;
+    fp=fopen(&quot;num.txt&quot;,&quot;r&quot;);
+    while(fgets(str1,5,fp)!=NULL){
+        fgets(str2,5,fp);
+        printf(&quot;%d&quot;,sizeof(str2));
+        a=atoi(str1);
+        b=atoi(str2);
+        c=a+b;
+        printf(&quot;%d+%d=%d\n&quot;,a,b,c);
+    } 
+    fclose(fp);
+    return 0;
+}
+</code></pre>
+</blockquote>
+
+<p>num.txt:</p>
+
+<blockquote>
+<pre><code class="language-text">123
+456
+789
+123
+</code></pre>
+</blockquote>
+
+<h4 id="toc_2">3.shell脚本启动和终止进程</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>编写shell脚本,脚本打开三个终端,并在每个终端中执行task1</li>
+<li>打印出每个task1对应的进程的详细信息,至少包括user,pid,cpu,mem四个信息</li>
+<li>在脚本执行1分钟后终止所有task1对应的进程,然后再打印出此时所有进程的信息</li>
+</ul>
+
+<blockquote>
 <pre><code class="language-text">#!/bin/bash
-#set -x
+#-t 为打开终端的标题,便于区分,#-x 后面的为要在打开的终端中执行的脚本,根据需要自己修改就行了,# exec bash是让打开的终端在执行完脚本后不关闭
+gnome-terminal -t &quot;1&quot; -x bash -c &quot;../1/main;exec bash&quot; 
+gnome-terminal -t &quot;2&quot; -x bash -c &quot;../1/main;exec bash&quot;
+gnome-terminal -t &quot;3&quot; -x bash -c &quot;../1/main;exec bash&quot;
+ps aux | grep &quot;bash -c ../1/main&quot; | awk &#39;NR!=4 {print $1,$2,$3,$4}&#39;
+sleep 60 
+for a in `ps aux | grep &quot;bash -c ../1/main&quot; | awk &#39;NR!=4 {print $2}&#39;`;do
+    kill $a
+done
+ps -a
+</code></pre>
+</blockquote>
 
-PASSWORD=       #登录用户的密码
-SOCK=               #端口
-#SLAVE=()
-SLAVE=()            #从库ip(有几个写几个，注意是一个数组，用空格隔开)
-MASTER=         #主库ip
+<p>4、shell脚本查看子进程和父进程</p>
 
-#连接语句
-MYSQL_CONN=&quot;mysql -uchecksum -p$PASSWORD&quot;
+<p>任务描述:</p>
 
-#存放产生临时文件的文件夹
-mysql_checksum=/tmp/mysql_checksum      
-#获取主库和从库的数据库、表
-get_db_table_field_name() {
-    if [ -d $mysql_checksum/$SOCK ];then
-        rm -r $mysql_checksum/$SOCK
-    fi
-    mkdir -p $mysql_checksum/$SOCK
-    echo &quot;#########start get port $SOCK master db #########&quot;
-    #获取主库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db
-    #获取上一步中的数据库中的表名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        $MYSQL_CONN -P $SOCK -h $MASTER -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table
-    done
-    #获取上一步中得到的表中的字段名
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table`;do
-        $MYSQL_CONN -P ${SOCK} -h $MASTER -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field
-        done
-    done
-    #获取从库除了mysql、test、information_schema、performance_schema、percona的数据库名
-    echo &quot;#########start get port $SOCK slave db #########&quot;
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;show databases;&quot;|grep -v mysql|grep -v test |grep -v information_schema|grep -v Database|grep -v performance_schema |grep -v percona &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db
-        #获取上一步中的数据库中的表名     for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;show tables;&quot;|grep -v Tables &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table
-        done
-        #获取上一步中得到的表中的字段名
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db`;do
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table`;do
-                $MYSQL_CONN -P $SOCK -h ${SLAVE[$j]} -e &quot;USE $DB;desc $TABLE;&quot;|grep -v Field &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-            done
-        done
-    done
+<ul>
+<li>编写shell脚本,脚本能够依次输出当前脚本运行的进程的pid,当前进程的命令名,当前进程父进程的pid,当前进程父进程的命令名</li>
+<li>打印进程后不自动终止,通过手动输入命令核对第一步中打印的信息,核对完成后手动终止该进程</li>
+</ul>
+
+<blockquote>
+<pre><code class="language-text">#!/bin/bash
+echo $$
+a=`cat /proc/$$/cmdline` 
+echo $a
+echo $PPID
+b=`cat /proc/$PPID/cmdline`
+echo $b
+read -p &quot;do you want to end it?(y or n)&quot; x
+while [ &quot;$x&quot; != y ];do 
+    read -p &quot;please input y :&quot; x 
+done 
+kill $$
+</code></pre>
+</blockquote>
+
+<h4 id="toc_3">5.shell脚本设置环境变量</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>读取当前系统中的环境变量，包括当前用户名和当前用户目录名信息</li>
+<li>设置环境变量WELCOME，内容是&quot;welcome,{用户名},Your home is{用户目录名},Today is {时间日期}&quot;</li>
+<li>在每次用户登陆时将WELCOME设为系统环境变量</li>
+</ul>
+
+<p>　　Shell Script 是一种弱类型语言,使用变量的时候无需首先声明其类型。新的变量会在本地数据区分配内存进行存储,这个变量归当前的 Shell 所有,任何子进程都不能访问本地变量。这些变量与环境变量不同,环境变量被存储在另一内存区,叫做用户环境区,这块内存中的变量可以被子进程访问。<br/>
+　　env 用于显示用户环境区中的变量及其取值;set 用于显示本地数据区和用户环境区中的变量及其取值;unset 用于删除指定变量当前的取值,该值将被指定为 NULL;export 命令用于将本地数据区中的变量转移到用户环境区。<br/>
+　　环境变量是和 Shell 紧密相关的,用户登录系统后就启动了一个 Shell。对于 Linux 来说一般是 bash,但也可以重新设定或切换到其它的 Shell(使用 chsh 命令)。根据发行版本的情况,bash 有两个基本的系统级配置文件:/etc/bashrc 和/etc/profile。这些配置文件包含两组不同的变量: shell 变量和环境变量。前者只是在特定的 shell 中固定(如bash),后者在不同 shell 中固定。很明显,shell 变量是局部的,而环境变量是全局的。环境变量是通过 Shell 命令来设置的,设置好的环境变量又可以被所有当前用户所运行的程序所使用。对于 bash 这个 Shell 程序来说,可以通过变量名来访问相应的环境变量,通过 export来设置环境变量。<br/>
+<strong>1.Linux 的变量种类</strong><br/>
+　　按变量的生存周期来划分,Linux 变量可分为两类:<br/>
+　　①永久的:需要修改配置文件,变量永久生效。<br/>
+　　② 临时的:使用 export 命令行声明即可,变量在关闭 shell 时失效。<br/>
+<strong>2.设置变量的三种方法</strong><br/>
+①在/etc/profile 文件中添加变量【对所有用户生效(永久的)】<br/>
+用 VI 在文件/etc/profile 文件中增加变量,该变量将会对 Linux 下所有用户有效,并且是“永久的”。<br/>
+例如:编辑/etc/profile 文件,添加 CLASSPATH 变量</p>
+
+<blockquote>
+<pre><code class="language-text">export CLASSPATH=./JAVA_HOME/lib;$JAVA_HOME/jre/lib
+</code></pre>
+</blockquote>
+
+<p>注:修改文件后要想马上生效还要运行# source /etc/profile 不然只能在下次重进此用户时生效。<br/>
+②在用户目录下的.bash_profile 文件中增加变量【对单一用户生效(永久的)】<br/>
+用 VI 在用户目录下的.bash_profile 文件中增加变量,改变量仅会对当前用户有效,并且是“永<br/>
+久的”。<br/>
+例如:编辑 guok 用户目录(/home/guok)下的.bash_profile,添加如下内容:</p>
+
+<blockquote>
+<pre><code class="language-text">export CLASSPATH=./JAVA_HOME/lib;$JAVA_HOME/jre/lib
+</code></pre>
+</blockquote>
+
+<p>注:修改文件后要想马上生效还要运行$ source /home/guok/.bash_profile 不然只能在下次重进此用户时生效。<br/>
+③直接运行 export 命令定义变量【只对当前 shell(BASH)有效(临时的)】<br/>
+在 shell 的命令行下直接使用[export 变量名=变量值]定义变量,该变量只在当前的 shell(BASH)或其子 shell(BASH)下是有效的,shell 关闭了,变量也就失效了,再打开新shell 时就没有这个变量,需要使用的话还需要重新定义。</p>
+
+<blockquote>
+<pre><code class="language-text">#!/bin/bash
+echo $HOME
+echo $USER
+echo &#39;export WELCOME=&quot;Welcome,$USER Your home is $HOME Today is `date`&quot; &#39;&gt;&gt; ~/.profile
+echo $WELCOME
+</code></pre>
+</blockquote>
+
+<h4 id="toc_4">6.使用c语言操作环境变量</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>使用c语言读取并重新设置task5中的环境变量WELCOME</li>
+<li>读取WELCOME值</li>
+<li>重新设置WELCOME值</li>
+<li>打印设置后的WELCOME值</li>
+</ul>
+
+<blockquote>
+<pre><code class="language-text">#include &lt;stdio.h&gt;
+#include&lt;stdlib.h&gt;
+int main(void){
+    char *p;
+    /\*取得参数WELCOME环境变量的内容,参数WELCOME为环境变量的名称\*/
+    if((p=getenv(&quot;WELCOME&quot;)))
+        printf(&quot;WELCOME=%s\n&quot;,p);
+    /\*改变或增加环境变量的内容*/
+        setenv(&quot;WELCOME&quot;,&quot;hello&quot;,1);
+        printf(&quot;WELCOME=%s\n&quot;,getenv(&quot;WELCOME&quot;));
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#检查从库是否多库少库多表少表多字段少字段
-checksum_db_table() {
-    if [ -e $mysql_checksum/$SOCK/report ];then
-        rm $mysql_checksum/$SOCK/report
-    fi
-    #将主库的数据库名排序
-    cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort
+<h4 id="toc_5">7.使用其他shell脚本中设置的环境变量</h4>
 
-    for ((j=0;j&lt;${#SLAVE[@]};j++));do
-        #将从库的数据库名排序
-        cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db | sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort
-        #comm命令检测从库是多还是少库，注意comm后面跟的两个文件顺序不能错
-        slave_surplus_db=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        slave_lack_db=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_db_sort|tr &#39;\n&#39; &#39; &#39; `
-        if [ ! -z &quot;$slave_surplus_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} surplus database $slave_surplus_db&quot; | tee -a $mysql_checksum/$SOCK/report 
-        fi
-        if [ ! -z &quot;$slave_lack_db&quot; ];then
-            echo &quot;port $SOCK slave ${SLAVE[$j]} lack database $slave_lack_db&quot; &gt;&gt; $mysql_checksum/$SOCK/report
-        fi
-        #库检查完了，就以主库包含的库为基准，comm命令检测从库是多还是少表，同样comm后面跟的两个文件顺序不能错
-        for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-            cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table| sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort
-            cat $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table |sort |uniq|sort &gt; $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort
-            slave_surplus_table=`comm -13 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            slave_lack_table=`comm -23 $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_table_sort|tr &#39;\n&#39; &#39; &#39; `
-            if [ ! -z &quot;$slave_surplus_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} surplus table $slave_surplus_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-            if [ ! -z &quot;$slave_lack_table&quot; ];then
-                echo &quot;port $SOCK slave ${SLAVE[$j]} database ${DB} lack table ${DB}.$slave_lack_table&quot; |tee -a $mysql_checksum/$SOCK/report
-            fi
-        #表检查完了，就以主库包含的表为基准，diff命令检测从库是多还是少字段，diff后面的文件顺序无所谓
-            for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-                diff $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_${TABLE}_field $mysql_checksum/$SOCK/${SOCK}_${SLAVE[$j]}_${DB}_${TABLE}_field
-                if [ $? -ne 0 ];then
-                    echo &quot;port $SOCK slave ${SLAVE[$j]} have different field in ${DB}.${TABLE}&quot; |tee -a $mysql_checksum/$SOCK/report
-                fi
-            done
-        done
-    done
+<p>任务描述:</p>
+
+<ul>
+<li>编写脚本setenv.sh,用于设置环境变量HELLO,值为hello</li>
+<li>通过source命令设置环境变量</li>
+<li>编写脚本test,sh,读取HELLO和USER两个环境变量,打印出Hello,username!</li>
+</ul>
+
+<p>source 命令的作用就是用来执行一个脚本,那么source a.sh 同直接执行 ./a.sh 有什么不同呢,比如你在一个脚本里 export KKK=111 ,如果你用./a.sh 执行该脚本,执行完毕后,你运行 echo $KKK ,发现没有值,如果你用 source 来执行 ,然后再 echo ,就会发现 KKK=111。因为调用./a.sh 来执行 shell 是在一个子 shell 里运行的,所以执行后,结构并没有反应到父 shell 里,但是source就是在本 shell 中执行的,所以可以看到结果。<br/>
+setenv.sh:</p>
+
+<blockquote>
+<pre><code class="language-text">#!/bin/bash
+export HELLO=&quot;Hello&quot; &gt;&gt;~/.profile 
+</code></pre>
+</blockquote>
+
+<p>test.sh:</p>
+
+<blockquote>
+<pre><code class="language-text">#!/bin/bash
+echo &quot;&quot;$HELLO&quot;,&quot;$USER&quot;!&quot;
+</code></pre>
+</blockquote>
+
+<h4 id="toc_6">8.使用linux系统调用函数读取hostname</h4>
+
+<p>任务描述：</p>
+
+<ul>
+<li>使用c语言调用系统调用gethostname，读取当前hostname值，然后打印出来</li>
+</ul>
+
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;sys/types.h&gt;
+#include&lt;unistd.h&gt;
+#include&lt;stdlib.h&gt;
+int main(void){
+    char name[50];
+    if(gethostname(name,sizeof(name))!=0){
+        perror(&quot;gethostname error\n&quot;);
+        exit(1);
+    }
+    printf(&quot;hostname=%s\n&quot;,name);
+    return 0;
 }
+</code></pre>
+</blockquote>
 
-#以主库有的库和表为基准，检测从库的记录是否与主库一致
-check_table_field() {
-    for DB in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_db_sort`;do
-        for TABLE in `cat $mysql_checksum/$SOCK/${SOCK}_${MASTER}_${DB}_table_sort`;do
-            echo &quot;#########port ${SOCK} database ${DB} table ${TABLE}&quot;
-            PTDEBUG=1 pt-table-checksum --user=checksum --password=$PASSWORD --host=$MASTER --port=${SOCK} --databases=$DB --tables=$TABLE --empty-replicate-table --replicate=percona.${SOCK}_checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=${SOCK}_dsns &gt;&gt; $mysql_checksum/$SOCK/report 2&gt;&amp;1
-        done
-    done
+<h4 id="toc_7">9.使用linux系统调用函数设置hostname</h4>
+
+<p>任务描述:</p>
+
+<ul>
+<li>打印当前主机名称hostname</li>
+<li>重新设置主机名称,设置为自己的名字</li>
+<li>打印设置后的主机名称</li>
+</ul>
+
+<blockquote>
+<pre><code class="language-text">#include&lt;stdio.h&gt;
+#include&lt;sys/types.h&gt;
+#include&lt;unistd.h&gt;
+#include&lt;stdlib.h&gt;
+int main(void){
+    char name[50];
+    if(gethostname(name,sizeof(name))!=0){
+        perror(&quot;gethostname error\n&quot;);
+        exit(1);
+    }
+    printf(&quot;hostname=%s\n&quot;,name);
+    char newname[50]=&quot;weijing&quot;;
+    if(sethostname(newname,sizeof(newname))!=0){
+        perror(&quot;set error\n&quot;);
+        exit(1);
+    }
+    printf(&quot;newhostname is %s\n&quot;,newname);
+    return 0;
 }
-
-#将生成的report进行处理
-process_report() {
-    sed -i -ne &#39;/^port/p&#39; -ne &#39;/checksum diffs/p&#39; -ne &#39;/^[0-1][1-9]-[0-3][1-9]/p&#39; $mysql_checksum/$SOCK/report
-    grep &quot;^port&quot; $mysql_checksum/$SOCK/report &gt; $mysql_checksum/$SOCK/mail
-    awk &#39;$3!=0&#39; $mysql_checksum/$SOCK/report |egrep -B ${#SLAVE[@]} &#39;^[0-1][1-9]-[0-3][1-9]&#39; &gt;&gt; $mysql_checksum/$SOCK/mail
-    if [ ! -s $mysql_checksum/$SOCK/mail ];then
-        echo &quot;$SOCK no problem&quot;|mail -s &quot;port $SOCK checksum report&quot; weijing3@book.sina.com
-    else
-        cat $mysql_checksum/$SOCK/mail|mail -s &quot;port $SOCK mysql checksum report&quot; weijing3@book.sina.com
-    fi
-}
-
-get_db_table_field_name
-checksum_db_table
-check_table_field
-process_report
-</code></pre>
-
-<h2 id="toc_4">5、脚本解读</h2>
-
-<p>　　每个函数基本都注释的很清楚了，process_report函数需要讲一下，脚本中把所有的信息都重定向到了report中，report的大致样子是这样的</p>
-
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers 
-# /usr/bin/perl 5.010001
-# Linux HP11012317.rb.simulation 2.6.32-431.11.2.el6.toa.2.x86_64 #1 SMP Wed Apr 9 15:55:33 CST 2014 x86_64 x86_64 x86_64 GNU/Linux 
-...此处省略n多PTDEBUG的调试信息
-OALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt;this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 1 checksum diffs on D11059841.rb.weibo.cn
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11060340.rb.db
-# RowChecksum:6008 24160 SELECT CONCAT(db, &#39;.&#39;, tbl) AS `table`, chunk, chunk_index, lower_boundary, upper_boundary, COALESCE(this_cnt-master_cnt, 0) AS cnt_diff, COALESCE(this_crc &lt;&gt; master_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc), 0) AS crc_diff, this_cnt, master_cnt, this_crc, master_crc FROM `percona`.`10185_752_checksums` WHERE (master_cnt &lt;&gt; this_cnt OR master_crc &lt;&gt; this_crc OR ISNULL(master_crc) &lt;&gt; ISNULL(this_crc)) AND (db=&#39;books&#39; AND tbl=&#39;bag_collection_1&#39;)
-# pt_table_checksum:10150 24160 0 checksum diffs on D11059852.rb.weibo.cn
-...此处省略n多PTDEBUG的调试信息
-        TS ERRORS  DIFFS     ROWS  CHUNKS SKIPPED    TIME TABLE
-03-23T14:23:14      0      1    83350       5       0   3.983   books.bag_collection_1
 </code></pre>
 </blockquote>
-
-<p>　　首部分是从库多库少库多表少表多字段少字段的情况，然后就是pt-table-checksum的调试信息了，包含了输出信息。sed过滤所有的无用信息，保留从库多库少库多表少表多字段少字段的情况，和从库信息，以及pt-table-checksum的标准输出，如下：</p>
-
-<blockquote>
-<pre><code class="language-text">port xxx slave xxx lack database asd 
-port xxx slave xxx lack database asd 
-port xxx slave xxx database percona surplus table person triggers
-# pt_table_checksum:10150 15046 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 15046 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 15046 0 checksum diffs on D11060339.rb.db
-03-21T09:24:54      0      0  1042909      17       0  23.607 asd.test1
-# pt_table_checksum:10150 16227 0 checksum diffs on D10117279.rb.db
-# pt_table_checksum:10150 16227 0 checksum diffs on D11059851.rb.weibo.cn
-# pt_table_checksum:10150 16227 0 checksum diffs on D11060339.rb.db
-03-21T09:25:23      0      1  1278316      19       0  28.421 asd.test2
-</code></pre>
-</blockquote>
-
-<p>　　此时的信息已经可读了，使用awk截取第三个字段列非0的行，并截取该行上面n行(n是slave的数量)，得到的结果就是所有有问题的库,表,字段和记录了.</p>
-
-<h2 id="toc_5">6、操作步骤：</h2>
-
-<p>　　随便找一台机器，本地机器也行，将脚本部署上去，然后登陆主库执行以下命令</p>
-
-<blockquote>
-<pre><code class="language-text">mysql&gt; GRANT select,insert,update,delete,create,process,super,replication slave,lock tables ON *.* to &#39;checksum&#39;@&#39;脚本所在机器的ip&#39; IDENTIFIED by &#39;xxx&#39;; 
-mysql&gt; CREATE DATABASE `percona` ;
-mysql&gt; use percona;
-mysql&gt; CREATE TABLE `port_checksums` (    #这里的port要改成你的数据库的端口
-`db` char(64) NOT NULL,
-`tbl` char(64) NOT NULL,
-`chunk` int(11) NOT NULL,
-`chunk_time` float DEFAULT NULL,
-`chunk_index` varchar(200) DEFAULT NULL,
-`lower_boundary` text,
-`upper_boundary` text,
-`this_crc` char(40) NOT NULL,
-`this_cnt` int(11) NOT NULL,
-`master_crc` char(40) DEFAULT NULL,
-`master_cnt` int(11) DEFAULT NULL,
-`ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-PRIMARY KEY (`db`,`tbl`,`chunk`),
-KEY `ts_db_tbl` (`ts`,`db`,`tbl`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-mysql&gt; CREATE TABLE `port_dsns` (   #这里的port要改成你的数据库的端口
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-</code></pre>
-</blockquote>
-
-<p>　　select,process,super是pt-table-checksum需要的权限,insert,update,delete,create,super,replication slave,lock tables是pt-table-sync需要的权限.<br/>
-主库把这些操作完毕后就可以执行脚本了，有问题会发送邮件给自己，没问题会发送no problem给自己。<br/>
-在这里创建dsns是因为该方法比较灵活，下一部分会讲到。</p>
-
-<h2 id="toc_6">7、特殊情况</h2>
-
-<p>　　线上有个数据库是两小时备份一次的,一开始--recursion-method使用的processlist，表示主库自己找从库，当两小时备份库不运行的时候pt-table-checksum会等待这个两小时备份库,直到它开始备份为止,等如此长的时间显然是不行的.因此可以换--recursion-method=hosts或dsn方法<br/>
-　　对于hosts方法,在从库的配置文件中添加report_host和report_port，但不在两小时备份库的配置文件添加report_host和report_port，这样pt-table-checksum登录主库检查时show hosts slave就找不到两小时备份库，也就忽略对两小时备份库的检查了。该方法需要修改配置文件并重启从库，不推荐。<br/>
-　　对于dsn方法，在主库创建percona.port_dsns表,表中插入从库的信息,执行pt-table-checksum的时候指定dsn方法,就会去percona.port_dsns表找从库信息.可以看出这种方法灵活且不影响线上服务,是比较好的,脚本中也是使用的这个方法.<br/>
-以3306为例<br/>
-在192.168.1.1(主库)上创建dsns表，并插入以下语句（从库的信息插入进去）</p>
-
-<blockquote>
-<pre><code class="language-text">CREATE DATABASE `percona` ;
-CREATE TABLE `3306_dsns` (
-`id` int(11) NOT NULL AUTO_INCREMENT,
-`parent_id` int(11) DEFAULT NULL,
-`dsn` varchar(255) NOT NULL,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.2,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.3,P=3306,u=checksum,p=123&#39;);
-insert into percona.3306_dsns(dsn) values(&#39;h=192.168.1.4,P=3306,u=checksum,p=123&#39;);
-</code></pre>
-</blockquote>
-
-<p>　　在主库或10191上执行pt-table-checksum --user=checksum --password=123 --host=192.168.1.1 --port=3306 --databases=asd --tables=user1 --empty-replicate-table --replicate=percona.checksums --no-check-binlog-format --nocheck-replication-filters --no-check-slave-tables --recursion-method dsn=D=percona,t=3306_dsns即可</p>
-
-<h2 id="toc_7">8、使用pt-table-checksum可能的报错：</h2>
-
-<p>1、mysql table is marked as crashed<br/>
-表损坏，使用以下命令修复</p>
-
-<blockquote>
-<pre><code class="language-text">mysql&gt; myisamchk -r $TABLE_NAME
-mysql&gt; myisamchk -r -v -f $TABLE_NAME
-</code></pre>
-</blockquote>
-
-<p>2、no slaves were found<br/>
-主库找不到从库，一般用dsn方法不会有这个情况，除非在主库的percona.portdsn插入从库信息有误<br/>
-3、03-23T15:16:40 Skipping chunk 1 of asd.user1 because it is oversized.  The current chunk size limit is 2000 rows (chunk size=1000 * chunk size limit=2.0), but MySQL estimates that there are 2008 rows in the chunk.<br/>
-这种情况是分的块太大了，设置--chunk-size-limit<br/>
-4、03-21T12:16:08 Error checksumming table asd.user1: Possible infinite loop detected!  The lower boundary for chunk 1 is <1> and the lower boundary for chunk 2 is also <1>.  This usually happens when using a non-unique single column index.  The current chunk index for table asd.user1 is idx_bid which is not unique and covers 1 column.<br/>
-没有唯一索引</p>
 
 
 </div>
@@ -674,15 +765,15 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
   <div class="large-6 columns">
 	<div class="text-left" style="padding:15px 0px;">
 		
-	        <a href="megacli%20%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4.html"  title="Previous Post: megacli 常用命令">&laquo; megacli 常用命令</a>
+	        <a href="%E7%B3%BB%E7%BB%9F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E5%BC%80%E5%8F%91.html"  title="Previous Post: 系统文件操作开发">&laquo; 系统文件操作开发</a>
 	    
 	</div>
   </div>
   <div class="large-6 columns">
 	<div class="text-right" style="padding:15px 0px;">
 		
-	        <a href="dns%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8A%A5%E9%94%99%E8%A7%A3%E5%86%B3.html" 
-	        title="Next Post: dns服务器报错解决">dns服务器报错解决 &raquo;</a>
+	        <a href="%E8%A7%A3%E5%86%B3%20virtualbox%20%E5%AE%89%E8%A3%85%E5%A2%9E%E5%BC%BA%E5%B7%A5%E5%85%B7%E5%A4%B1%E8%B4%A5%E7%9A%84%E9%97%AE%E9%A2%98.html" 
+	        title="Next Post: 解决 virtualbox 安装增强工具失败的问题">解决 virtualbox 安装增强工具失败的问题 &raquo;</a>
 	    
 	</div>
   </div>
@@ -695,7 +786,7 @@ mysql&gt; myisamchk -r -v -f $TABLE_NAME
 </div>
 <script type="text/javascript">
 	$(function(){
-		var currentURL = '%E8%AE%B0%E4%B8%80%E6%AC%A1mysql%E4%B8%BB%E4%BB%8E%E4%B8%80%E8%87%B4%E6%A0%A1%E9%AA%8C%E8%B5%B0%E8%BF%87%E7%9A%84%E5%9D%91.html';
+		var currentURL = '%E7%B3%BB%E7%BB%9F%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F.html';
 		$('#side-nav a').each(function(){
 			if($(this).attr('href') == currentURL){
 				$(this).parent().addClass('active');
